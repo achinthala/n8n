@@ -31,6 +31,7 @@ body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--ink);
+  overflow-x: clip;
   background:
     radial-gradient(1200px 600px at 10% -10%, rgba(15, 143, 138, 0.12), transparent 55%),
     radial-gradient(900px 500px at 100% 20%, rgba(36, 52, 71, 0.08), transparent 50%),
@@ -257,13 +258,14 @@ a:hover {
   margin-left: max(calc((100% - var(--shell)) / 2), 1.25rem);
   margin-right: auto;
   width: min(48rem, calc(100% - 2.5rem));
+  container-type: inline-size;
   animation: rise-in 0.9s var(--ease) both;
 }
 
 .brand-hero {
   margin: 0 0 1rem;
   font-family: var(--font-display);
-  font-size: clamp(1.55rem, 6.5vw + 0.45rem, 4.6rem);
+  font-size: clamp(1.45rem, 7.05cqi, 4.6rem);
   font-weight: 800;
   letter-spacing: -0.045em;
   line-height: 0.95;
@@ -273,10 +275,10 @@ a:hover {
 
 .hero h1 {
   margin: 0;
-  max-width: 18ch;
+  max-width: min(18ch, 100%);
   font-family: var(--font-display);
-  font-size: clamp(1.45rem, 3.2vw, 2.15rem);
-  font-weight: 650;
+  font-size: clamp(1.35rem, 3.2vw, 2.15rem);
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.2;
 }
@@ -335,6 +337,7 @@ a:hover {
 
 .section {
   padding: clamp(4rem, 9vw, 6.5rem) 0;
+  scroll-margin-top: calc(var(--header-h) + 0.5rem);
 }
 
 .section-kicker {
@@ -662,7 +665,6 @@ a:hover {
 
 @media (max-width: 720px) {
   .brand-hero {
-    font-size: clamp(1.45rem, 5.8vw + 0.35rem, 2.6rem);
     letter-spacing: -0.035em;
   }
 
@@ -715,6 +717,9 @@ a:hover {
 
   .hero-content {
     margin-left: 1.25rem;
+    margin-right: 1.25rem;
+    width: auto;
+    max-width: none;
   }
 }
 
