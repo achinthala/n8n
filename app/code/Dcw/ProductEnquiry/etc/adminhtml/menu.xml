@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Dcw_ProductEnquiry::product_enquiry"
+             title="Product Enquiry"
+             module="Dcw_ProductEnquiry"
+             sortOrder="95"
+             parent="Magento_Catalog::catalog"
+             resource="Dcw_ProductEnquiry::product_enquiry"/>
+        <add id="Dcw_ProductEnquiry::enquiry"
+             title="Enquiries"
+             module="Dcw_ProductEnquiry"
+             sortOrder="10"
+             parent="Dcw_ProductEnquiry::product_enquiry"
+             action="dcw_productenquiry/enquiry/index"
+             resource="Dcw_ProductEnquiry::enquiry"/>
+        <add id="Dcw_ProductEnquiry::config"
+             title="Configuration"
+             module="Dcw_ProductEnquiry"
+             sortOrder="20"
+             parent="Dcw_ProductEnquiry::product_enquiry"
+             action="admin/system_config/edit/section/dcw_product_enquiry"
+             resource="Dcw_ProductEnquiry::config"/>
+    </menu>
+</config>

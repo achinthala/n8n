@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="dcw_product_enquiry" resource="default" engine="innodb" comment="Product Enquiry Submissions">
+        <column xsi:type="int" name="enquiry_id" unsigned="true" nullable="false" identity="true" comment="Enquiry ID"/>
+        <column xsi:type="smallint" name="store_id" unsigned="true" nullable="false" comment="Store ID"/>
+        <column xsi:type="int" name="product_id" unsigned="true" nullable="true" comment="Product ID"/>
+        <column xsi:type="varchar" name="product_sku" nullable="true" length="64" comment="Product SKU"/>
+        <column xsi:type="varchar" name="product_name" nullable="true" length="255" comment="Product Name"/>
+        <column xsi:type="int" name="customer_id" unsigned="true" nullable="true" comment="Customer ID"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Customer Name"/>
+        <column xsi:type="varchar" name="email" nullable="false" length="255" comment="Customer Email"/>
+        <column xsi:type="varchar" name="phone" nullable="true" length="64" comment="Customer Phone"/>
+        <column xsi:type="text" name="message" nullable="false" comment="Enquiry Message"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="32" default="new" comment="Enquiry Status"/>
+        <column xsi:type="varchar" name="remote_ip" nullable="true" length="45" comment="Remote IP"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="enquiry_id"/>
+        </constraint>
+        <index referenceId="DCW_PRODUCT_ENQUIRY_STORE_ID" indexType="btree">
+            <column name="store_id"/>
+        </index>
+        <index referenceId="DCW_PRODUCT_ENQUIRY_PRODUCT_ID" indexType="btree">
+            <column name="product_id"/>
+        </index>
+        <index referenceId="DCW_PRODUCT_ENQUIRY_PRODUCT_SKU" indexType="btree">
+            <column name="product_sku"/>
+        </index>
+        <index referenceId="DCW_PRODUCT_ENQUIRY_EMAIL" indexType="btree">
+            <column name="email"/>
+        </index>
+        <index referenceId="DCW_PRODUCT_ENQUIRY_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+        <index referenceId="DCW_PRODUCT_ENQUIRY_CREATED_AT" indexType="btree">
+            <column name="created_at"/>
+        </index>
+    </table>
+</schema>

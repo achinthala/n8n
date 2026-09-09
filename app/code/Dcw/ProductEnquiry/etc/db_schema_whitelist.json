@@ -1,0 +1,31 @@
+{
+    "dcw_product_enquiry": {
+        "column": {
+            "enquiry_id": true,
+            "store_id": true,
+            "product_id": true,
+            "product_sku": true,
+            "product_name": true,
+            "customer_id": true,
+            "name": true,
+            "email": true,
+            "phone": true,
+            "message": true,
+            "status": true,
+            "remote_ip": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "DCW_PRODUCT_ENQUIRY_STORE_ID": true,
+            "DCW_PRODUCT_ENQUIRY_PRODUCT_ID": true,
+            "DCW_PRODUCT_ENQUIRY_PRODUCT_SKU": true,
+            "DCW_PRODUCT_ENQUIRY_EMAIL": true,
+            "DCW_PRODUCT_ENQUIRY_STATUS": true,
+            "DCW_PRODUCT_ENQUIRY_CREATED_AT": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}

@@ -1,0 +1,158 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ProductEnquiry\ViewModel\EnquiryForm;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var EnquiryForm $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel || !$viewModel->canShow()) {
+    return;
+}
+?>
+<script>
+    (function () {
+        const registerDcwProductEnquiryForm = () => {
+            Alpine.data('dcwProductEnquiryForm', () => ({
+                isSubmitting: false,
+                successMessage: '',
+                errorMessage: '',
+                formKey: '<?= $escaper->escapeJs($viewModel->getFormKey()) ?>',
+                submitUrl: '<?= $escaper->escapeJs($viewModel->getSubmitUrl()) ?>',
+                productId: '<?= $escaper->escapeJs((string) $viewModel->getProductId()) ?>',
+                form: {
+                    name: '<?= $escaper->escapeJs($viewModel->getPrefillName()) ?>',
+                    email: '<?= $escaper->escapeJs($viewModel->getPrefillEmail()) ?>',
+                    phone: '',
+                    message: ''
+                },
+                async submitEnquiry() {
+                    this.errorMessage = '';
+                    this.successMessage = '';
+                    this.isSubmitting = true;
+
+                    const body = new URLSearchParams({
+                        form_key: this.formKey,
+                        product_id: this.productId,
+                        name: this.form.name,
+                        email: this.form.email,
+                        phone: this.form.phone,
+                        message: this.form.message
+                    });
+
+                    try {
+                        const response = await fetch(this.submitUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: body.toString(),
+                            credentials: 'same-origin'
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            this.successMessage = data.message
+                                || '<?= $escaper->escapeJs((string) __('Thank you. Your enquiry has been submitted.')) ?>';
+                            this.form.message = '';
+                            this.form.phone = '';
+                        } else {
+                            this.errorMessage = data.message
+                                || '<?= $escaper->escapeJs((string) __('Unable to submit your enquiry.')) ?>';
+                        }
+                    } catch (e) {
+                        this.errorMessage = '<?= $escaper->escapeJs((string) __('Unable to submit your enquiry. Please try again later.')) ?>';
+                    } finally {
+                        this.isSubmitting = false;
+                    }
+                }
+            }));
+        };
+
+        if (window.Alpine) {
+            registerDcwProductEnquiryForm();
+        } else {
+            document.addEventListener('alpine:init', registerDcwProductEnquiryForm);
+        }
+    })();
+</script>
+<div class="dcw-product-enquiry mt-6 mb-4" x-data="dcwProductEnquiryForm">
+    <h2 class="text-lg font-semibold mb-3">
+        <?= $escaper->escapeHtml($viewModel->getFormTitle()) ?>
+    </h2>
+
+    <template x-if="successMessage">
+        <div class="message success mb-3" x-text="successMessage"></div>
+    </template>
+    <template x-if="errorMessage">
+        <div class="message error mb-3" x-text="errorMessage"></div>
+    </template>
+
+    <form @submit.prevent="submitEnquiry()" class="space-y-3" x-show="!successMessage">
+        <input type="hidden" name="form_key" :value="formKey"/>
+        <input type="hidden" name="product_id" :value="productId"/>
+
+        <div>
+            <label class="sr-only" for="dcw-product-enquiry-name">
+                <?= $escaper->escapeHtml(__('Name')) ?>
+            </label>
+            <input id="dcw-product-enquiry-name"
+                   type="text"
+                   name="name"
+                   class="form-input w-full"
+                   x-model="form.name"
+                   placeholder="<?= $escaper->escapeHtmlAttr(__('Name*')) ?>"
+                   required/>
+        </div>
+        <div>
+            <label class="sr-only" for="dcw-product-enquiry-email">
+                <?= $escaper->escapeHtml(__('Email')) ?>
+            </label>
+            <input id="dcw-product-enquiry-email"
+                   type="email"
+                   name="email"
+                   class="form-input w-full"
+                   x-model="form.email"
+                   placeholder="<?= $escaper->escapeHtmlAttr(__('Email*')) ?>"
+                   required/>
+        </div>
+        <div>
+            <label class="sr-only" for="dcw-product-enquiry-phone">
+                <?= $escaper->escapeHtml(__('Phone')) ?>
+            </label>
+            <input id="dcw-product-enquiry-phone"
+                   type="tel"
+                   name="phone"
+                   class="form-input w-full"
+                   x-model="form.phone"
+                   placeholder="<?= $escaper->escapeHtmlAttr(__('Phone (optional)')) ?>"/>
+        </div>
+        <div>
+            <label class="sr-only" for="dcw-product-enquiry-message">
+                <?= $escaper->escapeHtml(__('Message')) ?>
+            </label>
+            <textarea id="dcw-product-enquiry-message"
+                      name="message"
+                      class="form-input w-full"
+                      rows="4"
+                      x-model="form.message"
+                      placeholder="<?= $escaper->escapeHtmlAttr(__('Your question or enquiry*')) ?>"
+                      required></textarea>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+                <span x-show="!isSubmitting"><?= $escaper->escapeHtml(__('Submit Enquiry')) ?></span>
+                <span x-show="isSubmitting"><?= $escaper->escapeHtml(__('Submitting...')) ?></span>
+            </button>
+        </div>
+    </form>
+
+    <p class="text-sm text-gray-600 mt-2">
+        <?= $escaper->escapeHtml(__('Product: %1 (%2)', $viewModel->getProductName(), $viewModel->getProductSku())) ?>
+    </p>
+</div>

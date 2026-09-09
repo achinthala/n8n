@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_product_enquiry>
+            <general>
+                <enabled>1</enabled>
+                <recipient_email/>
+                <send_customer_acknowledgement>1</send_customer_acknowledgement>
+                <form_title>Product Enquiry</form_title>
+                <success_message>Thank you. Your enquiry has been submitted. We will contact you shortly.</success_message>
+            </general>
+        </dcw_product_enquiry>
+    </default>
+</config>

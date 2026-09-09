@@ -1,0 +1,15 @@
+<!--@subject {{trans "New product enquiry: %sku" sku=$product_sku}} @-->
+{{template config_path="design/email/header_template"}}
+
+<p>{{trans "A new product enquiry was submitted."}}</p>
+
+<p><strong>{{trans "Product:"}}</strong> {{var product_name}} ({{var product_sku}})</p>
+<p><strong>{{trans "Name:"}}</strong> {{var customer_name}}</p>
+<p><strong>{{trans "Email:"}}</strong> {{var customer_email}}</p>
+{{if customer_phone}}
+<p><strong>{{trans "Phone:"}}</strong> {{var customer_phone}}</p>
+{{/if}}
+<p><strong>{{trans "Message:"}}</strong></p>
+<p>{{var message|nl2br}}</p>
+
+{{template config_path="design/email/footer_template"}}

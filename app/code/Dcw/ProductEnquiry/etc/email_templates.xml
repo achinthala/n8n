@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="dcw_product_enquiry_notification"
+              label="Product Enquiry Store Notification"
+              file="enquiry_notification.html"
+              type="html"
+              module="Dcw_ProductEnquiry"
+              area="frontend"/>
+    <template id="dcw_product_enquiry_acknowledgement"
+              label="Product Enquiry Customer Acknowledgement"
+              file="enquiry_acknowledgement.html"
+              type="html"
+              module="Dcw_ProductEnquiry"
+              area="frontend"/>
+</config>
