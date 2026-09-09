@@ -1,0 +1,96 @@
+<!--
+/**
+ * AI Content Creator product form panel.
+ * Generate → Preview/Edit → Apply Draft (form only) → Magento Product Save.
+ */
+-->
+<div class="dcw-ai-content-creator admin__fieldset">
+    <div class="admin__field">
+        <label class="admin__field-label"><span translate="'Content field'"></span></label>
+        <div class="admin__field-control">
+            <select class="admin__control-select"
+                    data-bind="options: attributeOptions,
+                               optionsValue: 'value',
+                               optionsText: 'label',
+                               value: selectedAttribute,
+                               disable: isLoading"></select>
+        </div>
+    </div>
+
+    <div class="admin__field">
+        <label class="admin__field-label"><span translate="'Mode'"></span></label>
+        <div class="admin__field-control">
+            <select class="admin__control-select"
+                    data-bind="value: selectedMode, disable: isLoading">
+                <option value="generate" translate="'Generate new'"></option>
+                <option value="rewrite" translate="'Rewrite / Improve existing'"></option>
+            </select>
+        </div>
+    </div>
+
+    <div class="admin__field">
+        <label class="admin__field-label"><span translate="'AI provider'"></span></label>
+        <div class="admin__field-control">
+            <select class="admin__control-select"
+                    data-bind="options: providerOptions,
+                               optionsValue: 'value',
+                               optionsText: 'label',
+                               value: selectedProvider,
+                               disable: isLoading"></select>
+        </div>
+    </div>
+
+    <div class="admin__field">
+        <label class="admin__field-label"><span translate="'Additional instructions (optional)'"></span></label>
+        <div class="admin__field-control">
+            <textarea class="admin__control-textarea"
+                      rows="3"
+                      data-bind="value: extraInstructions, disable: isLoading"></textarea>
+        </div>
+    </div>
+
+    <div class="admin__field">
+        <div class="admin__field-control">
+            <button type="button"
+                    class="action-default scalable"
+                    data-bind="click: generate, disable: isLoading">
+                <span translate="'Generate'"></span>
+            </button>
+            <button type="button"
+                    class="action-secondary"
+                    data-bind="click: clearDraft, disable: isLoading"
+                    style="margin-left: 8px;">
+                <span translate="'Clear draft'"></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="admin__field" data-bind="visible: statusMessage">
+        <div class="admin__field-control">
+            <div class="message message-notice" data-bind="text: statusMessage"></div>
+        </div>
+    </div>
+
+    <div class="admin__field">
+        <label class="admin__field-label"><span translate="'Preview / Edit draft'"></span></label>
+        <div class="admin__field-control">
+            <textarea class="admin__control-textarea"
+                      rows="12"
+                      data-bind="value: draftContent, disable: isLoading"
+                      style="width: 100%; font-family: monospace;"></textarea>
+            <div class="admin__field-note">
+                <span translate="'Apply Draft populates the selected product field only. You must still click Save on the product to persist.'"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin__field">
+        <div class="admin__field-control">
+            <button type="button"
+                    class="action-primary"
+                    data-bind="click: applyDraft, disable: isLoading">
+                <span translate="'Apply Draft'"></span>
+            </button>
+        </div>
+    </div>
+</div>

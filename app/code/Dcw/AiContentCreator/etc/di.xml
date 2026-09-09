@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © FlooringInc. All rights reserved.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Dcw\AiContentCreator\Logger\Handler\AiContent">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/dcw_ai_content.log</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\AiContentCreator\Logger\Logger">
+        <arguments>
+            <argument name="handler" xsi:type="object">Dcw\AiContentCreator\Logger\Handler\AiContent</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\AiContentCreator\Model\Provider\OpenAiProvider">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\AiContentCreator\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\AiContentCreator\Model\Provider\GeminiProvider">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\AiContentCreator\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\AiContentCreator\Model\Service\ContentGenerator">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\AiContentCreator\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\AiContentCreator\Model\Provider\ProviderPool">
+        <arguments>
+            <argument name="providers" xsi:type="array">
+                <item name="openai" xsi:type="object">Dcw\AiContentCreator\Model\Provider\OpenAiProvider</item>
+                <item name="gemini" xsi:type="object">Dcw\AiContentCreator\Model\Provider\GeminiProvider</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

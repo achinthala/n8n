@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © FlooringInc. All rights reserved.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_ai_content_creator"
+                 translate="label"
+                 sortOrder="225"
+                 showInDefault="1"
+                 showInWebsite="1"
+                 showInStore="1">
+            <label>AI Content Creator</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_AiContentCreator::config</resource>
+
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Module</label>
+                    <comment>When No, AI generate actions are unavailable on the product edit form.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="provider" translate="label comment" type="select" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default AI Provider</label>
+                    <comment>Editors may still select a provider per request when both are configured.</comment>
+                    <source_model>Dcw\AiContentCreator\Model\Config\Source\Provider</source_model>
+                </field>
+                <field id="timeout" translate="label comment" type="text" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>HTTP Timeout (seconds)</label>
+                    <comment>Outbound request timeout for OpenAI/Gemini API calls.</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
+            </group>
+
+            <group id="openai" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>OpenAI</label>
+                <field id="api_key" translate="label comment" type="obscure" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>API Key</label>
+                    <comment>Stored encrypted. Never commit keys to Git. Client owns billing and key rotation.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="model" translate="label comment" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Model</label>
+                    <comment>Example: gpt-4o-mini, gpt-4o</comment>
+                </field>
+            </group>
+
+            <group id="gemini" translate="label" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Google Gemini</label>
+                <field id="api_key" translate="label comment" type="obscure" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>API Key</label>
+                    <comment>Stored encrypted. Never commit keys to Git. Client owns billing and key rotation.</comment>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+                <field id="model" translate="label comment" type="text" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Model</label>
+                    <comment>Example: gemini-1.5-flash, gemini-1.5-pro</comment>
+                </field>
+            </group>
+
+            <group id="prompts" translate="label comment" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Prompts / Instructions</label>
+                <comment>Text-only instruction changes apply without a code deploy. Used for brand voice and field-type guidance.</comment>
+                <field id="brand_voice" translate="label" type="textarea" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Brand Voice / Global Instructions</label>
+                </field>
+                <field id="description" translate="label" type="textarea" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Description Field Instructions</label>
+                </field>
+                <field id="short_description" translate="label" type="textarea" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Short Description Field Instructions</label>
+                </field>
+                <field id="meta_title" translate="label" type="textarea" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Meta Title Field Instructions</label>
+                </field>
+                <field id="meta_description" translate="label" type="textarea" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Meta Description Field Instructions</label>
+                </field>
+            </group>
+
+            <group id="attributes" translate="label comment" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="0">
+                <label>Allowed Attributes (MVP)</label>
+                <comment>Hard allow-list for MVP: native Magento attributes only. PIM-owned attributes are never writable. Disable a field here to hide it from Generate UI.</comment>
+                <field id="description" translate="label" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>description</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="short_description" translate="label" type="select" sortOrder="20"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>short_description</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="meta_title" translate="label" type="select" sortOrder="30"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>meta_title</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="meta_description" translate="label" type="select" sortOrder="40"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>meta_description</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+
+            <group id="seo_handoff" translate="label comment" sortOrder="60" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>SEO Toolkit Handoff (Ops)</label>
+                <comment><![CDATA[
+                    Operating model: AI Content Creator generates/improves copy and optional product meta.
+                    Amasty SEO Toolkit / Meta Tag Templates remain responsible for SEO analysis, templates, and remediation.
+                    Prefer: empty product meta may still be filled by Meta Tag Templates; once AI + Product Save sets
+                    product-level meta_title/meta_description, Magento product meta typically wins for that product.
+                    Confirm exact priority with SEO during QA. Do not use AI to duplicate Toolkit remediation logic.
+                ]]></comment>
+            </group>
+        </section>
+    </system>
+</config>

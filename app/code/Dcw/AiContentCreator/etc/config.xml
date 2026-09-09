@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © FlooringInc. All rights reserved.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_ai_content_creator>
+            <general>
+                <enabled>0</enabled>
+                <provider>openai</provider>
+                <timeout>60</timeout>
+            </general>
+            <openai>
+                <model>gpt-4o-mini</model>
+            </openai>
+            <gemini>
+                <model>gemini-1.5-flash</model>
+            </gemini>
+            <prompts>
+                <brand_voice>Write clear, accurate flooring product content for a professional home-improvement audience. Use natural language, avoid hype, and do not invent product specifications, certifications, warranties, or performance claims that are not provided in the product context.</brand_voice>
+                <description>Write a product description in clean HTML using paragraphs and optional bullet lists. Do not include script tags or inline event handlers.</description>
+                <short_description>Write a concise short description suitable for category/listing snippets. Prefer plain text or light HTML. Keep it under about 160 words.</short_description>
+                <meta_title>Write an SEO meta title under 60 characters. Do not use quotation marks unless necessary.</meta_title>
+                <meta_description>Write an SEO meta description under 160 characters. Focus on benefits and search intent without keyword stuffing.</meta_description>
+            </prompts>
+            <attributes>
+                <description>1</description>
+                <short_description>1</short_description>
+                <meta_title>1</meta_title>
+                <meta_description>1</meta_description>
+            </attributes>
+        </dcw_ai_content_creator>
+    </default>
+</config>

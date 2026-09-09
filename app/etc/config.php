@@ -571,6 +571,7 @@ return [
         'Dcw_AddressAutocomplete' => 1,
         'Dcw_AdvanceSearch' => 1,
         'Dcw_Affirm' => 1,
+        'Dcw_AiContentCreator' => 1,
         'Dcw_AllCategories' => 1,
         'Dcw_AmastyCart' => 1,
         'Dcw_AvalaraAvatax' => 1,
