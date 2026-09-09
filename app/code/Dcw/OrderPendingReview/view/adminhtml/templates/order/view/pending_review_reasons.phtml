@@ -1,0 +1,12 @@
+<?php
+/**
+ * @var \Dcw\OrderPendingReview\Block\Adminhtml\Order\View\PendingReviewReasons $block
+ */
+if (!$block->shouldDisplay()) {
+    return;
+}
+?>
+<tr>
+    <th><?= $block->escapeHtml(__('Pending Review Reason(s)')) ?></th>
+    <td><?= $block->escapeHtml($block->getReasonsDisplayText()) ?></td>
+</tr>

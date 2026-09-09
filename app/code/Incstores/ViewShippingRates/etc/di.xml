@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- New Controllers for Refactored Architecture -->
+    <type name="Incstores\ViewShippingRates\Controller\Adminhtml\Ajax\GetSimpleRates">
+        <arguments>
+            <argument name="resultJsonFactory" xsi:type="object">Magento\Framework\Controller\Result\JsonFactory</argument>
+            <argument name="requestTransformer" xsi:type="object">Incstores\ViewShippingRates\Model\Request\SimpleRequestTransformer</argument>
+            <argument name="responseTransformer" xsi:type="object">Incstores\ViewShippingRates\Model\Response\SimpleResponseTransformer</argument>
+            <argument name="shippingRatesApi" xsi:type="object">Incstores\ViewShippingRates\Model\Api\SimpleShippingRatesApi</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </type>
+    
+    <type name="Incstores\ViewShippingRates\Controller\Adminhtml\Ajax\GetAllRates">
+        <arguments>
+            <argument name="resultJsonFactory" xsi:type="object">Magento\Framework\Controller\Result\JsonFactory</argument>
+            <argument name="requestTransformer" xsi:type="object">Incstores\ViewShippingRates\Model\Request\AllRequestTransformer</argument>
+            <argument name="responseTransformer" xsi:type="object">Incstores\ViewShippingRates\Model\Response\AllResponseTransformer</argument>
+            <argument name="allShippingRatesApi" xsi:type="object">Incstores\ViewShippingRates\Model\Api\AllShippingRatesApi</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- Quote-specific controllers and services -->
+    <type name="Incstores\ViewShippingRates\Controller\Adminhtml\Ajax\GetQuoteRates">
+        <arguments>
+            <argument name="resultJsonFactory" xsi:type="object">Magento\Framework\Controller\Result\JsonFactory</argument>
+            <argument name="quoteProvider" xsi:type="object">Incstores\ViewShippingRates\Model\QuoteProvider</argument>
+            <argument name="quoteRequestTransformer" xsi:type="object">Incstores\ViewShippingRates\Model\Request\QuoteRequestTransformer</argument>
+            <argument name="allShippingRatesApi" xsi:type="object">Incstores\ViewShippingRates\Model\Api\AllShippingRatesApi</argument>
+            <argument name="allResponseTransformer" xsi:type="object">Incstores\ViewShippingRates\Model\Response\AllResponseTransformer</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- Customer address lookup controller -->
+    <type name="Incstores\ViewShippingRates\Controller\Adminhtml\Ajax\GetCustomerAddresses">
+        <arguments>
+            <argument name="resultJsonFactory" xsi:type="object">Magento\Framework\Controller\Result\JsonFactory</argument>
+            <argument name="customerAddressProvider" xsi:type="object">Incstores\ViewShippingRates\Model\CustomerAddressProvider</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- Configure CustomerAddressProvider -->
+    <type name="Incstores\ViewShippingRates\Model\CustomerAddressProvider">
+        <arguments>
+            <argument name="customerRepository" xsi:type="object">Magento\Customer\Api\CustomerRepositoryInterface</argument>
+            <argument name="addressRepository" xsi:type="object">Magento\Customer\Api\AddressRepositoryInterface</argument>
+            <argument name="searchCriteriaBuilder" xsi:type="object">Magento\Framework\Api\SearchCriteriaBuilder</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- Configure QuoteProvider with Amasty integration -->
+    <type name="Incstores\ViewShippingRates\Model\QuoteProvider">
+        <arguments>
+            <argument name="quoteRepository" xsi:type="object">Magento\Quote\Api\CartRepositoryInterface</argument>
+            <argument name="quoteCollectionFactory" xsi:type="object">Magento\Quote\Model\ResourceModel\Quote\CollectionFactory</argument>
+            <argument name="amastyQuoteRepository" xsi:type="object">Amasty\RequestQuote\Api\QuoteRepositoryInterface</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+            <argument name="customerAddressProvider" xsi:type="object">Incstores\ViewShippingRates\Model\CustomerAddressProvider</argument>
+        </arguments>
+    </type>
+</config>

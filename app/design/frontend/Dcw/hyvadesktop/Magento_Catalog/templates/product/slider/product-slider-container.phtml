@@ -1,0 +1,361 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Store;
+use Magento\Catalog\Block\Product\ReviewRendererInterface as ProductReviewRenderer;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var Store $viewModelStore */
+$viewModelStore = $viewModels->require(Store::class);
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var ProductListItem $productListItemViewModel */
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+$viewMode = 'grid';
+$imageDisplayArea = 'category_page_grid';
+$showDescription = false;
+$title = (string) $block->getTitle();
+$items = $block->getItems() ?? [];
+if (is_object($items) && $items instanceof Iterator) {
+    $items = iterator_to_array($items);
+}
+if (!$itemCount = count($items)) {
+    return '';
+}
+
+$sliderItemRenderer = $block->getLayout()->getBlock('product_list_item')
+    ?: $block->getChildBlock('slider.item.template')
+    ?: $block->getLayout()->createBlock(Template::class);
+$hideRatingSummary = (bool) $block->getData('hide_rating_summary');
+$hideDetails       = (bool) $block->getData('hide_details');
+$sliderItemRenderer->setData('hide_details', $hideDetails);
+$sliderItemRenderer->setData('hide_rating_summary', $hideRatingSummary);
+
+// The slider item renderer block is often a shared instance.
+// If a specific item template is set for this slider, the previously set template must be reset later
+// so the item template is only replaced for the one slider it is specified on.
+$sharedItemRendererTemplate = null;
+$isSharedItemRenderer       = $sliderItemRenderer !== $block->getChildBlock('slider.item.template');
+if ($isSharedItemRenderer && $block->getChildBlock('slider.item.template')) {
+    $sharedItemRendererTemplate = $sliderItemRenderer->getTemplate();
+    $sliderSpecificItemTemplate = $block->getChildBlock('slider.item.template')->getTemplate();
+    $sliderItemRenderer->setTemplate($sliderSpecificItemTemplate);
+}
+
+
+?>
+<?php /*<script>
+    var addtocart=document.getElementById('product-addtocart-button');
+    if(addtocart) {
+    addtocart.addEventListener("click", myFunction);
+    }
+    function myFunction() {
+        setTimeout(() => {
+
+            console.log("View Change 224");
+            var element = document.getElementById('products_slider');
+            const offset = 100; // Adjust this value as needed
+            const targetPosition = element.offsetTop - offset;
+
+            window.scrollTo({
+            top: targetPosition,
+            behavior: "smooth" // You can use "auto" or "smooth" scrolling behavior
+            });
+            console.log(element.offsetTop);
+            console.log(targetPosition);
+            // document.getElementById('products_slider').scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
+        }, 3000);
+    }
+</script> */?>
+<script>
+    'use strict';
+    function initSliderComponent() {
+return {
+    active: 0,
+    itemCount: 0,
+    pageSize: 6,
+    pageFillers: 0,
+
+    getSlider() {
+        return this.$root.querySelector('.js_slides');
+    },
+
+    calcPageSize() {
+        const slider = this.getSlider();
+        if (!slider) return;
+
+        this.itemCount = slider.querySelectorAll('.js_slide').length;
+        this.pageFillers =
+            (this.pageSize * Math.ceil(this.itemCount / this.pageSize))
+            - this.itemCount;
+    },
+
+    calcActive() {
+        const slider = this.getSlider();
+        if (!slider) return;
+
+        const slide = slider.querySelector('.js_slide');
+        if (!slide) return;
+
+        const pageWidth = slide.offsetWidth * this.pageSize;
+        this.active = Math.round(slider.scrollLeft / pageWidth) * this.pageSize;
+    },
+
+    scrollPrevious() {
+        this.scrollToPage((this.active / this.pageSize) - 1);
+    },
+
+    scrollNext() {
+        this.scrollToPage((this.active / this.pageSize) + 1);
+    },
+
+    scrollToPage(page) {
+        const slider = this.getSlider();
+        if (!slider) return;
+
+        const slide = slider.querySelector('.js_slide');
+        if (!slide) return;
+
+        const totalPages = Math.ceil(this.itemCount / this.pageSize);
+        const safePage = Math.max(0, Math.min(page, totalPages - 1));
+
+        const pageWidth = slide.offsetWidth * this.pageSize;
+
+        slider.scrollLeft = pageWidth * safePage;
+        this.active = safePage * this.pageSize;
+    }
+}
+
+    }
+</script>
+<?php
+   /*  if ($title=="You May Also Need") {
+?>
+    <section  id="products_slider"  class="youMayAlso <?=
+    $escaper->escapeHtmlAttr($block->getData('maybe_purged_tailwind_section_classes'))
+    ?: 'text-gray-700 body-font products_slider';?>"  x-data="initSliderComponent()"
+    x-init="calcPageSize();" @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })">
+<?php
+    } else {
+?>
+    <section  id="products_slider_upsell"  class="<?=
+    $escaper->escapeHtmlAttr($block->getData('maybe_purged_tailwind_section_classes'))
+    ?: 'text-gray-700 body-font products_slider';?>"  x-data="initSliderComponent()"
+    x-init="calcPageSize();"  @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })">
+<?php
+    } */
+?>
+<?php
+$blockObj= $block->getLayout()->createBlock('Dcw\ShoppingCart\Block\Related');
+$actionname = $blockObj->getActionName();
+if($actionname == "cart"){
+		$sliderid = "related_cart_slider";
+		$items = $blockObj->getItems();
+		$relateddata = array();
+		$countitems = 0;
+		foreach ($items as  $sdids => $relatedProductCollection){
+			if(count($relatedProductCollection)>0){
+				foreach ($relatedProductCollection as $relatedProduct){
+					$countitems = count($relatedProductCollection);
+					$pId = $relatedProduct->getId();
+					if(!in_array($pId, $relateddata))
+					{
+						array_push($relateddata,$pId);
+					}
+				}
+			}
+		}
+	} else {
+		$sliderid = "products_slider";
+		$countitems = count($items);
+	} ?>
+    <?php if($countitems>1): ?>
+	<?php if($title!=""){?>
+	<section  id="<?php echo $sliderid;?>"  class="youMayAlso <?=
+    $escaper->escapeHtmlAttr($block->getData('maybe_purged_tailwind_section_classes'))
+    ?: 'text-gray-700 body-font products_slider';?>"  x-data="initSliderComponent()"
+    x-init="calcPageSize();" @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })">
+	<?php } ?>
+
+        <div class="relative in-theme">
+            <?php if ($title): ?>
+                <div class="w-full flex flex-col items-center mx-auto md:flex-row">
+                    <h5>
+                        <?= $escaper->escapeHtml($title); ?>
+                    </h5>
+                </div>
+            <?php endif; ?>
+            <div class="flex-none relative w-full overflow-x-hidden max-slide">
+			<?php if($actionname == "cart"){ ?>
+                <div class="relative flex flex-nowrap w-full overflow-auto js_slides snap"
+                     @scroll.debounce="calcActive"
+                >
+                    <?php foreach ($relateddata as  $productId):
+						$sproducts = $blockObj->getLoadProduct((int)$productId);
+					?>
+					<div class="flex shrink-0 w-full js_slide md:w-1/2 lg:w-1/3 xl:w-1/6">
+									<?= /** @noEscape */ $productListItemViewModel->getItemHtmlWithRenderer(
+										$sliderItemRenderer,
+										$sproducts,
+										$block,
+										$viewMode,
+										ProductReviewRenderer::SHORT_VIEW,
+										$imageDisplayArea,
+										$showDescription
+									) ?>
+					</div>
+					<?php endforeach;?>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/6 flex shrink-0 py-1' : pageFillers > 0
+                        }"></div>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/6 flex shrink-0 py-1' : pageFillers > 1
+                        }"></div>
+                </div>
+			<?php }  else {?>
+
+				<div class="relative flex flex-nowrap w-full overflow-auto js_slides snap"
+                     @scroll.debounce="calcActive"
+                >
+                    <?php foreach ($items as $product): ?>
+                        <div class="flex shrink-0 w-full js_slide md:w-1/2 lg:w-1/3 xl:w-1/6">
+                            <?= /** @noEscape */ $productListItemViewModel->getItemHtmlWithRenderer(
+                                $sliderItemRenderer,
+                                $product,
+                                $block,
+                                $viewMode,
+                                ProductReviewRenderer::SHORT_VIEW,
+                                $imageDisplayArea,
+                                $showDescription
+                            ) ?>
+                        </div>
+                    <?php endforeach; ?>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/6 flex shrink-0 py-1' : pageFillers > 0
+                        }"></div>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/6 flex shrink-0 py-1' : pageFillers > 1
+                        }"></div>
+                </div>
+
+			<?php } ?>
+            </div>
+            <div>
+            <template x-if="itemCount > pageSize">
+                <div class="flex items-center justify-center page">
+                    <button
+                        aria-label="<?= $escaper->escapeHtml(__('Previous')) ?>"
+                        tabindex="-1"
+                        class="mr-4 text-black rounded-full outline-none focus:outline-none flex-none btn-prev"
+                        :class="{ 'opacity-25 pointer-events-none' : active === 0 }"
+                        @click="scrollPrevious">
+                        <?= $heroicons->chevronLeftHtml("w-5 h-5", 25, 25) ?>
+                    </button>
+                    <div class="flex flex-wrap w-full md:w-auto justify-center js_dots">
+                    <?php for ($i=0; $i < $itemCount; $i++): ?>
+                        <span class="shrink-0 block w-3 h-3 m-1 bg-black bg-opacity-25 rounded-full shadow cursor-pointer"
+                                :class="{
+                                    'bg-opacity-100': active === <?= (int) $i ?>,
+                                    'hidden': (pageSize !== 1 && !!(<?= (int) $i ?> % pageSize))
+                                    }"
+                                @click="scrollTo(<?= (int) $i ?>)">
+                        </span>
+                    <?php endfor; ?>
+                    </div>
+                    <button
+                        aria-label="<?= $escaper->escapeHtml(__('Next')) ?>"
+                        tabindex="-1"
+                        class="ml-4 text-black rounded-full outline-none focus:outline-none flex-none btn-next"
+                        :class="{ 'opacity-25 pointer-events-none' : active >= itemCount-pageSize }"
+                        @click="scrollNext">
+                        <?= $heroicons->chevronRightHtml("w-5 h-5", 25, 25) ?>
+                    </button>
+                </div>
+            </template>
+            </div>
+        </div>
+    <?php endif; ?>
+<?php if($title!=""){?>
+</section>
+<?php } ?>
+<?php
+
+if ($sharedItemRendererTemplate) {
+    $sliderItemRenderer->setTemplate($sharedItemRendererTemplate);
+}
+
+?>
+
+<script type="text/javascript">
+    /* var targetSpan1 = document.querySelector('span[x-text="total_qty_tile"]');
+    // Create a MutationObserver instance
+    var observer1 = new MutationObserver(function(mutations){
+        mutations.forEach(function(mutation){
+            // Handle the content change
+            var newValue = mutation.target.textContent;
+
+            var displayElements = document.querySelectorAll('.catalog-product-view .youMayAlso.products_slider .js_slide .compare-buttons .qty_fields .field.qty .input-text');
+            displayElements.forEach(function (element) {
+                element.value = newValue;
+            });
+        });
+    });
+    // Configure the observer to watch for changes in the text content
+    var config1 = { childList: true, subtree: true, characterData: true };
+    // Start observing the target span
+    observer1.observe(targetSpan1, config1);
+    // Simulate a dynamic change in content after a delay (for demonstration purposes)
+    setTimeout(function(){
+        targetSpan1.textContent = 'New Value';
+    }, 0); */
+
+
+	function addObserverIfDesiredNodeAvailable() {
+		var composeBox = document.querySelector('span[x-text="total_qty_tile"]');
+		if(!composeBox) {
+			//The node we need does not exist yet.
+			//Wait 500ms and try again
+			window.setTimeout(addObserverIfDesiredNodeAvailable,500);
+			return;
+		}
+		var observer1 = new MutationObserver(function(mutations){
+            mutations.forEach(function(mutation){
+                // Handle the content change
+                var newValue = mutation.target.textContent;
+
+                var displayElements = document.querySelectorAll('.catalog-product-view .youMayAlso.products_slider .js_slide .compare-buttons .qty_fields .field.qty .input-text')[2];
+
+                if (displayElements) {
+                    displayElements.value = newValue;
+                }
+            });
+		});
+		var config = {childList: true};
+		observer1.observe(composeBox,config);
+	}
+addObserverIfDesiredNodeAvailable();
+
+</script>

@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_feed" translate="label" sortOrder="360" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>Product Feed</label>
+            <tab>dcw_store_config</tab>
+            <resource>Magento_Backend::config</resource>
+            <group id="sf_pricing" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Square Foot Pricing</label>
+                <field id="mode" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Export Square Foot Prices</label>
+                    <source_model>Dcw\Feed\Model\Config\Source\SfPricingMode</source_model>
+                    <comment>Replaces price values in Amasty CSV feed exports with the calculated square foot price. Products without square foot data always keep their original price. This is a global setting read from the default scope.</comment>
+                </field>
+                <field id="sku_whitelist" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Whitelisted Parent SKUs</label>
+                    <comment>Comma separated configurable parent SKUs. Only children of these products export square foot prices.</comment>
+                    <depends>
+                        <field id="mode">whitelist</field>
+                    </depends>
+                </field>
+            </group>
+            <group id="unit_pricing" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Unit Pricing Measure</label>
+                <field id="mode" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Fill unit_pricing_measure Column</label>
+                    <source_model>Dcw\Feed\Model\Config\Source\UnitPricingMeasureMode</source_model>
+                    <comment>Writes the square foot area covered by the row price (for example 7.5sqft) into the feed column mapped to the target attribute, so Google can display a per square foot price next to the real price. The column is always emptied for products out of scope. Takes effect only when the feed profile contains a column mapped to the target attribute.</comment>
+                </field>
+                <field id="sku_whitelist" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Whitelisted Parent SKUs</label>
+                    <comment>Comma separated configurable parent SKUs. Only children of these products get the measure value.</comment>
+                    <depends>
+                        <field id="mode">whitelist</field>
+                    </depends>
+                </field>
+                <field id="target_attribute" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Target Feed Attribute</label>
+                    <comment>The Amasty feed attribute key of the column reserved for unit_pricing_measure, in the internal group|code format. The feed profile column must be mapped to this attribute.</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

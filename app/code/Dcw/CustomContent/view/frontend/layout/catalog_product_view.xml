@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+
+    <body>
+        <!-- Override product attributes block -->
+        <referenceBlock name="product.attributes">
+            <!-- Change template -->
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string">
+                    Dcw_CustomContent::product/view/attributes.phtml
+                </argument>
+            </action>
+        </referenceBlock>
+    </body>
+</page>

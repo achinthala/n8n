@@ -1,0 +1,48 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\DataServices\Block\Context;
+use Hyva\MagentoDataServices\ViewModel\CheckoutSuccessContextProvider;
+use Magento\Framework\Escaper;
+
+/**
+ * @var Context $block
+ * @var CheckoutSuccessContextProvider $successContextViewModel
+ * @var ViewModelRegistry $viewModels
+ * @var Escaper $escaper
+ */
+
+$viewModel = $block->getViewModel();
+$successContextViewModel = $viewModels->require(CheckoutSuccessContextProvider::class);
+
+?>
+
+<script>
+    window.addEventListener('load', function () {
+        magentoStorefrontEvents.context.setPage({
+            pageType: "<?= /* @noEscape */ $block->getData('page_type'); ?>"
+        });
+        magentoStorefrontEvents.context.setContext("pageExtended", {
+            action: "<?= /* @noEscape */ $block->getData('step_name'); ?>"
+        });
+        magentoStorefrontEvents.context.setShoppingCart(<?= /* @noEscape */ $successContextViewModel->getLastOrderCartContextData() ?>);
+
+        let accountContext = magentoStorefrontEvents.context.getAccount() || {};
+        accountContext.emailAddress = "<?= /* @noEscape */ $successContextViewModel->getCustomerEmail() ?>";
+        magentoStorefrontEvents.context.setAccount(accountContext);
+
+        let mseOrderContext = magentoStorefrontEvents.context.getOrder() || {};
+        let vmOrderContext = <?= /* @noEscape */ $successContextViewModel->getOrderContext() ?>;
+        magentoStorefrontEvents.context.setOrder({...mseOrderContext, ...vmOrderContext});
+
+        magentoStorefrontEvents.publish.placeOrder();
+    });
+</script>

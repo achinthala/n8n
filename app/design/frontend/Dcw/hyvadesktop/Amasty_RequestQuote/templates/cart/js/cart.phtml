@@ -1,0 +1,677 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\Escaper;
+use Hyva\AmastyRequestQuote\ViewModel\Cart\Items;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+$quoteCartViewModel = $viewModels->require(Items::class)
+
+?>
+
+<script>
+    // Function to show error modal
+    function showErrorModal(message) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('quote-error-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'quote-error-modal';
+            modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-red-600">Error</h3>
+                            <button onclick="closeErrorModal()" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="mb-4">
+                            <p id="quote-error-message" class="text-gray-700"></p>
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="closeErrorModal()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        // Set message
+        const messageEl = document.getElementById('quote-error-message');
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+        
+        // Show modal
+        modal.style.display = 'flex';
+    }
+    
+    // Function to close error modal
+    function closeErrorModal() {
+        const modal = document.getElementById('quote-error-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+    
+    // Close modal on outside click
+    document.addEventListener('click', function(e) {
+        const modal = document.getElementById('quote-error-modal');
+        if (modal && e.target === modal) {
+            closeErrorModal();
+        }
+    });
+</script>
+<script>
+    function cartQuoteTotals() {
+        return {
+            fetchEmail: BASE_URL + 'amasty_quote/cart/customer',
+            cartId: null,
+            cartData: null,
+            loading: false,
+            customer: null,
+            email: '',
+            password: '',
+            minChars: 20,
+            delay: null,
+            showPassword: false,
+            errorMessage: '',
+            errorLogin: false,
+            onPrivateContentLoaded(data) {
+                this.cartId = data.cart && data.cart.cartId;
+                this.customer = data.customer;
+            },
+            getQuoteCartData() {
+                this.cartData = <?= $quoteCartViewModel->getAmastyQuote(); ?>;
+            },
+            updateQuoteCartData(e, action) {
+                e.preventDefault();
+                const self = this,
+                    cart_id = <?= $quoteCartViewModel->getQuoteId(); ?>,
+                    postUrl = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updatePost')) ?>',
+                    formKey = document.querySelector('input[name=form_key]').value,
+                    form = document.getElementById('form-validate');
+
+                    form.onSubmit = function onSubmit(e) {
+                        e.preventDefault();
+                    }
+
+                    let data = new URLSearchParams(new FormData(form)).toString() + '&update_cart_action=' + action;
+
+                    fetch(postUrl, {
+                        "headers": {
+                            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                            "X-Requested-With": "XMLHttpRequest"
+                        },
+                        "method": "POST",
+                        "mode": "cors",
+                        "credentials": "include",
+                        "body": new URLSearchParams(data)
+                    }).then((response) => {
+                        return response.json();
+                    }).then((responseData) => {
+                        window.location.reload();
+                    })
+                        .catch((err) => {
+                            // Error handling
+                        })
+            },
+            checkEmail() {
+                const self = this;
+                if (self.email.length >= self.minChars) {
+                    self.delay = setTimeout(function () {
+                        self.getEmail();
+                    }, 1000)
+                }
+            },
+            getEmail() {
+                const data = {
+                    email: this.email,
+                    submit_action: 'check_email'
+                }
+                window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+                fetch(this.fetchEmail, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include",
+                    "body": new URLSearchParams(data)
+                }).then((response) => {
+                    return response.json();
+                }).then((res) => {
+                    if (res.email) {
+                        var fblink = document.querySelectorAll('li.facebook a');
+                        var googlelink = document.querySelectorAll('li.googleplus a');
+                        if (res.message == 'Email exists with facebook') {
+                            fblink[0].click();
+                        } else if(res.message == 'Email exists with googleplus') {
+                            googlelink[0].click();
+                        } else {
+                        this.showPassword = true;
+						// this.loading = false;
+                        }
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    } else {
+                        this.showPassword = false;
+                        this.password = '';
+						// this.loading = false;
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    }
+                })
+            },
+            _stopInterval: function () {
+                clearTimeout(this.delay);
+            },
+            quoteLogin() {
+                const data = {
+                    email: this.email,
+                    password: this.password,
+                    submit_action: 'login_customer'
+                }
+                fetch(this.fetchEmail, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include",
+                    "body": new URLSearchParams(data)
+                }).then((response) => {
+                    return response.json();
+                }).then((res) => {
+                    if (res.errors) {
+                        this.errorMessage = res.message;
+                        this.errorLogin = res.errors;
+                    } else {
+                        window.location.reload();
+                    }
+                }).finally(() => {
+                    setTimeout(() => {
+                        this.errorLogin = false;
+                        this.errorMessage = '';
+                    }, 5000);
+                })
+            },
+            quoteFormSubmit(event, proceedToCheckout = false) {
+                event.preventDefault();
+                this.validate()
+                    .then(() => {
+                        this.submitQuote(proceedToCheckout)
+                    })
+                    .catch((invalid) => {
+                        if (invalid.length > 0) {
+                            invalid[0].focus();
+                        }
+                    });
+            },
+            submitQuote(proceedToCheckout = false) {
+                const self = this,
+                    quoteCartForm = document.querySelector('.amasty-quote-update'),
+                    customerForm = document.querySelector('#quote-details'),
+                    postUrl = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updatePost')) ?>';
+
+                // Debug: Check if forms are found
+                if (!quoteCartForm) {
+                    return;
+                }
+                if (!customerForm) {
+                    return;
+                }
+
+                const formDataCart = new URLSearchParams(new FormData(quoteCartForm)).toString();
+                const formDataCustomer = new URLSearchParams(new FormData(customerForm)).toString();
+
+                ///this.loading = true;
+				window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+				
+                // Step 1: First update quantities with update_cart_action=update_qty
+                const updateQtyBody = formDataCart + '&update_cart_action=update_qty';
+                
+                fetch(postUrl, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include",
+                    "body": updateQtyBody
+                }).then((response) => {
+                    // Check if response is OK
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    // Check if response is JSON
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        return response.json();
+                    } else {
+                        // If not JSON, might be a redirect or HTML response
+                        throw new Error('Invalid response format. Expected JSON.');
+                    }
+                }).then((updateRes) => {
+                    // Check for discount removal pop-up (from quantity update)
+                    if (updateRes && updateRes.show_discount_removal_popup) {
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                        const quoteId = updateRes.quote_id;
+                        const cartData = updateRes.cart_data || {};
+                        
+                        // Show custom modal (Keep My Discount / Continue Without Discount)
+                        return (typeof showDiscountRemovalModal === 'function' ? showDiscountRemovalModal() : Promise.resolve(true)).then(function(proceed) {
+                        if (proceed) {
+                            // User clicked OK - remove discount
+                            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+                            const removeDiscountUrl = '<?= $escaper->escapeUrl($block->getUrl('dcwrequestquote/cart/removeDiscount')) ?>';
+                            const formKey = document.querySelector('input[name="form_key"]')?.value || '';
+                            
+                            // Store cart data for retry after discount removal
+                            const cartDataForRetry = cartData;
+                            
+                            // Prepare request data
+                            const removeDiscountParams = new URLSearchParams();
+                            removeDiscountParams.append('quote_id', quoteId);
+                            removeDiscountParams.append('form_key', formKey);
+                            
+                            // Call removeDiscount controller
+                            return fetch(removeDiscountUrl, {
+                                "headers": {
+                                    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                    "X-Requested-With": "XMLHttpRequest"
+                                },
+                                "method": "POST",
+                                "mode": "cors",
+                                "credentials": "include",
+                                "body": removeDiscountParams.toString()
+                            }).then((response) => {
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                const contentType = response.headers.get("content-type");
+                                if (contentType && contentType.includes("application/json")) {
+                                    return response.json();
+                                } else {
+                                    return { success: true };
+                                }
+                            }).then((removeRes) => {
+                                if (removeRes && removeRes.error) {
+                                    throw new Error(removeRes.message || 'Failed to remove discount');
+                                }
+                                
+                                // After discount removal, retry the quantity update
+                                // Wait a moment for the discount to be fully removed
+                                return new Promise((resolve) => {
+                                    setTimeout(() => {
+                                        // Get fresh form key
+                                        const formKey = document.querySelector('input[name="form_key"]')?.value || '';
+                                        
+                                        // Use the original cart data that was passed from the validation response
+                                        const retryCartData = new URLSearchParams();
+                                        if (typeof cartDataForRetry === 'object' && cartDataForRetry !== null) {
+                                            for (const [key, value] of Object.entries(cartDataForRetry)) {
+                                                if (typeof value === 'object' && value !== null) {
+                                                    for (const [subKey, subValue] of Object.entries(value)) {
+                                                        retryCartData.append(`cart[${key}][${subKey}]`, subValue);
+                                                    }
+                                                } else {
+                                                    retryCartData.append(`cart[${key}]`, value);
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Add form key
+                                        if (formKey) {
+                                            retryCartData.append('form_key', formKey);
+                                        }
+                                        
+                                        const retryUpdateQtyBody = retryCartData.toString() + '&update_cart_action=update_qty';
+                                        
+                                        // Retry the quantity update
+                                        resolve(fetch(postUrl, {
+                                            "headers": {
+                                                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                                "X-Requested-With": "XMLHttpRequest"
+                                            },
+                                            "method": "POST",
+                                            "mode": "cors",
+                                            "credentials": "include",
+                                            "body": retryUpdateQtyBody
+                                        }));
+                                    }, 500);
+                                });
+                            }).then((retryResponse) => {
+                                if (!retryResponse) {
+                                    return null;
+                                }
+                                if (!retryResponse.ok) {
+                                    throw new Error(`HTTP error! status: ${retryResponse.status}`);
+                                }
+                                const contentType = retryResponse.headers.get("content-type");
+                                if (contentType && contentType.includes("application/json")) {
+                                    return retryResponse.json();
+                                } else {
+                                    throw new Error('Invalid response format. Expected JSON.');
+                                }
+                            }).then((retryRes) => {
+                                if (!retryRes) {
+                                    return null;
+                                }
+                                
+                                // Check for errors in retry
+                                if (retryRes.errors || retryRes.error) {
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                    const errorMessage = retryRes.message || retryRes.error || 'An error occurred while updating quantities';
+                                    if (window.dispatchMessages) {
+                                        window.dispatchMessages([{
+                                            type: 'error',
+                                            text: errorMessage
+                                        }]);
+                                    } else {
+                                        alert(errorMessage);
+                                    }
+                                    return null;
+                                }
+                                
+                                // Retry successful, now continue with submit
+                                const quoteCartForm = document.querySelector('.amasty-quote-update');
+                                const customerForm = document.querySelector('#quote-details');
+                                const freshFormDataCart = quoteCartForm ? new URLSearchParams(new FormData(quoteCartForm)).toString() : formDataCart;
+                                const freshFormDataCustomer = customerForm ? new URLSearchParams(new FormData(customerForm)).toString() : formDataCustomer;
+                                
+                                const submitBody = freshFormDataCart + '&' + freshFormDataCustomer + '&update_cart_action=submit'
+                                    + (proceedToCheckout ? '&proceed_to_checkout=1' : '');
+                                
+                                return fetch(postUrl, {
+                                    "headers": {
+                                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                        "X-Requested-With": "XMLHttpRequest"
+                                    },
+                                    "method": "POST",
+                                    "mode": "cors",
+                                    "credentials": "include",
+                                    "body": submitBody
+                                });
+                            }).then((response) => {
+                                if (!response) {
+                                    return null;
+                                }
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+                                const contentType = response.headers.get("content-type");
+                                if (contentType && contentType.includes("application/json")) {
+                                    return response.json();
+                                } else {
+                                    throw new Error('Invalid response format. Expected JSON.');
+                                }
+                            }).then((res) => {
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                if (!res) {
+                                    return;
+                                }
+                                if (res.errors || res.error) {
+                                    const errorMessage = res.message || res.error || 'An error occurred';
+                                    if (window.dispatchMessages) {
+                                        window.dispatchMessages([{
+                                            type: 'error',
+                                            text: errorMessage
+                                        }]);
+                                    } else {
+                                        showErrorModal(errorMessage);
+                                    }
+                                    return;
+                                }
+                                if (res.url) {
+                                    window.location.href = res.url;
+                                } else if (res.redirect && res.url) {
+                                    window.location.href = res.url;
+                                } else {
+                                    window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                }
+                            }).catch((error) => {
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                alert('An error occurred while removing the discount. Please try again.');
+                            });
+                            return; // Stop here
+                        } else {
+                            // User clicked Keep My Discount - revert qty inputs and cancel the update
+                            var qtyInputs = document.querySelectorAll('input[data-role="cart-item-qty"][data-original-qty]');
+                            qtyInputs.forEach(function(inp) {
+                                var orig = inp.getAttribute('data-original-qty');
+                                if (orig !== null && orig !== '') {
+                                    inp.value = orig;
+                                }
+                            });
+                            if (window.dispatchMessages) {
+                                window.dispatchMessages([{
+                                    type: 'info',
+                                    text: 'Update cancelled.'
+                                }]);
+                            }
+                            return null;
+                        }
+                        });
+                    }
+                    
+                    // Check for errors in update response
+                    if (updateRes.errors || updateRes.error) {
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                        const errorMessage = updateRes.message || updateRes.error || 'An error occurred while updating quantities';
+                        
+                        // Use Hyva message system if available, otherwise show modal
+                        if (window.dispatchMessages) {
+                            window.dispatchMessages([{
+                                type: 'error',
+                                text: errorMessage
+                            }]);
+                        } else {
+                            // Fallback: Show modal dialog
+                            showErrorModal(errorMessage);
+                        }
+                        return;
+                    }
+                    
+                    // Step 2: If update successful, now submit the quote
+                    const submitBody = formDataCart + '&' + formDataCustomer + '&update_cart_action=submit'
+                        + (proceedToCheckout ? '&proceed_to_checkout=1' : '');
+                    
+                    return fetch(postUrl, {
+                        "headers": {
+                            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                            "X-Requested-With": "XMLHttpRequest"
+                        },
+                        "method": "POST",
+                        "mode": "cors",
+                        "credentials": "include",
+                        "body": submitBody
+                    });
+                }).then((response) => {
+                    if (!response) {
+                        return null; // Update failed, response already handled
+                    }
+                    // Check if response is OK
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    // Check if response is JSON
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.includes("application/json")) {
+                        return response.json();
+                    } else {
+                        // If not JSON, might be a redirect or HTML response
+                        throw new Error('Invalid response format. Expected JSON.');
+                    }
+                }).then((res) => {
+                    if (!res) {
+                        return; // Update failed, already handled
+                    }
+                    
+                    // Check for discount removal popup from submit (threshold exceeded)
+                    if (res.show_discount_removal_popup) {
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                        const quoteId = res.quote_id;
+                        return (typeof showDiscountRemovalModal === 'function' ? showDiscountRemovalModal() : Promise.resolve(true)).then(function(proceed) {
+                            if (proceed) {
+                                window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+                                const removeDiscountUrl = '<?= $escaper->escapeUrl($block->getUrl('dcwrequestquote/cart/removeDiscount')) ?>';
+                                const formKey = document.querySelector('input[name="form_key"]')?.value || '';
+                                const removeDiscountParams = new URLSearchParams();
+                                removeDiscountParams.append('quote_id', quoteId);
+                                removeDiscountParams.append('form_key', formKey);
+                                return fetch(removeDiscountUrl, {
+                                    "headers": { "content-type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
+                                    "method": "POST", "mode": "cors", "credentials": "include",
+                                    "body": removeDiscountParams.toString()
+                                }).then((r) => r.ok && r.headers.get("content-type")?.includes("application/json") ? r.json() : { success: true })
+                                .then((removeRes) => {
+                                    if (removeRes && removeRes.error) throw new Error(removeRes.message || 'Failed to remove discount');
+                                    const quoteCartForm = document.querySelector('.amasty-quote-update');
+                                    const customerForm = document.querySelector('#quote-details');
+                                    const formDataCart = quoteCartForm ? new URLSearchParams(new FormData(quoteCartForm)).toString() : '';
+                                    const formDataCustomer = customerForm ? new URLSearchParams(new FormData(customerForm)).toString() : '';
+                                    const submitBody = formDataCart + '&' + formDataCustomer + '&update_cart_action=submit' + (proceedToCheckout ? '&proceed_to_checkout=1' : '');
+                                    return fetch(postUrl, { "headers": { "content-type": "application/x-www-form-urlencoded; charset=UTF-8", "X-Requested-With": "XMLHttpRequest" }, "method": "POST", "mode": "cors", "credentials": "include", "body": submitBody });
+                                }).then((r) => {
+                                    if (!r.ok) throw new Error('Request failed');
+                                    const ct = r.headers.get('content-type');
+                                    return (ct && ct.includes('application/json')) ? r.json() : { url: r.url };
+                                }).then((retryRes) => {
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                    if (retryRes.errors || retryRes.error) {
+                                        const msg = retryRes.message || retryRes.error || 'An error occurred';
+                                        if (window.dispatchMessages) window.dispatchMessages([{ type: 'error', text: msg }]);
+                                        else showErrorModal(msg);
+                                        return;
+                                    }
+                                    if (retryRes.url || (retryRes.redirect && retryRes.url)) window.location.href = retryRes.url || retryRes.url;
+                                    else window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                }).catch((err) => {
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                    const msg = err.message || 'An error occurred while removing the discount.';
+                                    if (window.dispatchMessages) window.dispatchMessages([{ type: 'error', text: msg }]);
+                                    else showErrorModal(msg);
+                                });
+                            } else {
+                                // User chose Keep My Discount - revert qty inputs
+                                var qtyInputs = document.querySelectorAll('input[data-role="cart-item-qty"][data-original-qty]');
+                                qtyInputs.forEach(function(inp) {
+                                    var orig = inp.getAttribute('data-original-qty');
+                                    if (orig !== null && orig !== '') {
+                                        inp.value = orig;
+                                    }
+                                });
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                if (window.dispatchMessages) window.dispatchMessages([{ type: 'info', text: 'Submit cancelled.' }]);
+                                return null;
+                            }
+                        });
+                    }
+                    
+                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    
+                    // Check for errors in submit response
+                    if (res.errors || res.error) {
+                        // Display error message
+                        const errorMessage = res.message || res.error || 'An error occurred';
+                        
+                        // Use Hyva message system if available, otherwise show modal
+                        if (window.dispatchMessages) {
+                            window.dispatchMessages([{
+                                type: 'error',
+                                text: errorMessage
+                            }]);
+                        } else {
+                            // Fallback: Show modal dialog
+                            showErrorModal(errorMessage);
+                        }
+                        return;
+                    }
+                    
+                    // If redirect URL is provided, redirect
+                    // Success message will be displayed on the redirect page via messageManager
+                    if (res.url) {
+                        window.location.href = res.url;
+                    } else if (res.redirect && res.url) {
+                        window.location.href = res.url;
+                    }
+            }).catch((err) => {
+                // Error handling
+                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    
+                    // Try to extract more specific error message
+                    let errorMessage = 'An error occurred while submitting the quote. Please try again.';
+                    
+                    // If it's a JSON parsing error, the response might have been HTML
+                    if (err.message && err.message.includes('JSON')) {
+                        errorMessage = 'The server returned an unexpected response. Please check your information and try again.';
+                    } else if (err.message && err.message.includes('HTTP error')) {
+                        errorMessage = 'A server error occurred. Please try again later.';
+                    } else if (err.message && err.message.includes('Invalid response format')) {
+                        errorMessage = 'Unable to process your request. Please check your information and try again.';
+                    } else if (err.message) {
+                        errorMessage = err.message;
+                    }
+                    
+                    // Use Hyva message system if available, otherwise show modal
+                    if (window.dispatchMessages) {
+                        window.dispatchMessages([{
+                            type: 'error',
+                            text: errorMessage
+                        }]);
+                    } else {
+                        // Fallback: Show modal dialog
+                        showErrorModal(errorMessage);
+                    }
+                })
+            },
+            updateQuote(e) {
+                e.preventDefault();
+                const self = this,
+                    baseUrl = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updateItemOptions')) ?>',
+                    quoteId = 'id/<?php echo $quoteCartViewModel->getQuoteItemId() ?>',
+                    postUrl = baseUrl + quoteId,
+                    form = document.getElementById('product_addtocart_form'),
+                    body = new URLSearchParams(new FormData(form)).toString();
+
+                fetch(postUrl, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include",
+                    "body": body
+                }).then((response) => {
+                    window.location.href = response.url;
+                    return response;
+                }).then((res) => {
+                    // this.loading = false;
+					window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                }).catch((err) => {
+                    // Error handling
+                })
+            }
+        }
+    }
+</script>

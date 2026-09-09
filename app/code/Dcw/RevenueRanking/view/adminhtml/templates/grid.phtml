@@ -1,0 +1,95 @@
+<?php
+/**
+ * Copyright © Dotcom Weavers. All rights reserved.
+ * @var \Magento\Backend\Block\Template $block
+ * @var \Dcw\RevenueRanking\ViewModel\Admin\RevenueRankingInfo $viewModel
+ */
+
+$viewModel = $block->getData('view_model');
+$revenueData = $viewModel->getRevenueData();
+?>
+
+<div class="revenue-ranking-grid">
+    <div class="admin__data-grid-wrap">
+        <div class="admin__data-grid">
+            <table class="data-grid">
+                <thead>
+                    <tr>
+                        <th class="data-grid-th"><?= $block->escapeHtml(__('ID')) ?></th>
+                        <th class="data-grid-th"><?= $block->escapeHtml(__('Product ID')) ?></th>
+                        <th class="data-grid-th"><?= $block->escapeHtml(__('Base Revenue')) ?></th>
+                        <th class="data-grid-th"><?= $block->escapeHtml(__('Adjusted Revenue')) ?></th>
+                        <th class="data-grid-th"><?= $block->escapeHtml(__('Last Updated')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($revenueData)): ?>
+                        <?php foreach ($revenueData as $item): ?>
+                            <tr>
+                                <td class="data-grid-td"><?= $block->escapeHtml($item['id']) ?></td>
+                                <td class="data-grid-td"><?= $block->escapeHtml($item['product_id']) ?></td>
+                                <td class="data-grid-td"><?= $block->escapeHtml(number_format($item['base_revenue'], 2)) ?></td>
+                                <td class="data-grid-td"><?= $block->escapeHtml(number_format($item['adjusted_revenue'], 2)) ?></td>
+                                <td class="data-grid-td"><?= $block->escapeHtml($item['last_updated']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="5" class="data-grid-td"><?= $block->escapeHtml(__('No revenue data found. Click "Refresh Revenue Data" to calculate.')) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.revenue-ranking-grid {
+    margin-top: 20px;
+}
+
+.admin__data-grid-wrap {
+    background: #ffffff;
+    border: 1px solid #d6d6d6;
+    border-radius: 3px;
+}
+
+.admin__data-grid {
+    overflow-x: auto;
+}
+
+.data-grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.3rem;
+}
+
+.data-grid-th,
+.data-grid-td {
+    padding: 12px 15px;
+    border: 1px solid #d6d6d6;
+    text-align: left;
+    vertical-align: top;
+}
+
+.data-grid-th {
+    background: #f8f8f8;
+    font-weight: 600;
+    color: #333333;
+    border-bottom: 2px solid #d6d6d6;
+}
+
+.data-grid-td {
+    background: #ffffff;
+    color: #333333;
+}
+
+.data-grid tbody tr:nth-child(even) .data-grid-td {
+    background: #f9f9f9;
+}
+
+.data-grid tbody tr:hover .data-grid-td {
+    background: #f0f0f0;
+}
+</style>

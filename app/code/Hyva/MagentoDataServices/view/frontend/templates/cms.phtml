@@ -1,0 +1,59 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Magento\DataServices\Block\Context;
+
+/**
+ * @var Context $block
+ */
+
+?>
+
+<script>
+    window.addEventListener('load', function () {
+        magentoStorefrontEvents.context.setPage({
+            pageType: "<?= /* @noEscape */ $block->getData('page_type'); ?>"
+        });
+        magentoStorefrontEvents.context.setContext("pageExtended", {
+            action: "<?= /* @noEscape */ $block->getData('step_name'); ?>"
+        });
+    });
+
+    window.addEventListener('productAddToCart', function () {
+        const browserStorage = hyva.getBrowserStorage();
+        let dataServicesProductContext = JSON.parse(browserStorage.getItem('dataservices_product_context'));
+
+        if (dataServicesProductContext){
+            magentoStorefrontEvents.context.setProduct(dataServicesProductContext);
+            magentoStorefrontEvents.publish.addToCart();
+        }
+    });
+
+    function dataServicesAddToCartTracking() {
+        return {
+            checkIfProductIsAddedToBasket: function (data) {
+                const browserStorage = hyva.getBrowserStorage();
+
+                if (browserStorage && data.cart) {
+                    let cartSummaryCount = data.cart.summary_count;
+                    let storageSummaryCount = browserStorage.getItem('cart_summary_count') || 0;
+
+                    if (cartSummaryCount > storageSummaryCount) {
+                        window.dispatchEvent(new Event("productAddToCart"));
+                    }
+
+                    browserStorage.setItem('cart_summary_count', data.cart.summary_count);
+                    browserStorage.setItem('dataservices_product_context', JSON.stringify(data.cart.dataservices_product_context));
+                }
+            }
+        }
+    }
+</script>
+
+<div x-data="dataServicesAddToCartTracking()"
+     @private-content-loaded.window="checkIfProductIsAddedToBasket($event.detail.data)"></div>

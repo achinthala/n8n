@@ -1,0 +1,74 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
+use Magento\Framework\Escaper;
+use Magento\Sales\Block\Order\Invoice\Items;
+
+/** @var Escaper $escaper */
+/** @var Items $block */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+$order = $block->getOrder();
+?>
+<?php foreach ($order->getInvoiceCollection() as $invoice): ?>
+    <div class="order-title text-center md:text-left font-semibold">
+        <?= $escaper->escapeHtml(__('Invoice #')) ?><?= $escaper->escapeHtml($invoice->getIncrementId()) ?>
+        <a href="<?= $escaper->escapeUrl($block->getPrintInvoiceUrl($invoice)) ?>"
+           class="text-primary inline-block ml-2 pl-2 border-l text-sm font-normal"
+           target="_blank"
+           rel="noopener">
+            <?= $heroicons->printerHtml('inline-block', 20, 20); ?>
+            <span class="inline-block ml-1 underline"><?= $escaper->escapeHtml(__('Print Invoice')) ?></span>
+        </a>
+    </div>
+    <?= $block->getInvoiceCommentsHtml($invoice) ?>
+    <div class="order-items invoice">
+    <div class="hidden parent-headings lg:grid grid-cols-6 text-sm text-secondary mt-2">
+        <div class="p-2 text-size14 font-medium"><?= $escaper->escapeHtml(__('Product Name')) ?></div>
+		<div class="p-2  text-size14 font-medium hidden"><?= $escaper->escapeHtml(__('SKU')) ?></div>
+        <div class="p-2 text-size14 font-medium"><?= $escaper->escapeHtml(__('Qty')) ?></div>
+		<div class="p-2  text-size14 font-medium"><?= $escaper->escapeHtml(__('Size')) ?></div>
+		<div class="p-2  text-size14 font-medium"><?= $escaper->escapeHtml(__('Color')) ?></div>
+		<div class="p-2  text-size14 font-medium"><?= $escaper->escapeHtml(__('Discount Amount')) ?></div>
+        <?php if (!$block->getData('is_context_shipment')): ?>
+        <!--<div class="p-2 text-size14 font-medium"><?= $escaper->escapeHtml(__('Price')) ?></div><?php endif; ?>-->
+        
+        <?php if (!$block->getData('is_context_shipment')): ?>
+            <div class="p-2 text-size14 font-medium text-right"><?= $escaper->escapeHtml(__('Subtotal')) ?></div><?php endif; ?>
+    </div>
+        <?php $items = $invoice->getAllItems(); ?>
+        <?php foreach ($items as $item): ?>
+            <?php
+            $orderItem = $item->getOrderItem();
+            $parentItem = $orderItem->getParentItem();
+            if ($parentItem && $parentItem->getData('product_type') === Configurable::TYPE_CODE) {
+                continue;
+            }
+            ?>
+            <div class="<?= ($parentItem) ?
+                'child-item ml-2 px-4 mb-2 border-l-4 border-container text-sm' :
+                'parent-item mb-2'
+            ?>">
+                <?= $block->getItemHtml($item) ?>
+            </div>
+        <?php endforeach; ?>
+        <div class="order__totals flex justify-end border-t border-container">
+            <div class="lg:w-1/3">
+                <div class="grid grid-cols-2 text-right p-2 gap-2">
+                    <?= $block->getInvoiceTotalsHtml($invoice) ?>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endforeach; ?>

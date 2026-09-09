@@ -1,0 +1,68 @@
+<?php
+
+use Magento\ProductRecommendationsLayout\Block\Fetcher;
+
+/* @var Fetcher $block */
+?>
+<script>
+    function adobeProductRecsDataFetcher() {
+        "use strict";
+        return {
+            pagePreconfiguredDeferred: {},
+            productBanners: '',
+            fetchData: function () {
+                let self = this;
+                let storefrontEvents = window.magentoStorefrontEvents;
+
+                storefrontEvents.context.setContext("recsContext", {
+                    alternateEnvironmentId: "<?= /* @noEscape */ $block->getAlternateEnvironmentId(); ?>"
+                });
+
+                this.pagePreconfiguredDeferred = new Promise((resolve, reject) => {
+                    self.pagePreconfiguredDeferred.resolve = resolve;
+                    self.pagePreconfiguredDeferred.reject = reject;
+                })
+
+                document.addEventListener("recsRequestSent", (function () {
+                    storefrontEvents.publish.recsRequestSent();
+                }));
+
+                window.addEventListener("recsResponseReceived", (function (n) {
+                    let rec = storefrontEvents.context.getRecommendations();
+
+                    rec = n.detail, storefrontEvents.context.setRecommendations({
+                        units: rec
+                    });
+                    storefrontEvents.publish.recsResponseReceived();
+                }));
+
+                this.fetchRecommendationsData();
+            },
+            fetchRecommendationsData: function () {
+                let client;
+                let promise = new Promise(function(resolve, reject) {
+                    let interval = setInterval(() => {
+                        client = new RecommendationsClient();
+                        if(client._environmentId !== "") {
+                            clearInterval(interval);
+                            resolve();
+                        }
+                    }, 300);
+                })
+                .then(() => {
+                    document.dispatchEvent(new Event("recsRequestSent"));
+                    client.fetchPreconfigured().then(response => {
+                        const units = response.data.results;
+                        const filteredUnits = units.filter(unit => unit.products.length);
+                        const responseEvent = new CustomEvent("recsResponseReceived", {
+                            detail: filteredUnits,
+                        });
+
+                        window.dispatchEvent(responseEvent);
+                    });
+                });
+            }
+        }
+    }
+</script>
+<div x-data="adobeProductRecsDataFetcher()" x-init="fetchData()"></div>

@@ -1,0 +1,5 @@
+<?xml version="1.0"?> 
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Magento\ProductAlert\Block\Email\Stock" type="Dcw\ProductAlerts\Block\Email\Stock"/>     
+    <preference for="Magento\Sales\Block\Order\Totals" type="Dcw\ProductAlerts\Block\Order\Totals"/>     
+</config>

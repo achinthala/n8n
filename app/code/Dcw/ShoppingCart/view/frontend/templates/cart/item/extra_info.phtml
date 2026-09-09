@@ -1,0 +1,61 @@
+<?php
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\ShoppingCart\ViewModel\Data as ShoppingCartData;
+use Dcw\FlooringCalculation\ViewModel\Data as FlooringCalculationViewModelData;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var ShoppingCartData $shoppingCartData */
+/** @var FlooringCalculationViewModelData $flooringCalculationViewModelData */
+
+$shoppingCartData = $viewModels->require(ShoppingCartData::class);
+$getFullControllerPath = $shoppingCartData->getFullControllerPath();
+$flooringCalculationViewModelData = $viewModels->require(FlooringCalculationViewModelData::class);
+
+if ($getFullControllerPath != 'amasty_quote/account/view') {
+    $item = $block->getItem();
+    $product = $item->getProduct();
+    $loadChildProduct = $shoppingCartData->getProductObjectBySku($product->getSku());
+    $hideStockStatus = false;
+
+    if ($item && $item->getPdpLineItem()) {
+        $pdpLineItem = json_decode($item->getPdpLineItem(), true);
+        $itemRoomLength = $pdpLineItem['RoomLength'] ?? '';
+        $getCalculatorType = $loadChildProduct->getAttributeText('incstores_pim_calculator_type');
+
+        if ($itemRoomLength && $getCalculatorType == 'roll') {
+            $productCurrentAvailableQty = $flooringCalculationViewModelData->getProductCurrentAvailableQty($loadChildProduct->getId());
+            $itemQty = $itemRoomLength * $item->getQty();
+
+            if ($itemQty > $productCurrentAvailableQty) {
+                $hideStockStatus = true;
+            }
+        }
+    }
+    
+    $simpleProductOption = $item->getOptionByCode('simple_product');
+
+    if ($simpleProductOption && $simpleProductOption->getProduct()) {
+        $product = $simpleProductOption->getProduct();
+    }
+
+    $getPdpLineItem = $item->getPdpLineItem();
+    $promiseDate = $shippingEstimate = "";
+    if ($getPdpLineItem) {
+        $getPdpLineItem = json_decode($getPdpLineItem, true);
+        $promiseDate = $getPdpLineItem['promise_date'] ?? '';
+        $shippingEstimate = $getPdpLineItem['shipping_estimate'] ?? '';
+    }
+
+    $checkForQtyBackorder = $shoppingCartData->checkForQtyBackorder($product, $item->getQty());
+
+    if (!$checkForQtyBackorder && !$hideStockStatus) { ?>
+        <div class="custom-extra-info">
+            <p class="stock-status"><?= $product->isAvailable() ? 'In Stock' : 'Out of Stock'; ?></p>
+            <?php if ($shippingEstimate): ?>
+                <p class="shipping-estimate"><?= strip_tags(html_entity_decode($shippingEstimate)); ?></p>
+            <?php endif; ?>
+        </div>
+    <?php
+    }
+}
+?>

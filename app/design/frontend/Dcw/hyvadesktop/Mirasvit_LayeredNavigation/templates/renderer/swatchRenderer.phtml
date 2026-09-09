@@ -1,0 +1,151 @@
+<?php
+/**
+ * @var $block \Mirasvit\LayeredNavigation\Block\Renderer\SwatchRenderer
+ */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$swatchData        = $block->getSwatchData();
+$attributeCode     = $swatchData['attribute_code'];
+$attributeId       = $swatchData['attribute_id'];
+$filter        = $block->getSwatchFilter();
+
+$useAlphabeticalIndex = strpos(get_class($filter), 'AttributeFilter') !== false && $filter->isUseAlphabeticalIndex();
+
+$checkedItemsCount = 0;
+
+$letter  = '';
+$revenueHelper = $this->helper('Dcw\RevenueRanking\Helper\Data');
+$filter_counts = $revenueHelper->getActiveFilterCount();
+?>
+<div class="swatch-attribute swatch-layered <?= $attributeCode ?> mst-nav__swatch"
+     attribute-code="<?= $attributeCode ?>"
+     attribute-id="<?= $attributeId ?>"
+     x-data="{...initLabelRenderer(), ...initSwatchRenderer()}"
+>
+    <div class="swatch-attribute-options clearfix" data-mst-nav-filter="<?= $attributeCode ?>">
+        <div data-holder="alphabetical"
+             x-data="initAlphabeticalIndex(<?= (int)($useAlphabeticalIndex && $filter->isAlphabeticalIndexAllowedByLimit()) ?>, <?= $filter->getAlphabeticalLimit() ?>)"
+             x-init="init()"
+        ></div>
+        <?php foreach ($swatchData['options'] as $option => $label): ?>
+            <?php
+            if (!$option || empty(trim($label['label']))) {
+                continue;
+            }
+
+            if (!isset($swatchData['swatches'][$option])) {
+                $swatchData['swatches'][$option] = [
+                    'type' => 0,
+                    'label' => $label['label'],
+                    'value' => $label['label']
+                ];
+            }
+
+            $isItemChecked = $block->isItemChecked($option);
+            $url           = $isItemChecked ? $block->getRemoveUrl($attributeCode, $option) : $block->getSwatchOptionLink($attributeCode, $option);
+            $cssClass      = [
+                'swatch-option-link-layered',
+                $isItemChecked ? '_checked ring ring-primary' : '',
+            ];
+
+            if ($isItemChecked) {
+                $checkedItemsCount++;
+            }
+
+            $customStyle   = isset($label['custom_style']) ? $block->escapeHtmlAttr($label['custom_style']) : '';
+
+            $final_url = $escaper->escapeUrl($url);
+            if (!str_contains($final_url, 'product_list_mode=list')) { 
+                $final_url .= "&product_list_mode=list";
+            }
+			if (str_contains($final_url, 'product_list_dir')) {
+				// Replace existing product_list_dir=xxx with product_list_dir=desc
+				$final_url = preg_replace('/product_list_dir=[^&]*/', 'product_list_dir=desc', $final_url);
+			} else {
+				// If not present, append
+				$final_url .= (str_contains($final_url, '?') ? '&' : '?') . "product_list_dir=desc";
+			}
+			if($filter_counts==1 && $isItemChecked){
+				$final_url = str_replace('product_list_order=revenue_ranking', 'product_list_order=position', $final_url);
+				$final_url = str_replace('product_list_dir=desc', 'product_list_dir=asc', $final_url);
+			}else{
+				  if (str_contains($final_url, 'product_list_order')) {
+					// Replace existing product_list_order=xxx with product_list_order=revenue_ranking
+					$final_url = preg_replace('/product_list_order=[^&]*/', 'product_list_order=revenue_ranking', $final_url);
+				} else {
+					// If not present, append
+					$final_url .= (str_contains($final_url, '?') ? '&' : '?') . "product_list_order=revenue_ranking";
+				}
+			}
+
+            ?>
+            <?php if($useAlphabeticalIndex && $filter->isSortByLabel() && $letter !== $block->getFirstLetter($label['label'])):
+                $letter = $block->getFirstLetter($label['label']);
+                ?>
+                <div class="mst-nav__letter mst-nav__label-item" data-letter="<?= $letter ?>" data-element = filter>
+                    <b><?= $letter ?></b>
+                </div>
+            <?php endif; ?>
+
+            <a href="<?= $final_url ?>"
+               data-element="filter"
+               data-hidden="false"
+               data-search-hidden="false"
+               data-letter-hidden="false"
+               data-value="<?= $block->escapeHtmlAttr($option) ?>"
+               rel="<?= $block->escapeHtmlAttr($block->getRelAttributeValue()) ?>"
+               aria-label="<?= $escaper->escapeHtmlAttr($label['label']) ?>"
+               <?= $useAlphabeticalIndex ? 'data-letter="' .  $block->getFirstLetter($label['label']) . '"' : '' ?>
+               @click="handleClick"
+               class="<?= implode(' ', $cssClass) ?> swatch-option-link-layered swatch-option border-2 cursor-pointer bg-container-lighter shadow-sm relative select-none border-container-darker"
+               :class="{ 'w-6 h-6' : getSwatchType('<?= (string) $swatchData['swatches'][$option]['type'] ?>') !== 'text' }"
+               :style="getSwatchBackgroundStyle(
+                    '<?= (string) $swatchData['swatches'][$option]['type'] ?>',
+                    '<?= (string) $swatchData['swatches'][$option]['value'] ?>',
+                    '<?= $escaper->escapeUrl($block->getSwatchPath(
+                   'swatch_image',
+                   $swatchData['swatches'][$option]['value']
+               )) ?>'
+                )"
+                    <?php $swatchThumbPath = $block->getSwatchPath(
+                        'swatch_thumb',
+                        $swatchData['swatches'][$option]['value']
+                    ); ?>
+                    @mouseenter.self="activeTooltipItem = {
+                            attribute: '<?= $escaper->escapeHtmlAttr($swatchData['swatches'][$option]['value']) ?>',
+                            type: '<?= $escaper->escapeHtmlAttr($swatchData['swatches'][$option]['type']) ?>',
+                            id: '<?= $escaper->escapeHtmlAttr($option) ?>',
+                            label: '<?= $escaper->escapeHtmlAttr($label['label']) ?>',
+                            thumb: '<?= $escaper->escapeUrl($swatchThumbPath) ?>',
+                            value: '<?= $escaper->escapeHtmlAttr($swatchData['swatches'][$option]['value']) ?>'
+                        }; tooltipPositionElement = $event.target;"
+                    @mouseleave.self="activeTooltipItem = false"
+            >
+                <?php if ((string)$swatchData['swatches'][$option]['type'] === "0"): ?>
+                    <?= $escaper->escapeHtml($swatchData['swatches'][$option]['value'] ?: $label['label']) ?>
+                <?php endif; ?>
+            </a>
+        <?php endforeach ?>
+    </div>
+    <?= /* @noEscape */ $block->getBlockHtml('product.swatch.tooltip'); ?>
+    <div class="hidden mst-clear-options-link" data-checked-count="<?= $checkedItemsCount ?>">
+        <div class="mst-nav__checked-counter__wrapper flex items-center mx-2">
+            <div class="mst-nav__checked-counter rounded px-2 bg-gray-200 mr-1"><?= $checkedItemsCount ?></div>
+            <a class="hover:underline text-2xl opacity-50" href="<?= $block->getAttributeClearUrl($attributeCode) ?>" rel="<?= $block->escapeHtmlAttr($block->getRelAttributeValue()) ?>" data-element="filter">&#10005;</a>
+        </div>
+    </div>
+</div>
+<?php if ($useAlphabeticalIndex): ?>
+    <style>
+        [attribute-code="<?= $attributeCode ?>"] .swatch-attribute-options {
+            display: block;
+        }
+        [attribute-code="<?= $attributeCode ?>"] .swatch-attribute-options a[data-element="filter"] {
+            display: inline-block;
+        }
+        [attribute-code="<?= $attributeCode ?>"] .swatch-attribute-options a[data-element="filter"].hidden {
+            display: none!important;
+        }
+    </style>
+<?php endif; ?>
+

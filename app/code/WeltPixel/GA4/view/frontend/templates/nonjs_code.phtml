@@ -1,0 +1,16 @@
+<?php
+// @codingStandardsIgnoreFile
+?>
+<?php
+$_helper = $this->helper('WeltPixel\GA4\Helper\Data');
+$nonJsCodeSnippet = $_helper->getGtmNonJsCodeSnippet();
+$cspNonceProvider = $_helper->getCspNonceProvider();
+
+if ($cspNonceProvider) {
+    $nonJsCodeSnippet = str_replace('<script', '<script nonce="' . $cspNonceProvider->generateNonce() . '" ', $nonJsCodeSnippet);
+}
+
+?>
+<?php if ($_helper->isEnabled()) : ?>
+<?php echo $nonJsCodeSnippet; ?>
+<?php endif; ?>

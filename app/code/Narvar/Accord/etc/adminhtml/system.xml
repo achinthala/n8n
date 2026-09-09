@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="narvar_accord" translate="label" sortOrder="110">
+            <label>Narvar Accord Extension</label>
+        </tab>
+        <section id="narvar_accord" translate="label" type="text" sortOrder="9" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Configuration</label>
+            <tab>narvar_accord</tab>
+            <resource>Narvar_Accord::narvar_settings</resource>
+            <group id="narvar_settings" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Narvar Accord Configuration</label>
+                <field id="version" translate="label" type="label" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Narvar Accord Version</label>
+                    <backend_model>Narvar\Accord\Config\Version</backend_model>
+                </field>
+                <field id="narvar_accord_enabled" translate="label" type="select" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Narvar Accord</label>
+                    <source_model>Magento\Config\Model\Config\Source\Enabledisable</source_model>
+                    <comment>Enable/Disable Narvar Accord Module</comment>
+                </field>
+                <field id="narvar_retailer_moniker" translate="label comment" type="text" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Narvar Store Brand</label>
+                    <validate>required-entry</validate>
+                    <comment>Retailer or Brand Name Shared By Narvar</comment>
+                    <!-- <backend_model>Narvar\Accord\Controller\Settings\Validate</backend_model> -->
+                </field> 
+                <field id="narvar_auth" translate="label comment" type="password" sortOrder="4" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Narvar Authentication Token</label>
+                    <validate>required-entry</validate>
+                    <comment>Authentication Token Shared By Narvar</comment>
+                    <!-- <backend_model>Narvar\Accord\Controller\Settings\Validate</backend_model> -->
+                </field>
+                <field id="narvar_integration_token" translate="label comment" type="password" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Magento Integration Access Token</label>
+                    <comment>The Narvar Integration Access token created by Magento Admin(For Narvar to pull orders from Magento)</comment>
+                    <!-- <backend_model>Narvar\Accord\Controller\Settings\Validate</backend_model> -->
+                </field>
+                <field id="narvar_integration_token_secret" translate="label comment" type="password" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Magento Integration Access Token Secret</label>
+                    <comment>The Narvar Integration Access token secret created by Magento Admin(For Narvar to pull orders from Magento)</comment>
+                    <!-- <backend_model>Narvar\Accord\Controller\Settings\Validate</backend_model> -->
+                </field>
+                <field id="narvar_store_base_url" translate="label comment" type="text" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Magento API Base URL</label>
+                    <comment>The Magento API endpoint for communications using HTTPS([base_url]index.php/rest/V1/orders). OPTIONAL(default value - Magento config -> 'web/secure/base_url')</comment>
+                    <!-- <backend_model>Narvar\Accord\Controller\Settings\Validate</backend_model> -->
+                </field>
+                <field id="narvar_debug_mode" translate="label comment" type="select" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Debug Mode</label>
+                    <source_model>Magento\Config\Model\Config\Source\Enabledisable</source_model>
+                    <comment>Enable/Disable Narvar Debug logs (Please Enable Only when required! - Impacts Module Speed)</comment>
+                    <!-- <backend_model>Narvar\Accord\Controller\Settings\Validate</backend_model> -->
+                </field>
+                <field id="narvar_production_environment" translate="label" type="select" sortOrder="9" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Production Environment</label>
+                    <source_model>Magento\Config\Model\Config\Source\Enabledisable</source_model>
+                    <comment>Enabl/Disable Narvar production environment</comment>
+                </field>
+            </group>
+        </section>       
+    </system>
+</config>

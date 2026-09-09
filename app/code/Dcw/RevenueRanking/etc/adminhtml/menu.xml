@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Dcw_RevenueRanking::revenue_ranking"
+             title="Best Seller Control"
+             module="Dcw_RevenueRanking"
+             sortOrder="100"
+             parent="Magento_Catalog::catalog"
+             resource="Dcw_RevenueRanking::revenue_ranking"/>
+
+        <add id="Dcw_RevenueRanking::revenue_ranking_management"
+             title="Revenue Ranking Management"
+             module="Dcw_RevenueRanking"
+             sortOrder="10"
+             parent="Dcw_RevenueRanking::revenue_ranking"
+             action="revenue_ranking/index/index"
+             resource="Dcw_RevenueRanking::revenue_ranking"/>
+
+        <add id="Dcw_RevenueRanking::revenue_ranking_config"
+             title="Configuration"
+             module="Dcw_RevenueRanking"
+             sortOrder="20"
+             parent="Dcw_RevenueRanking::revenue_ranking"
+             action="admin/system_config/edit/section/dcw_revenue_ranking"
+             resource="Dcw_RevenueRanking::config"/>
+
+        <add id="Dcw_RevenueRanking::revenue_ranking_management_data"
+             title="Data for testing"
+             module="Dcw_RevenueRanking"
+             sortOrder="30"
+             parent="Dcw_RevenueRanking::revenue_ranking"
+             action="revenue_ranking/index/importdata"
+             resource="Dcw_RevenueRanking::revenue_ranking"/>
+    </menu>
+</config>

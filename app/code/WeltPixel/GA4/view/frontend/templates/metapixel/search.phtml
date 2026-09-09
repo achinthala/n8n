@@ -1,0 +1,16 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\MetaPixel\Common */
+
+/** @var \Magento\CatalogSearch\Helper\Data $searchDataHelper */
+$searchDataHelper = $this->helper('Magento\CatalogSearch\Helper\Data');
+?>
+<?php if ($block->isMetaPixelTrackingEnabled() && $block->shouldMetaPixelEventBeTracked(\WeltPixel\GA4\Model\Config\Source\MetaPixel\TrackingEvents::EVENT_SEARCH)) : ?>
+<script>
+    if (window.ga4AllowServices) {
+        fbq('track', 'Search', {
+            search_string: '<?= $searchDataHelper->getEscapedQueryText() ?>'
+        });
+    }
+</script>
+<?php endif; ?>

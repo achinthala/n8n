@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!--
+/** OrderRestrictions module xml
+ * @category  Dotcomweavers
+ * @package   Dotcomweavers_OrderRestrictions
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+ */
+ */
+-->
+<logging xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Logging:etc/logging.xsd">
+    <groups>
+        <group name="dotcomweavers_orderrestrictions">
+            <label translate="true">Order Restrictions</label>
+            <expected_models>
+                <expected_model class="Dotcomweavers\OrderRestrictions\Model\Rule" />
+            </expected_models>
+            <events>
+                <event controller_action="orderrestrictions_restrictions_rule_edit" action_alias="view" />
+                <event controller_action="orderrestrictions_restrictions_rule_save" action_alias="save">
+                    <skip_on_back>
+                        <controller_action name="orderrestrictions_restrictions_rule_edit" />
+                    </skip_on_back>
+                </event>
+                <event controller_action="orderrestrictions_restrictions_rule_delete" action_alias="delete" />
+            </events>
+        </group>
+    </groups>
+</logging>
+

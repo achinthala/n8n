@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>   
+        <referenceContainer name="page.messages">
+            <block class="Magento\Checkout\Block\Cart\ValidationMessages" name="checkout.cart.validationmessages"/>
+        </referenceContainer>     
+        <referenceBlock name="page.main.title" remove="true"/>
+		<referenceContainer name="amasty.extrafee.options" remove="true"/>
+        <referenceBlock name="crosssell" remove="true"/>
+		<referenceContainer name="amasty_extrafee" remove="true"/>
+        <referenceContainer name="content">
+            <block class="Magento\Catalog\Block\Product\View" name="related.mew" template="Magento_Catalog::product/slider/product-slider.phtml" after="-" >
+                <arguments>
+                  <argument translate="true" name="title" xsi:type="string">Related Products</argument>
+              </arguments>
+            </block>
+        </referenceContainer>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="custom.cart.block" template="Magento_Checkout::php-cart/custom.phtml" />
+        </referenceContainer>
+        <referenceContainer name="related.mew" remove="true"/>
+    </body>
+</page>

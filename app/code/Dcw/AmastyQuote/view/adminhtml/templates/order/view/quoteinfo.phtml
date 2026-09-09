@@ -1,0 +1,12 @@
+<?php
+/**
+ * @var \Dcw\AmastyQuote\Block\Adminhtml\Order\View\QuoteInfo $block
+ */
+if (!$block->shouldDisplay()) {
+    return;
+}
+?>
+<tr>
+    <th><?= $block->escapeHtml(__('Amasty Quote ID')) ?></th>
+    <td><?= $block->escapeHtml($block->getAmastyQuoteIncrementId()) ?></td>
+</tr>

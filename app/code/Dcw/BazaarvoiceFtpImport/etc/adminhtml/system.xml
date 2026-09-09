@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="bazaarvoice_ftp" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Bazaarvoice FTP Import</label>
+            <tab>catalog</tab>
+            <resource>Dcw_BazaarvoiceFtpImport::config</resource>
+            <group id="ftp_settings" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>FTP Settings</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable FTP Import</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Enable or disable the Bazaarvoice FTP import functionality</comment>
+                </field>
+                <field id="copy_credentials" translate="label comment" type="button" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Copy Credentials</label>
+                    <comment>Copy SFTP credentials from official Bazaarvoice module</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\CopyCredentialsButton</frontend_model>
+                </field>
+                <field id="host" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>FTP Host</label>
+                    <comment>FTP server hostname or IP address (copied from official Bazaarvoice module)</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\DisabledHost</frontend_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="username" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>FTP Username</label>
+                    <comment>FTP server username (copied from official Bazaarvoice module)</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\DisabledUsername</frontend_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="password" translate="label comment" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>FTP Password</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <comment>FTP server password (copied from official Bazaarvoice module)</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\DisabledPassword</frontend_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="remote_path" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Remote Path</label>
+                    <comment>Remote directory path on SFTP server (e.g., /feeds/)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="file_pattern" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>File Pattern</label>
+                    <comment>File pattern to match (e.g., *.xml.gz, *.zip, bv_*.xml.gz)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+            <group id="import_settings" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Import Settings</label>
+                <field id="auto_import" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Auto Import</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Enable automatic import via cron job</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="cron_schedule" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Cron Schedule</label>
+                    <comment>Cron schedule expression (e.g., 0 2 * * * for daily at 2 AM)</comment>
+                    <depends>
+                        <field id="auto_import">1</field>
+                    </depends>
+                </field>
+                <field id="keep_original_files" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Keep Original Files</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Keep original zip files after extraction (for debugging)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+            <group id="actions" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Actions</label>
+                <field id="test_connection" translate="label comment" type="button" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Test FTP Connection</label>
+                    <comment>Test the FTP connection with current settings</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\TestConnection</frontend_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="manual_import" translate="label comment" type="button" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Manual Import</label>
+                    <comment>Execute import manually (use with caution)</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\ManualImport</frontend_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="manual_gmc_convert" translate="label comment" type="button" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Manual GMC Convert</label>
+                    <comment>Convert existing XML files to GMC format</comment>
+                    <frontend_model>Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\ManualGmcConvert</frontend_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+            <group id="gmc_settings" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>GMC Review Conversion</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable GMC Conversion</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Convert Bazaarvoice reviews to Google Merchant Center format</comment>
+                </field>
+                <field id="publisher_name" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Publisher Name</label>
+                    <comment>Your company name for GMC feed</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="aggregator_name" translate="label comment" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Aggregator Name</label>
+                    <comment>Review aggregator name (e.g., Bazaarvoice)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="review_statuses" translate="label comment" type="text" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Allowed Review Statuses</label>
+                    <comment>Comma-separated list of review statuses to include (e.g., approved,published)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="default_rating" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Default Rating</label>
+                    <comment>Default rating value when not specified (1-5)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="rating_range" translate="label comment" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Rating Range</label>
+                    <comment>Maximum rating value (e.g., 5 for 1-5 scale)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="cron_schedule" translate="label comment" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>GMC Cron Schedule</label>
+                    <comment>Cron schedule for GMC conversion (e.g., 0 3 * * * for daily at 3 AM)</comment>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

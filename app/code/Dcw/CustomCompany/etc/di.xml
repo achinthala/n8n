@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+<preference for="Magento\Company\Model\Company\DataProvider" type="Dcw\CustomCompany\Model\Company\DataProvider" />    
+<preference for="Magento\Company\Controller\Index\Index" type="Dcw\CustomCompany\Controller\Company\Index\Index" />
+<type name="Magento\Company\Model\CompanyRepository">
+    <plugin name="myvendor_mymodule_after_save_company" type="Dcw\CustomCompany\Plugin\Model\CompanyRepository" />
+</type>
+<preference for="Magento\Company\Controller\Account\CreatePost" type="Dcw\CustomCompany\Controller\Company\CreatePost" />
+<preference for="Magento\Customer\Controller\Account\ResetPasswordPost" type="Dcw\CustomCompany\Controller\Account\ResetPasswordPost" />
+<preference for="Magento\Customer\Controller\Account\CreatePost" type="Dcw\CustomCompany\Controller\Account\CreatePost" />
+<preference for="Magento\Customer\Controller\Account\CreatePassword" type="Dcw\CustomCompany\Controller\Account\CreatePassword" />
+</config>

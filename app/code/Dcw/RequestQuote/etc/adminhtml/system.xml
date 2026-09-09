@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="requestquote" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Request Quote</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_RequestQuote::config</resource>
+            <group id="general" translate="label" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+                <field id="show_save_cart_proceed_to_checkout" translate="label comment" type="select" sortOrder="50" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Show Save Cart &amp; Proceed to Checkout Button</label>
+                    <comment>Enable to display the "Save Cart &amp; Proceed to Checkout" button on the quote details page.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>requestquote/general/show_save_cart_proceed_to_checkout</config_path>
+                </field>
+                <field id="allow_quote_edit" translate="label comment" type="select" sortOrder="51" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Allow Quote Editing in Statuses</label>
+                    <comment>Enable this option to allow customers to edit quotes in statuses.</comment>
+                    <source_model>Dcw\RequestQuote\Model\Source\Edit\AllowQuoteEdit</source_model>
+                </field>
+            </group>
+            <group id="change_log" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Change Log Settings</label>
+                <field id="show_to_customer" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Show Change Logs to Customer</label>
+                    <comment>Enable this to display quote change logs to customers on the quote view page.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>requestquote/change_log/show_to_customer</config_path>
+                </field>
+            </group>
+            <group id="quote_lock" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Quote Lock Settings</label>
+                <field id="lock_timeout" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Lock Timeout (seconds)</label>
+                    <comment>Time in seconds before a lock is considered expired if no activity is detected. Default: 300 (5 minutes).</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                    <config_path>requestquote/quote_lock/lock_timeout</config_path>
+                </field>
+            </group>
+            <group id="discount_threshold" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Discount Threshold Settings</label>
+                <field id="threshold_percentage" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Quantity Reduction Threshold (%)</label>
+                    <comment>Maximum percentage of quantity reduction allowed when quote has discount. If customer changes exceed this threshold, update will be blocked. Default: 20 (20%).</comment>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                    <config_path>requestquote/discount_threshold/threshold_percentage</config_path>
+                </field>
+            </group>
+            <group id="admin_permissions" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Admin Role Permissions</label>
+                <comment>Configure which admin roles have access to specific quote editing permissions.</comment>
+                <field id="quantity_edit_roles" translate="label comment" type="multiselect" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Quantity Edits &amp; Remove Items</label>
+                    <comment>Select admin roles that can edit quantities and remove items from quotes (Sales Agent level).</comment>
+                    <source_model>Dcw\RequestQuote\Model\Config\Source\AdminRoles</source_model>
+                    <config_path>requestquote/admin_permissions/quantity_edit_roles</config_path>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+                <field id="pricing_control_roles" translate="label comment" type="multiselect" sortOrder="20" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Complete Cart Control (Pricing, Discounts, Shipping)</label>
+                    <comment>Select admin roles that can control pricing, discounts, and shipping overrides (Sales Manager level).</comment>
+                    <source_model>Dcw\RequestQuote\Model\Config\Source\AdminRoles</source_model>
+                    <config_path>requestquote/admin_permissions/pricing_control_roles</config_path>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+                <field id="full_discount_roles" translate="label comment" type="multiselect" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>100% Discount (Zero Cart Total)</label>
+                    <comment>Select admin roles that can apply 100% discounts, leaving zero in the cart (Sales Admin level).</comment>
+                    <source_model>Dcw\RequestQuote\Model\Config\Source\AdminRoles</source_model>
+                    <config_path>requestquote/admin_permissions/full_discount_roles</config_path>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+                <field id="admin_assistance_roles" translate="label comment" type="multiselect" sortOrder="40" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Edit Admin User Assistance (Post Order)</label>
+                    <comment>Select admin roles that can edit 'Admin User Assistance' field post order (Admin level).</comment>
+                    <source_model>Dcw\RequestQuote\Model\Config\Source\AdminRoles</source_model>
+                    <config_path>requestquote/admin_permissions/admin_assistance_roles</config_path>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

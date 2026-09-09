@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_product_tab" translate="label" sortOrder="140"
+                 showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Product Tab</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_CustomAttribute::config</resource>
+            <group id="tabs" translate="label" type="text" sortOrder="10"
+                   showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Product Tabs</label>
+                <field id="size_attributes" translate="label" type="textarea" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Dimension Attributes</label>
+                </field>
+                <field id="show_indec_attributes" translate="label" type="textarea" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Detail Attributes</label>
+                </field>
+                <field id="tab_show_attribute" translate="label" type="textarea" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Tab Show Attributes</label>
+                </field>
+            </group>
+        </section>
+        <section id="dcw_us_holiday" translate="label" sortOrder="140"
+                 showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>US Holidays for ESD Calculation</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_CustomAttribute::config</resource>
+            <group id="holiday" translate="label" type="text" sortOrder="10"
+                   showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>US Holidays</label>
+                <field id="us_holiday_list" translate="label" type="text" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>US Holidays</label>
+                    <hint>Use date format MM/DD/YYYY. For multiple dates, use comma-separated dates, for example:
+                        01/10/2024,02/20/2024,03/30/2024 and so on.</hint>
+                    <comment>Use date format MM/DD/YYYY. For multiple dates, use comma-separated dates, for example:
+                        01/10/2024,06/20/2024,12/30/2024 and so on.</comment>
+                    <validate>validate-us-holidays</validate>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

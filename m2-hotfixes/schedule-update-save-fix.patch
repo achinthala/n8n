@@ -1,0 +1,32 @@
+diff --git a/vendor/magento/module-staging/Model/Operation/Update.php b/vendor/magento/module-staging/Model/Operation/Update.php
+index 76a8b5bf..cbe8bbf8 100644
+--- a/vendor/magento/module-staging/Model/Operation/Update.php
++++ b/vendor/magento/module-staging/Model/Operation/Update.php
+@@ -168,6 +168,14 @@ class Update implements UpdateInterface
+         }
+         $update = $this->updateRepository->get($arguments['created_in']);
+ 
++        $version = $this->versionInfoProvider->getVersionInfo(
++            $entity,
++            $this->resolveVersion(array_merge($entityData, $arguments))
++        );
++        if (!isset($entityData['updated_in']) && $version->getUpdatedIn()) {
++            $entityData['updated_in'] = $version->getUpdatedIn();
++        }
++
+         $needReschedule = false;
+         if (isset($arguments['origin_in'])) {
+             $needReschedule = $arguments['created_in'] != $arguments['origin_in']
+@@ -178,10 +186,6 @@ class Update implements UpdateInterface
+         }
+ 
+         $identifier = $entityData[$metadata->getIdentifierField()];
+-        $version = $this->versionInfoProvider->getVersionInfo(
+-            $entity,
+-            $this->resolveVersion(array_merge($entityData, $arguments))
+-        );
+         if ($version->getRowId() != null) {
+             if ($update->getRollbackId()) {
+                 $arguments['updated_in'] = $update->getRollbackId();
+
+                 

@@ -1,0 +1,41 @@
+--- a/vendor/klaviyo/magento2-extension/Plugin/CheckoutLayoutPlugin.php 2025-09-18 09:37:48.600199811 +0000
++++ b/vendor/klaviyo/magento2-extension/Plugin/CheckoutLayoutPlugin.php 2025-09-18 10:41:32.845017406 +0000 
+@@ -62,12 +62,14 @@
+                     'options' => [],
+                     'id' => 'kl_sms_consent',
+                 ],
+-                'dataScope' => 'shippingAddress.custom_attributes.kl_sms_consent',
++                //'dataScope' => 'shippingAddress.custom_attributes.kl_sms_consent',
++                'dataScope' => 'billingAddress.custom_attributes.kl_sms_consent',
+                 'label' => $this->_klaviyoScopeSetting->getConsentAtCheckoutSMSConsentLabelText(),
+                 'description' => $this->_klaviyoScopeSetting->getConsentAtCheckoutSMSConsentText(),
+                 'provider' => 'checkoutProvider',
+                 'visible' => true,
+-                'checked' => false,
++                'checked' => true,
++                'value'   => 1,
+                 'validation' => [],
+                 'sortOrder' => $this->_klaviyoScopeSetting->getConsentAtCheckoutSMSConsentSortOrder(),
+                 'id' => 'kl_sms_consent',
+@@ -76,7 +78,9 @@
+             $address = $this->_getDefaultAddressIfSetForCustomer();
+ 
+             if (!$address) {
+-                $jsLayout['components']['checkout']['children']['steps']['children']['shipping-step']['children']['shippingAddress']['children']['shipping-address-fieldset']['children']['kl_sms_consent'] = $smsConsentCheckbox;
++                // $jsLayout['components']['checkout']['children']['steps']['children']['shipping-step']['children']['shippingAddress']['children']['shipping-address-fieldset']['children']['kl_sms_consent'] = $smsConsentCheckbox;
++                $jsLayout['components']['checkout']['children']['steps']['children']['billing-step']
++        ['children']['payment']['children']['afterMethods']['children']['kl_sms_consent'] = $smsConsentCheckbox;
+             } else {
+                 // extra un-editable field with saved phone number to display to logged in users with default address set
+                 $smsConsentTelephone = [
+@@ -96,7 +100,9 @@
+                 ];
+ 
+                 $jsLayout['components']['checkout']['children']['steps']['children']['shipping-step']['children']['shippingAddress']['children']['before-form']['children']['kl_sms_phone_number'] = $smsConsentTelephone;
+-                $jsLayout['components']['checkout']['children']['steps']['children']['shipping-step']['children']['shippingAddress']['children']['before-form']['children']['kl_sms_consent'] = $smsConsentCheckbox;
++                // $jsLayout['components']['checkout']['children']['steps']['children']['shipping-step']['children']['shippingAddress']['children']['before-form']['children']['kl_sms_consent'] = $smsConsentCheckbox;
++                $jsLayout['components']['checkout']['children']['steps']['children']['billing-step']
++        ['children']['payment']['children']['afterMethods']['children']['kl_sms_consent'] = $smsConsentCheckbox;
+             }
+         }
+ 

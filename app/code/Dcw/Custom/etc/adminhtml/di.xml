@@ -1,0 +1,8 @@
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Amasty\RequestQuote\Controller\Adminhtml\Quote\Edit\Save">
+        <plugin name="dcw_custom_edit_quote_save_after_plugin" type="Dcw\Custom\Plugin\Amasty\RequestQuote\Controller\Adminhtml\Quote\Edit\SavePlugin" sortOrder="1" />
+    </type>
+	<type name="Amasty\RequestQuote\Controller\Adminhtml\Quote\Create\Save">
+        <plugin name="dcw_custom_create_quote_save_after_plugin" type="Dcw\Custom\Plugin\Amasty\RequestQuote\Controller\Adminhtml\Quote\Create\SavePlugin" sortOrder="1" />
+    </type>
+</config>

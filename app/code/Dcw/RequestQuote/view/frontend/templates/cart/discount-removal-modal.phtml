@@ -1,0 +1,45 @@
+<?php
+/**
+ * Discount removal confirmation modal - shared partial
+ * Include once per page. Use showDiscountRemovalModal() which returns Promise<boolean>.
+ * true = Continue Without Discount, false = Keep My Discount
+ */
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<?php
+static $discountModalRendered = false;
+if (!$discountModalRendered):
+    $discountModalRendered = true;
+?>
+<div id="discount-removal-modal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; flex-direction:row;">
+    <div style="background:#fff; padding:1.5rem; max-width:28rem; border-radius:0.5rem; box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); margin:0 1rem;">
+        <p style="margin-bottom:1rem; font-size:1rem; line-height:1.625;"><?= $escaper->escapeHtml(__("You're updating your quantity. This may remove your current discount. Any questions about discounts please contact us.")) ?></p>
+        <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:1.25rem;">
+            <button type="button" id="discount-modal-keep" style="padding:0.5rem 1rem; background:#374151; color:#fff; border:none; border-radius:0.375rem; cursor:pointer; font-size:0.875rem;"><?= $escaper->escapeHtml(__('Keep My Discount')) ?></button>
+            <button type="button" id="discount-modal-continue" style="padding:0.5rem 1rem; background:#2563eb; color:#fff; border:none; border-radius:0.375rem; cursor:pointer; font-size:0.875rem;"><?= $escaper->escapeHtml(__('Continue Without Discount')) ?></button>
+        </div>
+    </div>
+</div>
+<script>
+window.showDiscountRemovalModal = window.showDiscountRemovalModal || function() {
+    return new Promise(function(resolve) {
+        var modal = document.getElementById('discount-removal-modal');
+        if (!modal) { resolve(false); return; }
+        modal.style.display = 'flex';
+        var keepBtn = document.getElementById('discount-modal-keep');
+        var continueBtn = document.getElementById('discount-modal-continue');
+        function close(proceed) {
+            modal.style.display = 'none';
+            if (keepBtn) keepBtn.removeEventListener('click', onKeep);
+            if (continueBtn) continueBtn.removeEventListener('click', onContinue);
+            resolve(proceed);
+        }
+        function onKeep() { close(false); }
+        function onContinue() { close(true); }
+        if (keepBtn) keepBtn.addEventListener('click', onKeep);
+        if (continueBtn) continueBtn.addEventListener('click', onContinue);
+    });
+};
+</script>
+<?php endif; ?>

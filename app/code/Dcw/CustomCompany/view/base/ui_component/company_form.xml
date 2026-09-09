@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+
+    <fieldset name="general" sortOrder="10">
+
+        <field name="business_focus">
+        <argument name="data" xsi:type="array">
+            <item name="options" xsi:type="object">Dcw\CustomCompany\Model\Source\BusinessOptions</item>
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Business Focus</item>
+                <item name="dataType" xsi:type="string">select</item>
+                <item name="formElement" xsi:type="string">select</item>
+                <item name="sortOrder" xsi:type="number">20</item>
+                <item name="dataScope" xsi:type="string">business_focus</item>
+            </item>
+        </argument>
+    </field>
+	 
+	<field name="business_focus_others" sortOrder="23" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Business Focus Others</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">business_focus_others</item>
+				<item name="sortOrder" xsi:type="number">23</item>
+			</item>
+		</argument>
+	</field> 
+	
+	<field name="flooring_jobs_per_year">
+        <argument name="data" xsi:type="array">
+            <item name="options" xsi:type="object">Dcw\CustomCompany\Model\Source\FlooringJobs</item>
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Flooring Jobs per Year</item>
+                <item name="dataType" xsi:type="string">select</item>
+                <item name="formElement" xsi:type="string">select</item>
+                <item name="sortOrder" xsi:type="number">20</item>
+                <item name="dataScope" xsi:type="string">flooring_jobs_per_year</item>
+            </item>
+        </argument>
+    </field>
+	
+       
+	   <field name="contact_by_phone">
+        <argument name="data" xsi:type="array">
+            <item name="options" xsi:type="object">Magento\Config\Model\Config\Source\Yesno</item>
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Contact By Phone</item>
+                <item name="dataType" xsi:type="string">select</item>
+                <item name="formElement" xsi:type="string">select</item>
+                <item name="sortOrder" xsi:type="number">40</item>
+                <item name="dataScope" xsi:type="string">contact_by_phone</item>
+            </item>
+        </argument>
+    </field>
+	
+	<field name="company_website" sortOrder="20" formElement="input">
+    <argument name="data" xsi:type="array">
+        <item name="config" xsi:type="array">
+            <item name="label" xsi:type="string" translate="true">Company Website</item>
+            <item name="dataType" xsi:type="string">text</item>
+            <item name="formElement" xsi:type="string">input</item>
+            <item name="dataScope" xsi:type="string">company_website</item>
+            <item name="sortOrder" xsi:type="number">50</item>
+        </item>
+    </argument>
+</field> 
+	
+	<field name="loading_dock">
+        <argument name="data" xsi:type="array">
+            <item name="options" xsi:type="object">Magento\Config\Model\Config\Source\Yesno</item>
+            <item name="config" xsi:type="array">
+                <item name="label" xsi:type="string" translate="true">Has loading Dock</item>
+                <item name="dataType" xsi:type="string">select</item>
+                <item name="formElement" xsi:type="string">select</item>
+                <item name="sortOrder" xsi:type="number">60</item>
+                <item name="dataScope" xsi:type="string">loading_dock</item>
+            </item>
+        </argument>
+    </field>
+	
+	
+	
+	<field name="company_id" sortOrder="70" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Company Id</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">company_id</item>
+			</item>
+		</argument>
+	</field> 
+	<field name="toll_free_number" sortOrder="80" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Toll Free Number</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">toll_free_number</item>
+			</item>
+		</argument>
+	</field> 
+	<field name="sales_rep_name" sortOrder="90" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Sales Rep Name</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">sales_rep_name</item>
+			</item>
+		</argument>
+	</field> 
+	
+	<field name="sales_rep_email" sortOrder="100" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Sales Rep Email</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">sales_rep_email</item>
+			</item>
+		</argument>
+	</field> 
+	
+	<field name="total_order_value" sortOrder="110" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Total Order Value</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">total_order_value</item>
+			</item>
+		</argument>
+	</field> 
+	
+	<field name="unlock_next_level" sortOrder="120" formElement="input">
+		<argument name="data" xsi:type="array">
+			<item name="config" xsi:type="array">
+				<item name="label" xsi:type="string" translate="true">Unlock Next Level</item>
+				<item name="dataType" xsi:type="string">text</item>
+				<item name="formElement" xsi:type="string">input</item>
+				<item name="dataScope" xsi:type="string">unlock_next_level</item>
+			</item>
+		</argument>
+	</field> 
+	<field name="job_title_other" sortOrder="122" formElement="input">
+    <argument name="data" xsi:type="array">
+        <item name="config" xsi:type="array">
+            <item name="label" xsi:type="string" translate="true">Job Title Other</item>
+            <item name="dataType" xsi:type="string">text</item>
+            <item name="formElement" xsi:type="string">input</item>
+            <item name="dataScope" xsi:type="string">job_title_other</item>
+            <item name="sortOrder" xsi:type="number">150</item>
+        </item>
+    </argument>
+</field>
+	
+	
+	   
+    </fieldset>
+	
+	<fieldset name="address">
+
+		
+		
+</fieldset>
+   
+</form>

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- TEST FILE - Created for testing BccEmailExtension - Safe to delete -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="admin">
+        <route id="bccemailtest" frontName="bccemailtest">
+            <module name="Incstores_BccEmailExtension" />
+        </route>
+    </router>
+</config>

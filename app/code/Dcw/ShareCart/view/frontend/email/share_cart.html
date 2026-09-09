@@ -1,0 +1,37 @@
+<!--@subject {{trans "%name shared a cart with you." name=$your_name}} @-->
+{{template config_path="design/email/header_template"}}
+
+{{if recipient_name}}
+<p>{{trans "Hello %name," name=$recipient_name}}</p>
+{{else}}
+<p>{{trans "Hello,"}}</p>
+{{/if}}
+
+{{if your_name}}
+<p>{{trans "%name shared a cart with you." name=$your_name}}</p>
+{{else}}
+<p>{{trans "A cart has been shared with you."}}</p>
+{{/if}}
+
+{{if custom_message}}
+<p><strong>{{trans "Message:"}}</strong></p>
+<p>{{var custom_message|nl2br}}</p>
+{{/if}}
+
+<p>{{trans "Click the button below to view the shared cart items:"}}</p>
+
+<table class="button" width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+        <td>
+            <table class="inner-wrapper" border="0" cellspacing="0" cellpadding="0" align="center">
+                <tr>
+                    <td align="center">
+                        <a href="{{var share_url}}" target="_blank">{{trans "View Shared Cart"}}</a>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+{{template config_path="design/email/footer_template"}}

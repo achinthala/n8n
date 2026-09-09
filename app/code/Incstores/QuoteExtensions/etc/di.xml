@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Plugin to enhance Amasty quotes with Magento quote data after conversion -->
+    <type name="Amasty\RequestQuote\Model\Quote\CustomerAccount\ConvertBasicQuote">
+        <plugin name="incstores_quote_extensions_convert_basic_quote"
+                type="Incstores\QuoteExtensions\Plugin\ConvertBasicQuote\ConvertBasicQuotePlugin"
+                sortOrder="10" />
+    </type>
+
+    <!-- Override Name column block to use custom template with variant and color -->
+    <preference for="Amasty\RequestQuote\Block\Adminhtml\Items\Column\Name"
+                type="Incstores\QuoteExtensions\Block\Adminhtml\Items\Column\Name"/>
+
+</config>

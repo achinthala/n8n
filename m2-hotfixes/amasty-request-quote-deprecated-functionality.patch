@@ -1,0 +1,13 @@
+diff --git a/vendor/amasty/module-request-quote/Block/Adminhtml/Quote/Edit/Info.php b/vendor/amasty/module-request-quote/Block/Adminhtml/Quote/Edit/Info.php
+index 67cfe4f5..1f5d53e4 100644
+--- a/vendor/amasty/module-request-quote/Block/Adminhtml/Quote/Edit/Info.php
++++ b/vendor/amasty/module-request-quote/Block/Adminhtml/Quote/Edit/Info.php
+@@ -230,7 +230,7 @@ class Info extends \Amasty\RequestQuote\Block\Adminhtml\Quote\AbstractQuote
+      */
+     public function getQuoteAdminDate($createdAt)
+     {
+-        return $this->_localeDate->date(new \DateTime($createdAt));
++        return $this->_localeDate->date(new \DateTime($createdAt ?? ''));
+     }
+ 
+     /**

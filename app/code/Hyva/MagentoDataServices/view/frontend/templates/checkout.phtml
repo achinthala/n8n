@@ -1,0 +1,34 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\DataServices\Block\Context;
+use Magento\DataServices\ViewModel\Checkout\CheckoutContextProvider;
+
+/**
+ * @var Context $block
+ * @var CheckoutContextProvider $viewModel
+ * @var ViewModelRegistry $viewModels
+ */
+
+$viewModel = $viewModels->require(CheckoutContextProvider::class);
+?>
+
+<script>
+    window.addEventListener('load', function () {
+        magentoStorefrontEvents.context.setPage({
+            pageType: "<?= /* @noEscape */ $block->getData('page_type'); ?>"
+        });
+        magentoStorefrontEvents.context.setContext("pageExtended", {
+            action: "<?= /* @noEscape */ $block->getData('step_name'); ?>"
+        });
+        magentoStorefrontEvents.context.setShoppingCart(<?= /* @noEscape */ $block->getEventContext(); ?>);
+
+        magentoStorefrontEvents.publish.initiateCheckout();
+    });
+</script>

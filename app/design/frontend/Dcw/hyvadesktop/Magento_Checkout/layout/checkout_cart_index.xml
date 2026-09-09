@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="page.messages">
+            <block class="Magento\Checkout\Block\Cart\ValidationMessages" name="checkout.cart.validationmessages"/>
+        </referenceContainer>
+        <referenceBlock name="breadcrumbs">
+            <action method="addCrumb">
+                <argument name="crumbName" xsi:type="string">Homepage</argument>
+                <argument name="crumbInfo" xsi:type="array">
+                    <item name="title" xsi:type="string">Homepage</item>
+                    <item name="label" xsi:type="string">Homepage</item>
+                    <item name="link" xsi:type="string">/</item>
+                </argument>
+            </action>
+            <action method="addCrumb">
+                <argument name="crumbName" xsi:type="string">Shopping Cart</argument>
+                <argument name="crumbInfo" xsi:type="array">
+                    <item name="title" xsi:type="string">Shopping Cart</item>
+                    <item name="label" xsi:type="string">Shopping Cart</item>
+                </argument>
+            </action>
+        </referenceBlock>
+        <move element="checkout.cart.methods.bottom" destination="cart.summary" after="checkout.cart.totals"/>
+        <referenceContainer name="cart.summary">
+                <referenceBlock name="checkout.cart.giftcardaccount" remove="true"/>
+        </referenceContainer>
+        <referenceBlock name="checkout.cart.order.actions">
+                <referenceBlock name="checkout.cart.order.actions.gift_options" remove="true"/>
+        </referenceBlock>
+        <move element="cart.discount" destination="cart.summary" after="checkout.cart.shipping"/>
+        <referenceBlock name="checkout.cart.shipping" remove="false"/>
+        <referenceBlock name="crosssell" remove="true"/>
+        <referenceContainer name="amasty.extrafee.options" remove="true"/>
+        <referenceContainer name="amasty_extrafee" remove="true"/>
+        <referenceContainer name="content">
+            <block class="Magento\Catalog\Block\Product\View" name="related.mew" template="Magento_Catalog::product/slider/product-slider.phtml" after="-" >
+                <arguments>
+                    <argument translate="true" name="title" xsi:type="string">Related Products</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+            
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="custom.cart.block" template="Magento_Checkout::php-cart/custom.phtml" />
+        </referenceContainer>
+        <referenceContainer name="related.mew" remove="true"/>
+	</body>
+</page>

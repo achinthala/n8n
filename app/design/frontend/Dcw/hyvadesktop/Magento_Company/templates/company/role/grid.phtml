@@ -1,0 +1,35 @@
+<?php $rolelist = $block->getroles() ?>
+<div class="table_wrapper">
+    <div class="table_information">
+    <table class="table_info">
+        <thead>
+            <tr>
+                <th>Role Id</th>
+                <th>Role</th>
+                <th>Users</th>
+                <th>Actions</th>                        
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            foreach ($rolelist['items'] as $role): ?>
+                <tr>
+                    <td><?= /** @noEscape */ $role['role_id'] ?></td>
+                    <td><?= /** @noEscape */ $role['role_name'] ?></td>
+                    <td><?= /** @noEscape */ $role['users_count'] ?></td>
+                    <td>
+                        <a 
+                        href="<?=/** @noEscape */$block->getUrl('company/role/edit/duplicate_id/'.$role['role_id'])?>" 
+                        class="duplicate">Duplicate</a>
+                        <a 
+                        href="<?=/** @noEscape */$block->getUrl('company/role/edit/id/'.$role['role_id'])?>"
+                        class="edit">Edit</a>
+                        <a 
+                        href="<?=/** @noEscape */$block->getUrl('company/role/delete/id/'.$role['role_id'])?>"
+                        class="delete">Delete</a>
+                    </td>
+                </tr>
+                     <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>

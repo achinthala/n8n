@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Amasty\RequestQuote\Controller\Adminhtml\Quote\Edit\LoadBlock" type="Dcw\RequestQuote\Controller\Adminhtml\Quote\Edit\LoadBlock" />
+    <preference for="Amasty\RequestQuote\Block\Adminhtml\Quote\Edit\Items" type="Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\Items" />
+    <preference for="Amasty\RequestQuote\Block\Adminhtml\Quote\Edit\Items\Grid" type="Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\Items\Grid" />
+    <preference for="Amasty\RequestQuote\Block\Adminhtml\Quote\Edit\Items\Discounts" type="Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\Items\Discounts" />
+    <preference for="Amasty\RequestQuote\Block\Adminhtml\Quote\View" type="Dcw\RequestQuote\Block\Adminhtml\Quote\View" />
+    <preference for="Amasty\RequestQuote\Block\Adminhtml\Quote\Create\Shipping\Method\Form" type="Dcw\RequestQuote\Block\Adminhtml\Quote\Create\Shipping\Method\Form" />
+    <!-- Enrich reserved_order_id on Amasty quote grid / export only (not all quote collections) -->
+    <type name="Amasty\RequestQuote\Model\ResourceModel\Quote\Grid\Collection">
+        <plugin name="add_reserved_order_id_column" type="Dcw\RequestQuote\Plugin\Quote\CollectionPlugin" />
+    </type>
+    <type name="Amasty\RequestQuote\Controller\Adminhtml\Quote\Edit\Save">
+        <plugin name="dcw_requestquote_log_admin_changes" type="Dcw\RequestQuote\Plugin\Adminhtml\Quote\Edit\SavePlugin" sortOrder="10"/>
+    </type>
+    <type name="Amasty\RequestQuote\Block\Adminhtml\Quote\View">
+        <plugin name="dcw_requestquote_add_get_new_quote_button" type="Dcw\RequestQuote\Plugin\Adminhtml\Quote\View\AddGetNewQuoteButton" sortOrder="10"/>
+    </type>
+</config>

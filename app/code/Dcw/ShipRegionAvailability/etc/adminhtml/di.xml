@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <virtualType name="DcwShipRegionListingFilterPool"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\FilterPool">
+        <arguments>
+            <argument name="appliers" xsi:type="array">
+                <item name="regular" xsi:type="object">Magento\Framework\View\Element\UiComponent\DataProvider\RegularFilter</item>
+                <item name="fulltext" xsi:type="object">Dcw\ShipRegionAvailability\Ui\Component\Listing\Region\FulltextFilter</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DcwShipRegionListingReporting"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\Reporting">
+        <arguments>
+            <argument name="filterPool" xsi:type="object">DcwShipRegionListingFilterPool</argument>
+        </arguments>
+    </virtualType>
+    <type name="Dcw\ShipRegionAvailability\Ui\Component\DataProvider\RegionGridDataProvider">
+        <arguments>
+            <argument name="reporting" xsi:type="object">DcwShipRegionListingReporting</argument>
+        </arguments>
+    </type>
+    <virtualType name="DcwShipRegionZipListingFilterPool"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\FilterPool">
+        <arguments>
+            <argument name="appliers" xsi:type="array">
+                <item name="regular" xsi:type="object">Magento\Framework\View\Element\UiComponent\DataProvider\RegularFilter</item>
+                <item name="fulltext" xsi:type="object">Dcw\ShipRegionAvailability\Ui\Component\Listing\Zip\FulltextFilter</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="DcwShipRegionZipListingReporting"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\Reporting">
+        <arguments>
+            <argument name="filterPool" xsi:type="object">DcwShipRegionZipListingFilterPool</argument>
+        </arguments>
+    </virtualType>
+    <type name="Dcw\ShipRegionAvailability\Ui\Component\DataProvider\ZipGridDataProvider">
+        <arguments>
+            <argument name="reporting" xsi:type="object">DcwShipRegionZipListingReporting</argument>
+        </arguments>
+    </type>
+</config>

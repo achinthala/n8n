@@ -1,0 +1,13 @@
+<?php
+/** @var \WeltPixel\GA4\Helper\ServerSideTracking $ga4Helper */
+$ga4Helper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking');
+?>
+<?php
+if ($ga4Helper->isServerSideTrakingEnabled() && $ga4Helper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_SELECT_ITEM)) :
+?>
+<script>
+    requirejs(['jquery', 'WeltPixel_GA4/js/weltpixel_ga4_serverside'],
+        function   ($) {
+        });
+</script>
+<?php endif; ?>

@@ -1,0 +1,105 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Catalog\Block\Product\Image;
+use Magento\Framework\Escaper;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+/** @var Image $block */
+/** @var Escaper $escaper */
+
+$customAttributes = $block->getCustomAttributes() ?: [];
+$listIndex = isset($customAttributes['list_index']) ? (int) $customAttributes['list_index'] : null;
+$firstRowHoverPreloadCount = isset($customAttributes['first_row_preload_count'])
+    ? (int) $customAttributes['first_row_preload_count']
+    : null;
+$productId = (int) $block->getProductId();
+$product = $customViewModel->getLoadProduct($productId);
+$hoverImageUrl = $customViewModel->getListHoverImageUrl($productId);
+$productName = $product ? $product->getName() : $block->getLabel();
+$listImageDimension = $customViewModel->getCategoryListImageDimension();
+$primaryImageUrl = $customViewModel->getCategoryListImageUrl($block->getImageUrl());
+$preloadHoverImage = $hoverImageUrl
+    && $listIndex !== null
+    && $firstRowHoverPreloadCount !== null
+    && $listIndex < $firstRowHoverPreloadCount;
+$isFirstRowImage = $listIndex !== null
+    && $firstRowHoverPreloadCount !== null
+    && $listIndex < $firstRowHoverPreloadCount;
+$isEagerImage = ($customAttributes['loading'] ?? '') === 'eager'
+    || ($customAttributes['fetchpriority'] ?? '') === 'high'
+    || $isFirstRowImage;
+$enableSecondImage = $hoverImageUrl && $customViewModel->isSecondImagePageContext();
+?>
+<div class="product-list-image relative w-full overflow-hidden"
+    <?php if ($enableSecondImage): ?>
+     x-data='{
+        over: false,
+        hovered: false,
+        hoverTimer: null,
+        hoverUrl: <?= /* @noEscape */ json_encode($hoverImageUrl, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
+        onEnter() {
+            this.over = true;
+            clearTimeout(this.hoverTimer);
+            this.hoverTimer = setTimeout(() => {
+                if (this.over) {
+                    this.hovered = true;
+                }
+            }, 80);
+        },
+        onMove() {
+            if (this.over) {
+                this.hovered = true;
+            }
+        },
+        onLeave() {
+            this.over = false;
+            this.hovered = false;
+            clearTimeout(this.hoverTimer);
+        }
+     }'
+     :class="hovered ? 'is-hovered' : ''"
+     x-on:mouseenter="onEnter()"
+     x-on:mousemove.debounce.80ms="onMove()"
+     x-on:mouseleave="onLeave()"
+     <?php if ($preloadHoverImage): ?>
+     x-init="(new Image()).src = hoverUrl"
+     <?php endif; ?>
+    <?php endif; ?>
+>
+    <img class="hover:shadow-sm object-contain w-full <?= $escaper->escapeHtmlAttr($block->getClass()) ?>"
+         x-data=""
+         @update-gallery-<?= $productId ?>.window="$root.src = $event.detail"
+         src="<?= $escaper->escapeUrl($primaryImageUrl) ?>"
+         loading="<?= $isEagerImage ? 'eager' : 'lazy' ?>"
+         decoding="async"
+         fetchpriority="<?= $isEagerImage ? 'high' : 'low' ?>"
+         width="<?= $escaper->escapeHtmlAttr($listImageDimension) ?>"
+         height="<?= $escaper->escapeHtmlAttr($block->getHeight()) ?>"
+         alt="<?= $escaper->escapeHtmlAttr($productName) ?>"
+         title="<?= $escaper->escapeHtmlAttr($productName) ?>"
+         style="position: static !important;" />
+    <?php if ($enableSecondImage): ?>
+        <template x-if="hovered">
+            <img class="product-list-image-hover absolute inset-0 w-full h-full object-contain pointer-events-none"
+                 :src="hoverUrl"
+                 loading="lazy"
+                 decoding="async"
+                 fetchpriority="low"
+                 width="<?= $escaper->escapeHtmlAttr($listImageDimension) ?>"
+                 height="<?= $escaper->escapeHtmlAttr($block->getHeight()) ?>"
+                 alt="<?= $escaper->escapeHtmlAttr($productName) ?>"
+                 title="<?= $escaper->escapeHtmlAttr($productName) ?>"
+                 aria-hidden="true" />
+        </template>
+    <?php endif; ?>
+</div>

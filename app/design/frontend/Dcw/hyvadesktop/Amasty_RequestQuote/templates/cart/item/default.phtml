@@ -1,0 +1,397 @@
+<?php
+declare(strict_types=1);
+
+// phpcs:disable Magento2.Files.LineLength.MaxExceeded
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\Modal;
+use Dcw\FlooringCalculation\ViewModel\Data as FlooringCalculationViewModelData;
+use Dcw\IncstoreShipping\ViewModel\Data as IncstoreShippingViewModelData;
+
+/** @var \Magento\Checkout\Block\Cart\Item\Renderer $block */
+$item = $block->getItem();
+$product = $item->getProduct();
+$isVisibleProduct = $product->isVisibleInSiteVisibility();
+/** @var \Magento\Msrp\Helper\Data $helper */
+// @codingStandardsIgnoreLine
+$helper = $this->helper(\Magento\Msrp\Helper\Data::class);
+$canApplyMsrp = $helper->isShowBeforeOrderConfirm($product) && $helper->isMinimalPriceLessMsrp($product);
+/** @var \Amasty\RequestQuote\Helper\Cart $cartHelper */
+// @codingStandardsIgnoreLine
+$cartHelper = $this->helper(\Amasty\RequestQuote\Helper\Cart::class);
+/** @var \Amasty\RequestQuote\Helper\Data $configHelper */
+// @codingStandardsIgnoreLine
+$configHelper = $this->helper(\Amasty\RequestQuote\Helper\Data::class);
+
+$sampleProductBlock = $block->getLayout()->createBlock(\Dcw\SampleProduct\Block\SampleData::class);
+
+/** @var FlooringCalculationViewModelData $flooringCalculationViewModelData */
+$flooringCalculationViewModelData = $viewModels->require(FlooringCalculationViewModelData::class);
+$incstoreShippingViewModelData = $viewModels->require(IncstoreShippingViewModelData::class);
+
+$loadChildProduct = $incstoreShippingViewModelData->loadProductBySku($item->getSku());
+?>
+<div class="flex justify-start pb-11 border-gray-1 pt-2 later-cart">
+    <div class="pt-6 pl-0 flex flex-nowrap flex-row prdct">
+        <div class="cart-img-wrapper mr-5">
+            <?php if ($block->hasProductUrl()): ?>
+            <a href="<?= /* @noEscape */ $block->getProductUrl() ?>"
+               title="<?= $escaper->escapeHtml($product->getName()) ?>"
+               tabindex="-1"
+               class="product-item-photo">
+                <?php else: ?>
+                <span class="product-item-photo">
+            <?php endif; ?>
+            <?php
+                $thumbnail = $block->getProductForThumbnail();
+                
+                $imgUrl = $block->getImage($block->getProductForThumbnail(), 'cart_page_product_thumbnail')->toHtml();
+                
+                if (strpos($imgUrl, 'placeholder') === false) {
+                    echo $imgUrl;
+                
+                }else{ 
+                ?>
+                    <img src="<?=$sampleProductBlock->getCartItemImage($item)?>" />
+            <?php }?>
+            <?php if ($block->hasProductUrl()): ?>
+            </a>
+        <?php else: ?>
+            </span>
+        <?php endif; ?>
+        </div>
+        <div class="product-desc">
+            <strong class="product-item-name break-all text-size16 font-semibold">
+                <?php if ($block->hasProductUrl()): ?>
+                    <a href="<?= /* @noEscape */ $block->getProductUrl() ?>">
+                        <?= $escaper->escapeHtml($sampleProductBlock->getCartItemName($item)) ?>
+                    </a>
+                <?php else: ?>
+                    <?= $escaper->escapeHtml($sampleProductBlock->getCartItemName($item)) ?>
+                <?php endif; ?>
+            </strong>
+            <?php if ($options = $block->getOptionList()): ?>
+                <dl class="item-options w-full break-all mt-8 clearfix">
+                    <?php foreach ($options as $option): 
+                        if ($option['label']=="Configurable Product Id" || 
+                        $option['label']== "Configurable Product Url" || 
+                        $option['label']=="Configurable Product Image" || 
+                        $option['label'] == "Product Name") {
+                            continue;
+                        }
+                    ?>
+                        <?php $_formatedOptionValue = $block->getFormatedOptionValue($option) ?>
+                        <?php if($option['label']!=""){?>
+                            <dt class="text-size14 font-semibold float-left clear-left mr-2 mb-2"><?= $escaper->escapeHtml($option['label']) ?>:</dt>
+							<?php }  else {?>
+							<dt class="text-size14 font-semibold float-left clear-left mb-2 no-labels"></dt>
+							<?php } ?>
+                        <dd class="float-left text-size14">
+                            <?php if (isset($_formatedOptionValue['full_view'])): ?>
+                                <?= /* @noEscape */ $_formatedOptionValue['full_view'] ?>
+                            <?php else: ?>
+                                <?= /* @noEscape */ $_formatedOptionValue['value'] ?>
+                            <?php endif; ?>
+                        </dd>
+                    <?php endforeach; ?>
+                </dl>
+            <?php endif;?>
+            <?php if ($item && $item->getPdpLineItem()) {
+                $pdpLineItem = json_decode($item->getPdpLineItem(), true);
+                $itemRoomLength = $pdpLineItem['RoomLength'] ?? '';
+                $getCalculatorType = $loadChildProduct->getAttributeText('incstores_pim_calculator_type');
+                $isRollProduct = false;
+                if ($itemRoomLength && $getCalculatorType == 'roll') {
+                    $isRollProduct = true;
+                    $productCurrentAvailableQty = $flooringCalculationViewModelData->getProductCurrentAvailableQty($loadChildProduct->getId());
+                    $itemQty = (float) $itemRoomLength * (float) $item->getQty();
+
+                    $promiseDateText = "";
+                    $promiseDate = $loadChildProduct->getIncstoresPimPromiseDate() ?? '';
+
+                    if ($promiseDate) {
+                        $promiseDateText = '[Estimated ship date: '.$promiseDate.']';
+                    }
+
+                    if ($itemQty > $productCurrentAvailableQty) { ?>
+                        <div class= "cart item message notice">
+                            <div><?= $escaper->escapeHtml(__(
+                                'We have %1 in stock, and pre-orders will ship soon. Contact us at
+                                    866-416-6388 with any questions! %2',
+                                $productCurrentAvailableQty,
+                                $promiseDateText
+                            )); ?></div>
+                        </div>
+                    <?php }
+                }
+            }
+            ?>
+            <?php if ($messages = $block->getMessages()): ?>
+                <?php foreach ($messages as $message): ?>
+                    <?php
+                    $messageText = $message['text'] ?? '';
+                    if ($messageText instanceof \Magento\Framework\Phrase) {
+                        $messageText = $messageText->render();
+                    }
+                    if (!is_string($messageText)) {
+                        $messageText = (string) $messageText;
+                    }
+                    if ($messageText !== '' && stripos($messageText, 'pre-orders will ship soon') !== false && $isRollProduct) {
+                        continue;
+                    }
+                    ?>
+                    <div class="cart item message <?= /* @noEscape */ $message['type'] ?>">
+                        <div><?= $escaper->escapeHtml($messageText) ?></div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <?php $addInfoBlock = $block->getProductAdditionalInformationBlock(); ?>
+            <?php if ($addInfoBlock): ?>
+                <?= $addInfoBlock->setItem($item)->toHtml() ?>
+            <?php endif;?>
+        </div>
+    </div>
+    <div class="pt-6 px-4 items-center prc">
+        <div class="flex flex-col lg:flex-row items-center justify-center text-sm sm:text-base">
+            <?php if ($canApplyMsrp): ?>
+                <span class="block text-left md:text-right lg:text-center lg:whitespace-nowrap">
+                    <span class="msrp notice"><?= /* @noEscape */ __('See price before order confirmation.') ?></span>
+                    <?php $helpLinkId = 'cart-msrp-help-' . $item->getId(); ?>
+                    <a href="#" class="action help map" id="<?= /* @noEscape */ ($helpLinkId) ?>" data-mage-init='{"addToCart":{"helpLinkId": "#<?= /* @noEscape */ $helpLinkId ?>","productName": "<?= /* @noEscape */ $product->getName() ?>","showAddToCart": false}}'>
+                        <span><?= /* @noEscape */ __("What's this?") ?></span>
+                    </a>
+                </span>
+            <?php else: ?>
+                <span class="quote-custom-price block text-left md:text-right lg:text-center lg:whitespace-nowrap">
+                    <?= $block->getUnitPriceHtml($item) ?>
+                </span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <div class="pt-5 px-4 justify-center qnty">
+        <div class="flex items-center lg:justify-center">
+            <div class="block text-center flex-col lg:flex-row items-center qty">
+                <input id="cart-<?= /* @noEscape */ $item->getId() ?>-qty"
+                       name="cart[<?= /* @noEscape */ $item->getId() ?>][qty]"
+                       data-cart-item-id="<?= $escaper->escapeHtml($item->getSku()) ?>"
+                       value="<?= /* @noEscape */ $block->getQty() ?>"
+                       type="text"
+                       size="4"
+                       onkeypress="return onlyNumberKey(event)"
+                       title="<?= $escaper->escapeHtml(__('Qty')) ?>"
+                       <?= ($product->getIncstoresFreeProduct() == 1)?'readonly disabled':''; ?>
+                       class="input-text qty form-input px-2 py-2 w-20 text-center"
+                       data-role="cart-item-qty"
+                       data-original-qty="<?= $escaper->escapeHtmlAttr($block->getQty()) ?>" />
+            </div>
+        </div>
+    </div>
+    <div class="pt-6 px-4 items-center sbtl">
+        <div class="flex sm:items-center sm:justify-center lg:justify-end sm:text-base items-center">
+            <div class="flex items-center sm:justify-center">
+                <span class="block text-left md:text-right lg:text-center lg:whitespace-nowrap">
+                    <?php if ($canApplyMsrp): ?>
+                        <span class="cart msrp subtotal">--</span>
+                    <?php else: ?>
+                        <?php if ((float) $item->getPrice() || $configHelper->isAllowCustomizePrice()): ?>
+                            <?= $block->getRowTotalHtml($item) ?>
+                        <?php else: ?>
+                            <?= $escaper->escapeHtml('N/A') ?>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </span>
+            </div>
+        </div>
+    </div>
+	
+	<div class="item-actions quotes-cart">
+    <div class="req-cart-contents">
+        <div class="actions-toolbar q-carts" data-item-id="<?= (int)$item->getId() ?>">
+            <?= /* @noEscape */ $block->getActions($item) ?>
+        </div>
+    </div>
+	</div>
+</div>
+
+<script>
+        function onlyNumberKey(evt) {
+            var ASCIICode = (evt.which) ? evt.which : evt.keyCode;
+
+            // If Enter key is pressed, trigger submitForm (so threshold popup / discount removal flow runs)
+            if (ASCIICode === 13) {
+                evt.preventDefault();
+                if (typeof submitForm === 'function') {
+                    submitForm();
+                }
+                return false;
+            }
+
+            // Only ASCII digits 0–9 allowed
+            if (ASCIICode > 31 && (ASCIICode < 48 || ASCIICode > 57)) {
+                return false;
+            }
+            return true;
+        }
+    </script>
+    <script>
+        var myForm = document.getElementById("form-validate");
+        function submitForm(){
+            // Skip update if no qty actually changed (avoids threshold/discount popup on blur without edit)
+            var qtyInputs = document.querySelectorAll('input[data-role="cart-item-qty"][data-original-qty]');
+            var hasQtyChange = false;
+            for (var i = 0; i < qtyInputs.length; i++) {
+                var inp = qtyInputs[i];
+                var orig = inp.getAttribute('data-original-qty');
+                var current = (inp.value || '').trim();
+                if (orig !== null && current !== orig) {
+                    hasQtyChange = true;
+                    break;
+                }
+            }
+            if (!hasQtyChange) {
+                return;
+            }
+
+            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+            const cartId = <?= $item->getId(); ?>;
+            const postUrl = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updatePost')) ?>';
+            const formKey = document.querySelector('input[name=form_key]').value;
+            const form = document.getElementById('form-validate');
+
+            // Prevent the native form submit (which causes full page reload and plain error message)
+            form.onsubmit = function (e) {
+                e.preventDefault();
+            };
+
+            const requestBody = new URLSearchParams(new FormData(form)).toString() + '&update_cart_action=update_qty';
+
+            function doUpdate(bodyToSend) {
+                return fetch(postUrl, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include",
+                    "body": new URLSearchParams(bodyToSend)
+                }).then((response) => {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json();
+                    }
+                    // Non-JSON: just stop loading
+                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    return null;
+                });
+            }
+
+            doUpdate(requestBody).then((data) => {
+                if (!data) {
+                    return;
+                }
+
+                // Threshold popup: discount removal
+                if (data.show_discount_removal_popup) {
+                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    const quoteId = data.quote_id || null;
+
+                    (typeof showDiscountRemovalModal === 'function' ? showDiscountRemovalModal() : Promise.resolve(true)).then((proceed) => {
+                    if (proceed) {
+                        // Remove discount then retry qty update
+                        window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+                        const removeDiscountUrl = '<?= $escaper->escapeUrl($block->getUrl('dcwrequestquote/cart/removeDiscount')) ?>';
+                        const params = new URLSearchParams();
+                        if (quoteId) {
+                            params.append('quote_id', quoteId);
+                        }
+                        if (formKey) {
+                            params.append('form_key', formKey);
+                        }
+
+                        fetch(removeDiscountUrl, {
+                            "headers": {
+                                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                                "X-Requested-With": "XMLHttpRequest"
+                            },
+                            "method": "POST",
+                            "mode": "cors",
+                            "credentials": "include",
+                            "body": params.toString()
+                        }).then((res) => {
+                            const ct = res.headers.get('content-type');
+                            if (ct && ct.includes('application/json')) {
+                                return res.json();
+                            }
+                            return { success: true };
+                        }).then((removeData) => {
+                            if (removeData && removeData.error) {
+                                throw new Error(removeData.message || 'Failed to remove discount');
+                            }
+                            // Retry qty update with same body
+                            return doUpdate(requestBody);
+                        }).then((retryData) => {
+                            window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            if (retryData && (retryData.errors || retryData.error)) {
+                                const msg = retryData.message || retryData.error || 'An error occurred while updating quantities';
+                                if (window.dispatchMessages) {
+                                    window.dispatchMessages([{ type: 'error', text: msg }]);
+                                } else {
+                                    alert(msg);
+                                }
+                                return;
+                            }
+                            // Success after retry – keep user on page, sections can be reloaded elsewhere if needed
+                        }).catch((err) => {
+                            window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            const msg = err && err.message ? err.message : 'An error occurred while removing the discount.';
+                            if (window.dispatchMessages) {
+                                window.dispatchMessages([{ type: 'error', text: msg }]);
+                            } else {
+                                alert(msg);
+                            }
+                        });
+                        return;
+                    } else {
+                        // User chose Keep My Discount - revert qty inputs to original values
+                        var qtyInputs = document.querySelectorAll('input[data-role="cart-item-qty"][data-original-qty]');
+                        qtyInputs.forEach(function(inp) {
+                            var orig = inp.getAttribute('data-original-qty');
+                            if (orig !== null && orig !== '') {
+                                inp.value = orig;
+                            }
+                        });
+                        if (window.dispatchMessages) {
+                            window.dispatchMessages([{
+                                type: 'info',
+                                text: 'Update cancelled.'
+                            }]);
+                        }
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                        return;
+                    }
+                    });
+                }
+
+                // Standard error JSON
+                if (data.errors || data.error) {
+                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    const msg = data.message || data.error || 'An error occurred while updating quantities';
+                    if (window.dispatchMessages) {
+                        window.dispatchMessages([{ type: 'error', text: msg }]);
+                    } else {
+                        alert(msg);
+                    }
+                    return;
+                }
+
+                // Success – just stop loading, stay on page
+                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+            }).catch((err) => {
+                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                // Optional: handle error if needed
+            });
+        }
+        function detailssubmit() {
+            alert("Your details were Submitted");
+        }
+    </script>

@@ -1,0 +1,255 @@
+<?php
+// @codingStandardsIgnoreFile
+?>
+<?php $helper = $this->helper('WeltPixel\GA4\Helper\Data'); ?>
+<?php $ga4ServerSideHelper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking'); ?>
+<?php $configurableProductsHelper = $this->helper('WeltPixel\GA4\Helper\ConfigurableProducts'); ?>
+<?php
+$product = $this->getCurrentProduct();
+$sendOnlyMainProduct = true;
+if (($product->getTypeId() ==  \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE) && ($helper->getParentOrChildIdUsage() == \WeltPixel\GA4\Model\Config\Source\ParentVsChild::CHILD) && $helper->sendAllChildConfigurableProducts()) {
+    $sendOnlyMainProduct = false;
+}
+?>
+<?php if ($this->isEnabled()) : ?>
+    <?php if (isset($product)) : ?>
+
+        <?php if (!($ga4ServerSideHelper->isServerSideTrakingEnabled() && $ga4ServerSideHelper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_VIEW_ITEM)
+            && $ga4ServerSideHelper->isDataLayerEventDisabled())) : ?>
+
+            <?php if ($sendOnlyMainProduct) : ?>
+                <?php $productDetails = []; ?>
+                <?php
+
+                $productPrice = floatval(number_format($product->getPriceInfo()->getPrice('final_price')->getValue() ?? 0, 2, '.', ''));
+                $productDetail = [];
+                $productDetail['item_name'] = html_entity_decode($product->getName() ?? '');
+                $productDetail['affiliation'] = $helper->getAffiliationName();
+                $productDetail['item_id'] = $helper->getGtmProductId($product);
+                $productDetail['price'] = $productPrice;
+                if ($helper->isBrandEnabled()) :
+                    $productDetail['item_brand'] = $helper->getGtmBrand($product);
+                endif;
+                $productCategoryIds = $product->getCategoryIds();
+                $ga4Categories = $helper->getGA4CategoriesFromCategoryIds($productCategoryIds);
+                $productDetail = array_merge($productDetail, $ga4Categories);
+                $categoryName = $helper->getGtmCategoryFromCategoryIds($product->getCategoryIds());
+                $productDetail['item_list_name'] = $categoryName;
+                $productDetail['item_list_id'] = count($productCategoryIds) ? $productCategoryIds[0] : '';
+
+                /** Set the custom dimensions */
+                $customDimensions = $this->getProductDimensions($product, $helper);
+                foreach ($customDimensions as $name => $value) :
+                    $productDetail[$name] = $value;
+                endforeach;
+
+                $productDetails[] = $productDetail;
+                ?>
+                <?php
+                $this->setEcommerceData('currency', $this->getCurrencyCode());
+                $this->setEcommerceData('value', $productPrice);
+                $this->setEcommerceData('items', $productDetails);
+                $this->setDataLayerOption('event', 'view_item');
+                ?>
+            <?php else : ?>
+                <?php
+                $productPrice = floatval(number_format($product->getPriceInfo()->getPrice('final_price')->getValue() ?? 0, 2, '.', ''));
+                $simpleProductsViewEventData = [];
+                    $configurableOptions = $product->getTypeInstance()->getConfigurableOptions($product);
+                    $isVariantEnabled = $helper->isVariantEnabled();
+                    $_children = $product->getTypeInstance()->getSalableUsedProducts($product);
+                    $configurableProductReviewDimensions = $this->getReviewRatingDimensions($product);
+                    $index = 0;
+                    foreach ($_children as $child) {
+                        $viewItemEventData = $configurableProductsHelper->getViewItemEventDataForSimpleProduct($child, $isVariantEnabled, $configurableOptions);
+                        if ($viewItemEventData) {
+                            $viewItemEventDataOptions = $viewItemEventData['ecommerce']['items'][0];
+                            $viewItemEventDataOptions['index'] = $index;
+                            $viewItemEventDataOptions = array_merge($viewItemEventDataOptions, $configurableProductReviewDimensions);
+                            $simpleProductsViewEventData[] = $viewItemEventDataOptions;
+                            $index += 1;
+                        }
+                    }
+
+                    if ($simpleProductsViewEventData) {
+                        $simpleProductsViewEcommerceData = [
+                            'event' => 'view_item',
+                            'ecommerce' => [
+                                'currency' => $this->getCurrencyCode(),
+                                'value' => $productPrice,
+                                'items' => $simpleProductsViewEventData
+                            ]
+                        ];
+                        $this->setAdditionalDataLayerData($simpleProductsViewEcommerceData);
+                    }
+
+                ?>
+            <?php endif; ?>
+
+        <?php endif; ?>
+
+        <?php
+
+    if (!($ga4ServerSideHelper->isServerSideTrakingEnabled() && $ga4ServerSideHelper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_VIEW_ITEM_LIST)
+        && $ga4ServerSideHelper->isDataLayerEventDisabled())) :
+
+        $relatedProductsCollection = $this->getRelatedProductCollection();
+        $upsellProductsCollection = $this->getUpsellProductCollection();
+
+            $relatedProductImpressions = [];
+            $upsellProductImpressions = [];
+
+            if (count($relatedProductsCollection)) :
+                $i = 1;
+                foreach ($relatedProductsCollection as $_product) :
+                    $relatedProduct = [];
+                    $relatedProduct['item_name'] = html_entity_decode($_product->getName() ?? '');
+                    $relatedProduct['affiliation'] = $helper->getAffiliationName();
+                    $relatedProduct['item_id'] = $helper->getGtmProductId($_product);
+                    $relatedProduct['price'] = floatval(number_format($_product->getPriceInfo()->getPrice('final_price')->getValue(), 2, '.', ''));
+                    if ($helper->isBrandEnabled()) :
+                        $relatedProduct['item_brand'] = $helper->getGtmBrand($_product);
+                    endif;
+                    $ga4Categories = $helper->getGA4CategoriesFromCategoryIds($_product->getCategoryIds());
+                    $relatedProduct = array_merge($relatedProduct, $ga4Categories);
+                    $relatedProduct['category'] = $helper->getGtmCategoryFromCategoryIds($_product->getCategoryIds());
+                    $relatedProduct['item_list_name'] = __('Related Products From') . ' ' . $product->getData('name');
+                    $relatedProduct['item_list_id'] = 'related_products';
+                    $relatedProduct['index'] = $i;
+                    $relatedProductImpressions[] = $relatedProduct;
+                    $i++;
+                endforeach;
+
+                $this->setImpressionData([
+                    'items' => $relatedProductImpressions,
+                    'item_list_id' =>  'related_products',
+                    'item_list_name' =>  __('Related Products From') . ' ' . $product->getData('name')
+                ]);
+            endif;
+
+            if (count($upsellProductsCollection)) :
+                $i = 1;
+                foreach ($upsellProductsCollection as $_product) :
+                    $upsellProduct = [];
+                    $upsellProduct['item_name'] = html_entity_decode($_product->getName() ?? '');
+                    $upsellProduct['affiliation'] = $helper->getAffiliationName();
+                    $upsellProduct['item_id'] = $helper->getGtmProductId($_product);
+                    $upsellProduct['price'] = floatval(number_format($_product->getPriceInfo()->getPrice('final_price')->getValue(), 2, '.', ''));
+                    if ($helper->isBrandEnabled()) :
+                        $upsellProduct['item_brand'] = $helper->getGtmBrand($_product);
+                    endif;
+                    $ga4Categories = $helper->getGA4CategoriesFromCategoryIds($_product->getCategoryIds());
+                    $upsellProduct = array_merge($upsellProduct, $ga4Categories);
+                    $upsellProduct['item_list_name'] = __('Upsell Products From') . ' ' . $product->getData('name');
+                    $upsellProduct['item_list_id'] = 'upsell_products';
+                    $upsellProduct['index'] = $i;
+                    $upsellProductImpressions[] = $upsellProduct;
+                    $i++;
+                endforeach;
+
+                $this->setImpressionData([
+                    'items' => $upsellProductImpressions,
+                    'item_list_id' =>  'upsell_products',
+                    'item_list_name' =>  __('Upsell Products From') . ' ' . $product->getData('name')
+                ]);
+            endif;
+
+        endif;
+
+        if ($helper->isAdWordsRemarketingEnabled()):
+            $remarketingData = [];
+            $remarketingData['ecomm_pagetype'] = \WeltPixel\GA4\Model\Api\Remarketing::ECOMM_PAGETYPE_PRODUCT;
+            $remarketingData['ecomm_prodid'] = $helper->getGtmProductId($product);
+            $remarketingData['ecomm_totalvalue'] = floatval(number_format($product->getPriceInfo()->getPrice('final_price')->getValue(), 2, '.', ''));
+            $remarketingData['ecomm_category'] = $helper->getGtmCategoryFromCategoryIds($product->getCategoryIds());
+            $this->setDataLayerOption('google_tag_params', $remarketingData);
+        endif;
+
+        ?>
+
+    <?php endif; ?>
+<?php endif; ?>
+<?php if ($ga4ServerSideHelper->isServerSideTrakingEnabled() && $ga4ServerSideHelper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_VIEW_ITEM_LIST)) : ?>
+    <?php
+    $relatedProductsCollection = $this->getRelatedProductCollection();
+    $upsellProductsCollection = $this->getUpsellProductCollection();
+    $relatedProductImpressions = [];
+    $upsellProductImpressions = [];
+
+    if (count($relatedProductsCollection)) :
+        $i = 1;
+        foreach ($relatedProductsCollection as $_product) :
+            $relatedProduct = [];
+            $relatedProduct['item_name'] = html_entity_decode($_product->getName() ?? '');
+            $relatedProduct['affiliation'] = $helper->getAffiliationName();
+            $relatedProduct['item_id'] = $helper->getGtmProductId($_product);
+            $relatedProduct['price'] = floatval(number_format($_product->getPriceInfo()->getPrice('final_price')->getValue(), 2, '.', ''));
+            if ($helper->isBrandEnabled()) :
+                $relatedProduct['item_brand'] = $helper->getGtmBrand($_product);
+            endif;
+            $ga4Categories = $helper->getGA4CategoriesFromCategoryIds($_product->getCategoryIds());
+            $relatedProduct = array_merge($relatedProduct, $ga4Categories);
+            $relatedProduct['category'] = $helper->getGtmCategoryFromCategoryIds($_product->getCategoryIds());
+            $relatedProduct['item_list_name'] = __('Related Products From') . ' ' . $product->getData('name');
+            $relatedProduct['item_list_id'] = 'related_products';
+            $relatedProduct['index'] = $i;
+            $relatedProduct['quantity'] = 1;
+            $relatedProduct['affiliation'] = $ga4ServerSideHelper->getAffiliationName();
+            /** Set the custom dimensions */
+            $customDimensions = $this->getProductDimensions($_product);
+            foreach ($customDimensions as $name => $value) :
+                $relatedProduct[$name] = $value;
+            endforeach;
+            $relatedProductImpressions[] = $relatedProduct;
+            $i++;
+        endforeach;
+        if (count($relatedProductImpressions)) :
+            $impressionData = [];
+            $impressionData['params'] = [
+                'item_list_id' =>  'related_products',
+                'item_list_name' => __('Related Products From') . ' ' . $product->getData('name'),
+                'items' => $relatedProductImpressions
+            ];
+            $this->setServerSideViewItemList($impressionData);
+        endif;
+    endif;
+
+    if (count($upsellProductsCollection)) :
+        $i = 1;
+        foreach ($upsellProductsCollection as $_product) :
+            $upsellProduct = [];
+            $upsellProduct['item_name'] = html_entity_decode($_product->getName() ?? '');
+            $upsellProduct['affiliation'] = $helper->getAffiliationName();
+            $upsellProduct['item_id'] = $helper->getGtmProductId($_product);
+            $upsellProduct['price'] = floatval(number_format($_product->getPriceInfo()->getPrice('final_price')->getValue(), 2, '.', ''));
+            if ($helper->isBrandEnabled()) :
+                $upsellProduct['item_brand'] = $helper->getGtmBrand($_product);
+            endif;
+            $ga4Categories = $helper->getGA4CategoriesFromCategoryIds($_product->getCategoryIds());
+            $upsellProduct = array_merge($upsellProduct, $ga4Categories);
+            $upsellProduct['item_list_name'] = __('Upsell Products From') . ' ' . $product->getData('name');
+            $upsellProduct['item_list_id'] = 'upsell_products';
+            $upsellProduct['index'] = $i;
+            $upsellProduct['quantity'] = 1;
+            $upsellProduct['affiliation'] = $ga4ServerSideHelper->getAffiliationName();
+            /** Set the custom dimensions */
+            $customDimensions = $this->getProductDimensions($_product);
+            foreach ($customDimensions as $name => $value) :
+                $relatedProduct[$name] = $value;
+            endforeach;
+            $upsellProductImpressions[] = $upsellProduct;
+            $i++;
+        endforeach;
+        if (count($upsellProductImpressions)) :
+            $impressionData = [];
+            $impressionData['params'] = [
+                'item_list_id' =>  'upsell_products',
+                'item_list_name' => __('Upsell Products From') . ' ' . $product->getData('name'),
+                'items' => $upsellProductImpressions
+            ];
+            $this->setServerSideViewItemList($impressionData);
+        endif;
+    endif;
+
+    ?>
+<?php endif; ?>

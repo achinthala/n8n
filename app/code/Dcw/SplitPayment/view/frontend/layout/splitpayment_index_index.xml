@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="checkout" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <script src="Dcw_DesignerTool/js/jquery-3.6.4.min.js"/>
+    </head>
+    <body>
+        <attribute name="class" value="payment-step" />
+        <referenceContainer name="content">
+            <block class="Dcw\SplitPayment\Block\Index" name="split_payment" template="Dcw_SplitPayment::splitPayment.phtml" cacheable="false"></block>
+        </referenceContainer>
+    </body>
+</page>

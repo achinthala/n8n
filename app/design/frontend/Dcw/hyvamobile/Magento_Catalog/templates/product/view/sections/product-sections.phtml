@@ -1,0 +1,63 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+/** @var Details $block */
+/** @var Escaper $escaper */
+
+use Magento\Catalog\Block\Product\View\Details;
+use Magento\Framework\Escaper;
+
+$titleRenderer = $block->getChildBlock('product.section.title.renderer');
+$defaultTitleTemplate = $titleRenderer->getTemplate();
+
+?>
+
+<div class="you-may-also-need-slider-section">    
+    <?= $block->getLayout()->createBlock(
+        \Dcw\Custom\Block\Product\RelatedSlider::class
+    )->setTemplate('Magento_Catalog::product/list/related-slider.phtml')->toHtml(); ?>
+</div>
+
+<div class="product-blocks block gap-8">
+<?php
+foreach ($block->getGroupSortedChildNames('detailed_info', '') as $sectionName) {
+    $sectionBlock  = $block->getLayout()->getBlock($sectionName);
+    $sectionHtml   = (string) $sectionBlock->toHtml();
+    $titleTemplate = $sectionBlock->getData('title_template') ?? $defaultTitleTemplate;
+
+    if (empty(trim($sectionHtml))) {
+        continue;
+    }
+    ?>
+    <div x-data="{ sticky: false }" x-init="window.addEventListener('scroll', () => { sticky = window.pageYOffset >= $refs.middleSection1.offsetTop - 600 })">
+        <div class="middle-section1" :class="{ 'sticky': sticky }" x-ref="middleSection1">
+            <section id="<?= $escaper->escapeHtmlAttr($sectionBlock->getNameInLayout()) ?>">
+                <?=
+                    $titleRenderer->setTemplate($titleTemplate)
+                                  ->assign('sectionBlock', $sectionBlock)
+                                  ->toHtml()
+                ?>
+                <div class="card w-full aplus-content">
+                    <?= /** @noEscape  */ $sectionHtml ?>
+                </div>
+            </section>
+        </div>
+    </div>
+<?php } ?>
+</div>
+
+<script>
+      const middleSection1 = document.querySelector('.middle-section1');
+      window.addEventListener('scroll', () => {
+          if (middleSection1.classList.contains('sticky')) {
+            document.body.classList.remove('sticky');
+          }
+      });
+</script>

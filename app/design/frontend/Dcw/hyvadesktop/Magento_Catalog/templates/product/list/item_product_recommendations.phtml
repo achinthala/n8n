@@ -1,0 +1,338 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\HeroiconsSolid;
+use Hyva\Theme\ViewModel\ProductCompare;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Wishlist;
+use Magento\Catalog\Block\Product\AbstractProduct;
+use Magento\Catalog\Helper\Output as CatalogOutputHelper;
+use Magento\Framework\Escaper;
+use Magento\Catalog\ViewModel\Product\OptionsData as ProductOptionsData;
+use Hyva\AmastyRequestQuote\ViewModel\Product\Action;
+use Amasty\RequestQuote\Helper\Data;
+// phpcs:disable Magento2.Templates.ThisInTemplate
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var AbstractProduct $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var ProductListItem $productListItemViewModel */
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+
+/** @var CatalogOutputHelper $catalogOutputHelper */
+$catalogOutputHelper = $this->helper(CatalogOutputHelper::class);
+
+/** @var ProductCompare $compareViewModel */
+$compareViewModel = $viewModels->require(ProductCompare::class);
+/** @var Wishlist $wishlistViewModel */
+$wishlistViewModel = $viewModels->require(Wishlist::class);
+
+/** @var HeroiconsOutline $heroiconsOutline */
+$heroiconsOutline = $viewModels->require(HeroiconsOutline::class);
+/** @var HeroiconsSolid $heroiconsSolid */
+$heroiconsSolid = $viewModels->require(HeroiconsSolid::class);
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+$productOptionsViewmodel = $viewModels->require(ProductOptionsData::class);
+
+/** @var Magento\Catalog\Model\Product $product */
+$product = $block->getData('product');
+$imageDisplayArea = $block->getData('image_display_area');
+$templateType = $block->getData('template_type');
+$viewMode = $block->getData('view_mode');
+$showDescription = $block->getData('show_description');
+$showAddToWishlist = $wishlistViewModel->isEnabled();
+$showAddToCompare = $compareViewModel->showInProductList();
+$viewIsGrid = $viewMode === 'grid';
+
+/** @var Action $quoteActionviewModel */
+$quoteActionviewModel = $viewModels->require(Action::class);
+
+/** @var Data $quoteHelper */
+$quoteHelper = $this->helper(Data::class);
+    /* Create a new product object */
+$imageHelper = $block->getLayout()->createBlock(Magento\Catalog\Helper\Image::class);
+
+if (!$product) {
+    return '';
+}
+$productId = $product->getId();
+$options   = $productOptionsViewmodel->getOptionsData($product);
+$uniqueId = '_' . uniqid();
+
+$hideDetails       = $block->getData('hide_details') ?: false;
+$hideRatingSummary = $block->getData('hide_rating_summary') ?: false;
+
+$imageCustomAttributes = $product->getData('image_custom_attributes')
+    ?? $block->getData('image_custom_attributes')
+    ?? [];
+    
+$sampleblock= $block->getLayout()->createBlock(Dcw\SampleProduct\Block\SampleData::class);
+    
+?>
+
+<?php if ($product->isSaleable()): ?>
+<form method="post"
+    action="<?= $escaper->escapeUrl($productViewModel->getAddToCartUrl($product, ['useUencPlaceholder' => true])) ?>"
+    class="item product product-item product_addtocart_form flex flex-col pr-6 m-0 w-full relative align-top <?= $viewIsGrid ? '' : 'md:flex-row' ?>"
+    <?php if ($product->getOptions()): ?>
+    enctype="multipart/form-data"
+    <?php endif; ?>
+>
+    <?= /** @noEscape */ $block->getBlockHtml('formkey') ?>
+    <input type="hidden" name="product" value="<?= (int)$productId ?>"/>
+    <?php foreach ($options as $optionItem): ?>
+    <input type="hidden"
+           name="<?= $escaper->escapeHtml($optionItem['name']) ?>"
+           value="<?= $escaper->escapeHtml($optionItem['value']) ?>">
+    <?php endforeach; ?>
+    <?php else: ?>
+        <!-- item product product-item card card-interactive flex flex-col w-full -->
+<div class="item product product-item product_addtocart_form flex flex-col pr-6 m-0 w-full relative align-top <?= $viewIsGrid ? '' : 'md:flex-row' ?>">
+<?php endif; ?>
+<div class="catergory_slider_content bg-white">
+    <?php 
+    if(!($viewMode == "list"))
+     {
+        if (!empty($product->getAttributeText('incstores_pim_home_page_feature_flag')) || $product->getIsBestseller() == 1) {?>
+        <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+            <div class="product_lebel_container absolute left-0 top-0">
+                <?php if (!empty($product->getAttributeText('incstores_pim_home_page_feature_flag'))) {?>
+                    <span class="product_lebel newarrival_label <?= str_replace(" ","",strtolower($product->getAttributeText('incstores_pim_home_page_feature_flag')))?> text-size12 font-semibold text-white text-center"><?= $product->getAttributeText('incstores_pim_home_page_feature_flag')?></span>
+                <?php }?>
+                <?php if ($product->getIsBestseller() == 1) {?>
+                    <span class="product_lebel bestseller_label text-size12 font-semibold text-white text-center">Best Seller</span>
+                <?php } ?>
+                <?php //if($product->getData('best_seller_number')!='') {?>
+                    <!--<span class="product_lebel bestseller_label text-size12 font-semibold text-white text-center">
+                        <?php 
+                            //echo '# '.$product->getData('best_seller_number');
+                        ?> Seller
+                    </span>-->
+                <?php //} ?>
+                <?php if(is_numeric($product->getData('buy_this_percentage'))){ ?>
+                    <sapn class="buy_this_percentage"><?php  echo $product->getData('buy_this_percentage');?><?= __('% Buy This'); ?></span>  
+                <?php }?>
+            </div>
+        </a>
+    <?php 
+        }
+    }else{ 
+    ?>
+        <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+            <div class="product_lebel_container absolute left-0 top-0">
+        <?php if ($product->getIsBestseller() == 1) {?>
+            <span class="product_lebel bestseller_label text-size12 font-semibold text-white text-center">Best Seller</span>
+            <?php }?>
+            <?php //if($product->getData('best_seller_number')!='') {?>
+                    <!--<span class="product_lebel bestseller_label text-size12 font-semibold text-white text-center">
+                        <?php 
+                            //echo '# '.$product->getData('best_seller_number');
+                        ?> Seller
+                    </span>-->
+                    <?php //} ?>
+                    <?php if(is_numeric($product->getData('buy_this_percentage'))){ ?>
+                        <sapn class="buy_this_percentage"><?php  echo $product->getData('buy_this_percentage');?><?= __('% Buy This'); ?></span>
+                    <?php } ?>    
+                
+                    </div>
+                    </a>
+    <?php
+    }
+    ?>
+
+    <?php if($product->getMarginPercentage() > 0){ ?>
+        <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+            <div class="product_lebel_container absolute left-0 top-0 margin_percentage_div">
+                    <span class="product_lebel text-size12 font-semibold text-white text-center"><?= $product->getMarginPercentage() ?>% Margin</span>
+            </div>
+        </a>
+    <?php } ?>
+    <?php /* Product Image */ ?>
+    <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>"
+        class="product photo product-item-photo block mx-auto w-full <?= $viewIsGrid ? '' : 'md:w-2/6 md:mb-0 md:mr-5' ?>"
+        tabindex="-1"
+    >
+        <?= $productViewModel->getImage($product, $imageDisplayArea)
+            ->setTemplate('Magento_Catalog::product/list/image.phtml')
+            ->setData('custom_attributes', $imageCustomAttributes)
+            ->setProductId($productId)
+            ->toHtml(); ?>
+    </a>
+    <input type="hidden" id="product_name_<?= (int)$productId ?>"  name="product_name_<?= (int)$productId ?>" value="<?= $product->getName() ?>">
+    <input type="hidden" id="product_id_<?= (int)$productId ?>"  name="product_id_<?= (int)$productId ?>" value="<?= $product->getId() ?>">
+    <input type="hidden" id="product_url_<?= (int)$productId ?>" name="product_url_<?= (int)$productId ?>" value="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+    <?php //Add Code for Canto getUrl
+     $cantoImageHelper = $this->helper(Dcw\ProductImage\Helper\Data::class);
+     $imageDcwHelper = $this->helper(Magento\Catalog\Helper\Image::class);
+         $cantoImage = $cantoImageHelper->getMainImageUrl($product);
+         if ($cantoImage!="") {
+             $imagesDimensionMedium = $cantoImageHelper->getThumbnailImageDimension();
+             $mainImageData = $cantoImage.'/-B'.$imagesDimensionMedium;
+         } else {
+             $mainImageData = $imageDcwHelper->getDefaultPlaceholderUrl('small_image');
+         }
+    // End Code
+    ?>
+    <input type="hidden" id="image_url_<?= (int)$productId ?>" name="image_url_<?= (int)$productId ?>" value="<?=/** @noEscape */$mainImageData?>">
+    <div class="product-info flex flex-col grow py-3 px-3">
+
+            <?php //if ($product->getShipNextDay()) {?>
+               <!-- <div class="ship-fax">
+                    <a class="ship-icon" href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>"></a>
+                    <span class="ship-text">Quick Ship</span>
+                </div> -->
+                <?php //} ?>
+            <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">    
+            <?php $productNameStripped = $block->stripTags($product->getName(), null, true); ?>
+            <div class="text-primary product-name <?= $viewIsGrid ? '' : 'md:text-left' ?>">
+                <span class="product-item-link text-size14 text-black font-semibold no-underline relative block"
+                    title="<?= /* @noEscape */ $catalogOutputHelper->productAttribute($product, $product->getName(), 'name') ?>">
+                    <?= /* @noEscape */ $catalogOutputHelper->productAttribute($product, $product->getName(), 'name') ?>
+                </span>
+                
+            </div>
+
+            <?php //if (!$hideRatingSummary): ?>
+                <div class="ratings <?= $viewIsGrid ? '' : 'md:mx-0 md:w-auto' ?>" data-nosnippet>
+                    <div data-bv-show="rating_summary"
+                        data-bv-product-id="<?= $product->getSku(); ?>"
+                        data-bv-redirect-url="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                    </div>
+                </div>
+            <?php //endif; ?>
+
+            <?php if ($product->isAvailable() && !$hideDetails && $viewMode=='list'): ?>
+                <?= $block->getProductDetailsHtml($product) ?>
+            <?php endif; ?>
+
+            <?php if ($showDescription): ?>
+            <div class="mt-2 mb-1 items-center justify-center text-primary content-dis text-center <?= $viewIsGrid ? '' : 'md:text-left' ?>">
+                <?= /* @noEscape */ $productViewModel->getShortDescriptionForProduct($product) ?>
+            </div>
+            <?php endif; ?>
+        <div class="color_counts">
+            <?php if ($product->getTypeId() == 'configurable' && $viewMode=='grid') {
+                $_children = $product->getTypeInstance()->getUsedProducts($product);
+                $config_color_arr = [];
+                $_children = $product->getTypeInstance()->getUsedProducts($product);
+                foreach($_children as $_child){
+                    $config_color_arr[] = $_child->getIncstoresPimColorAxis();
+                }
+                if(!empty($config_color_arr)){
+                ?>
+                    <div class="color_count text-size14 font-normal text-black">Available in <?= /* @noEscape */ count(array_unique($config_color_arr))?> colors</div>
+                <?php
+                }
+            }
+            ?>
+            <?php /* if (!empty($product->getplp_feature1())) {?>
+                <div class="color_count text-size12 font-normal text-black"><?php echo $product->getplp_feature1();?></div>
+            <?php }?>
+            <?php if (!empty($product->getPlpFeature2())) {?>
+                <div class="color_count text-size12 font-normal text-black"><?php echo $product->getPlpFeature2();?></div>
+            <?php }?>
+            <?php if (!empty($product->getPlpFeature3())) {?>
+                <div class="color_count text-size12 font-normal text-black"><?php echo $product->getPlpFeature3();?></div>
+            <?php }?>
+        <?php if (!empty($product->getPlpFeature4())) {?>
+                <div class="color_count text-size12 font-normal text-black"><?php echo $product->getPlpFeature4();?></div>
+            <?php }?>
+        <?php if (!empty($product->getPlpFeature5())) {?>
+                <div class="color_count text-size12 font-normal text-black"><?php echo $product->getPlpFeature5();?></div>
+            <?php }?>
+        <?php if (!empty($product->getPlpFeature6())) {?>
+                <div class="color_count text-size12 font-normal text-black"><?php echo $product->getPlpFeature6();?></div>
+            <?php } */?>
+            </div>
+        </a>
+            <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" class="priceBlock">
+            <div class="text-gray-900"
+            >
+                <?= /* @noEscape */ $productListItemViewModel->getProductPriceHtml($product) ?>
+            </div>
+        </a>
+		<!--  <script>
+			'use strict';
+
+			  const initPriceBox_<?= $escaper->escapeHtml($uniqueId) ?> = () => {
+				return {
+				  updatePrice(priceData) {
+						let regularPriceLabel="";
+						if(priceData.querySelector('.price-box')){
+							regularPriceLabel = priceData.querySelector('.price-box');
+						}
+						let regularPriceElement = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=finalPrice].price-wrapper .price')){
+							regularPriceElement = priceData.querySelector('.price-box .price-container [data-price-type=finalPrice].price-wrapper .price');
+						}
+						let basePriceElement = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=basePrice].price-wrapper .price')){
+							basePriceElement = priceData.querySelector('.price-box .price-container [data-price-type=basePrice].price-wrapper .price');
+						}
+						const pid = '<?= (int)$productId ?>';
+						let finalpricevalue = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=finalPrice]')){
+							finalpricevalue = priceData.querySelector('.price-box .price-container [data-price-type=finalPrice]').getAttribute('data-price-amount');
+						}
+						let basepricevalue = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=basePrice]')){
+							 basepricevalue =  priceData.querySelector('.price-box .price-container [data-price-type=basePrice]').getAttribute('data-price-amount');
+						}
+						if(finalpricevalue && basepricevalue && regularPriceLabel && finalpricevalue < basepricevalue){
+							regularPriceLabel.classList.add('hidden');
+						} else {
+							if(regularPriceLabel){
+								regularPriceLabel.classList.remove('hidden');
+							}
+						}
+						if(regularPriceElement){
+							regularPriceElement.innerText = hyva.formatPrice(finalpricevalue);
+						}
+						if(basepricevalue){
+							basePriceElement && (basePriceElement.innerText = hyva.formatPrice(basePriceElement));
+						}
+						
+                   }
+				}
+			  }
+	   </script> -->
+        <div class="compare-buttons flex flex-wrap">
+        
+            <?php if ($sampleblock->getsampleproductsku($productId)) {?>        
+            <div class="orderSampleContent" x-cloak x-data="{showModal: false, htmlContent: '',pid: <?=$productId?>}">
+                <button class="order_btn text-size12 font-medium text-black" type="button" x-on:click="showModal = true,fetchHtmlContent(pid), document.body.classList.add('order_active');"><?= $escaper->escapeHtml(__('Order Free Sample')) ?></button>
+                <div class="modal order-free-sample-popup" x-show="showModal">
+                    <div class="modal-overlay" x-on:click="showModal = false"></div>
+                    <button class="closemodal" type="button" x-on:click="showModal = false, document.body.classList.remove('order_active');">Close X</button>
+                    <div class="modal-content">    
+                        <div x-html="htmlContent" class="htmlcontent<?=$productId?>"></div>
+                    </div>
+                </div>
+            </div>
+            <?php }?>
+        </div>
+    </div>
+</div>
+<?php if ($product->isSaleable()): ?>
+
+</form>
+<?php else: ?>
+</div>
+<?php endif; ?>

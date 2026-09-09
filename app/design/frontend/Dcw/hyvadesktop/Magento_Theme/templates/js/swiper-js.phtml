@@ -1,0 +1,35 @@
+<?php
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+?>
+<script>
+    // Load the Swiper script
+    const swiperJsScript = document.createElement('script')
+    swiperJsScript.src = '<?= $escaper->escapeUrl($block->getViewFileUrl('js/swiper-bundle.min.js'))?>';
+    swiperJsScript.type = 'text/javascript';
+
+    // Append script to head
+    document.head.append(swiperJsScript);
+
+    // Wait for the script to load
+    swiperJsScript.onload = () => {
+        setTimeout(function () {
+            // Dispatch the swiperSliderJsLoaded event when Swiper js loaded
+            window.dispatchEvent(new CustomEvent('swiperSliderJsLoaded', {}));
+        }, 300);
+
+    };
+
+    // load swiper CSS
+    const swiperStyles = document.createElement('link');
+    swiperStyles.rel = 'stylesheet';
+    swiperStyles.href = '<?= $escaper->escapeUrl(
+        $block->getViewFileUrl('css/swiper-bundle.min.css')
+    ) ?>';
+    document.head.append(swiperStyles);
+</script>

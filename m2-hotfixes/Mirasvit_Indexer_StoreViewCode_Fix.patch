@@ -1,0 +1,21 @@
+diff --git a/vendor/mirasvit/module-navigation/src/LayeredNavigationLiveSearch/Plugin/LiveSearch/AddExtraFiltersMetadataPlugin.php b/vendor/mirasvit/module-navigation/src/LayeredNavigationLiveSearch/Plugin/LiveSearch/AddExtraFiltersMetadataPlugin.php
+index 0dda0635..7f3ca20f 100644
+--- a/vendor/mirasvit/module-navigation/src/LayeredNavigationLiveSearch/Plugin/LiveSearch/AddExtraFiltersMetadataPlugin.php
++++ b/vendor/mirasvit/module-navigation/src/LayeredNavigationLiveSearch/Plugin/LiveSearch/AddExtraFiltersMetadataPlugin.php
+@@ -236,9 +236,15 @@ class AddExtraFiltersMetadataPlugin
+     {
+         $keys        = null;
+         $ids         = [];
++
+         $selectQuery = "SELECT * FROM " . $this->resource->getTableName($metadata->getFeedTableName())
+             . " WHERE store_view_code = '" . $store->getCode() . "'";
+ 
++        if ($metadata->getFeedTableName() == 'cde_products_feed') {
++            $selectQuery = "SELECT * FROM " . $this->resource->getTableName($metadata->getFeedTableName())
++            . " WHERE 1 = 1";
++        }
++
+         $productsMetadata = $this->resource->getConnection()->query($selectQuery);
+ 
+         while ($row = $productsMetadata->fetch()) {
+            

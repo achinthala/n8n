@@ -1,0 +1,20 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2023 Amasty (https://www.amasty.com)
+ * @package Ajax Cart Hyva Compatibility (System)
+ */
+
+use Amasty\AjaxCartHyva\ViewModel\CartSettings;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+/** @var Template $block */
+
+$cartConfig = $viewModels->require(CartSettings::class);
+?>
+
+

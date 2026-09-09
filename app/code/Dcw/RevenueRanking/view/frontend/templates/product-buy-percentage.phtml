@@ -1,0 +1,632 @@
+<?php
+/**
+ * Simple Product Count and Revenue Display
+ */
+$block = $block;
+$attributes = $block->getAllProductAttributes();
+?>
+
+<script>
+(function() {
+    'use strict';
+    
+    
+    let allattributesdata = <?php echo json_encode($attributes); ?>;
+    // Get ALL filtered product IDs (not just current page)
+    function getAllFilteredProductIds() {
+        // Try to get all product IDs from various sources
+        let allProductIds = [];
+        
+        // Method 1: Try to get from all product containers (including hidden/paginated ones)
+        const allProductElements = document.querySelectorAll('[data-product-id]');
+        const uniqueIds = new Set();
+        
+        allProductElements.forEach(element => {
+            const productId = element.getAttribute('data-product-id');
+            if (productId && !uniqueIds.has(productId)) {
+                uniqueIds.add(productId);
+                allProductIds.push(productId);
+            }
+        });
+        
+        // Method 2: If we don't have enough, try to get from data attributes or other sources
+        if (allProductIds.length < 25) {
+            // Try to get from toolbar or other data sources
+            const toolbarElement = document.querySelector('.toolbar, #toolbar-amount, .toolbar-amount');
+            if (toolbarElement) {
+                // Look for data attributes that might contain all product IDs
+                const dataProductIds = toolbarElement.getAttribute('data-product-ids');
+                if (dataProductIds) {
+                    const additionalIds = dataProductIds.split(',').map(id => id.trim()).filter(id => id);
+                    additionalIds.forEach(id => {
+                        if (!uniqueIds.has(id)) {
+                            uniqueIds.add(id);
+                            allProductIds.push(id);
+                        }
+                    });
+                }
+            }
+        }
+        return allProductIds;
+    }
+    
+    // Get toolbar count for comparison
+    function getToolbarCount() {
+        const toolbarElement = document.querySelector('#toolbar-amount .toolbar-number, .toolbar .amount, .toolbar-number');
+        if (toolbarElement) {
+            const text = toolbarElement.textContent.replace(/,/g, '');
+            const count = parseInt(text) || 0;
+            
+            return count;
+        }
+        return 0;
+    }
+    
+    // AJAX function to get product data from backend
+    async function getProductData() {
+        
+        // Get ALL filtered product IDs (not just current page)
+        const allFilteredProductIds = getAllFilteredProductIds();
+        const toolbarCount = getToolbarCount();
+        
+        try {
+            const response = await fetch('/revenueranking/ajax/productRevenue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams({
+                    'action': 'get_product_data',
+                    'current_url': window.location.href,
+                    'current_page_product_ids': allFilteredProductIds.join(','),
+                    'toolbar_count': toolbarCount
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            return data;
+            
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+    
+    // Update display with AJAX data
+    async function updateDisplay() {
+        
+        // Get data from backend
+        const data = await getProductData();
+        
+        if (data.success) {
+            
+            getAllproductsIds();
+            
+        } else {
+        }
+    }
+    
+    // Display Buy % calculations
+    function displayBuyPercentages(buyPercentages) {
+        // Get current URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        const activeFilters = getActiveFilters();
+		// Count only non-blank values
+		const nonBlankCount = Object.values(activeFilters)
+		  .filter(value => value !== '' && value !== null && value !== undefined)
+		  .length;
+
+        const hasActiveFilters = Object.keys(activeFilters).length > 0;
+        
+        let order = urlParams.get('product_list_order');
+        let isRevenue = 0; // default = not revenue
+
+        if (order && order !== 'position' && order !== 'price') {
+            isRevenue = 1;
+        }
+
+        // Check if product_list_order exists and equals revenue_ranking
+        if (nonBlankCount) {
+        
+            document.querySelectorAll('#m-navigation-product-list-wrapper form.form-desktop').forEach((form, index) => {
+                
+                const productId = parseInt(form.querySelector('input[name="product"]')?.value, 10);
+                const productData = buyPercentages.find(item => item.product_id === productId);
+                if (isRevenue === 1) {
+                let bestsellerDiv = form.querySelector('.product_lebel.bestseller_label.text-size12.font-semibold.text-white.text-center');
+                if (index < 5 && (!urlParams.has('p') || urlParams.get('p') === '1')) {
+                    let displayIndex = index + 1;
+                    if (productData && productData.has_revenue_data && productData.revenue > 0) {
+                        if (!bestsellerDiv) {
+                            // Create new if not exists
+                            bestsellerDiv = document.createElement('span');
+                            bestsellerDiv.className = 'product_lebel bestseller_label text-size12 font-semibold text-white text-center';
+
+                            // Find container where to append
+                            const labelContainer = form.querySelector('.product_lebel_container.active');
+                            if (labelContainer) {
+                                labelContainer.appendChild(bestsellerDiv);
+                            }
+                        }
+                        // Update text
+                        bestsellerDiv.innerText = `# ${displayIndex} Best Seller`;
+                    }else{
+                        if (bestsellerDiv) {
+                            bestsellerDiv.remove();
+                        }
+                    }
+                }else{
+                    if (bestsellerDiv) {
+                        bestsellerDiv.remove();
+                    }
+                }
+                }
+                
+                if (productData && productData.has_revenue_data && productData.buy_percentage > 0) {
+                    // Check if buy_this_percentage already exists
+                    let percentageDiv = form.querySelector('.buy_this_percentage');
+
+                    if (!percentageDiv) {
+                        // Create new if not exists
+                        percentageDiv = document.createElement('sapn');
+                        percentageDiv.className = 'buy_this_percentage';
+
+                        // Find container where to append
+                        const labelContainer = form.querySelector('.product_lebel_container.active');
+                        if (labelContainer) {
+                            labelContainer.appendChild(percentageDiv);
+                        }
+                    }
+
+                    // Update text
+                    percentageDiv.innerText = `${productData.buy_percentage}% Buy This`;
+                }else{
+                    let percentageDiv = form.querySelector('.buy_this_percentage');
+                    if (percentageDiv) {
+                        percentageDiv.innerText = ``;
+                    }
+                }
+            });
+            
+            document.querySelectorAll('#m-navigation-product-list-wrapper form.form-mob').forEach((form, index) => {
+                
+                const productId = parseInt(form.querySelector('input[name="product"]')?.value, 10);
+                const productData = buyPercentages.find(item => item.product_id === productId);
+                if (isRevenue === 1) {
+                let bestsellerDiv = form.querySelector('.product_lebel.bestseller_label.text-size12.font-semibold.text-white.text-center');
+                if (index < 5 && (!urlParams.has('p') || urlParams.get('p') === '1')) {
+                    let displayIndex = index + 1;
+                    if (productData && productData.has_revenue_data && productData.revenue > 0) {
+                        if (!bestsellerDiv) {
+                            // Create new if not exists
+                            bestsellerDiv = document.createElement('span');
+                            bestsellerDiv.className = 'product_lebel bestseller_label text-size12 font-semibold text-white text-center';
+
+                            // Find container where to append
+                            const labelContainer = form.querySelector('.product_lebel_container_bestseller');
+                            if (labelContainer) {
+                                labelContainer.appendChild(bestsellerDiv);
+                            }
+                        }
+                        // Update text
+                        bestsellerDiv.innerText = `# ${displayIndex} Best Seller`;
+                    }else{
+                        if (bestsellerDiv) {
+                            bestsellerDiv.remove();
+                        }
+                    }
+                }else{
+                    if (bestsellerDiv) {
+                        bestsellerDiv.remove();
+                    }
+                }
+                }
+                
+                if (productData && productData.has_revenue_data && productData.buy_percentage > 0) {
+                    // Check if buy_this_percentage already exists
+                    let percentageDiv = form.querySelector('.buy_this_percentage');
+
+                    if (!percentageDiv) {
+                        // Create new if not exists
+                        percentageDiv = document.createElement('sapn');
+                        percentageDiv.className = 'buy_this_percentage';
+
+                        // Find container where to append
+                        const labelContainer = form.querySelector('.product_lebel_container_buy_this_percentage');
+                        if (labelContainer) {
+                            labelContainer.appendChild(percentageDiv);
+                        }
+                    }
+
+                    // Update text
+                    percentageDiv.innerText = `${productData.buy_percentage}% Buy This`;
+                }else{
+                    let percentageDiv = form.querySelector('.buy_this_percentage');
+                    if (percentageDiv) {
+                        percentageDiv.innerText = ``;
+                    }
+                }
+            });
+            
+        } else if (isRevenue === 1 && hasActiveFilters) {
+			document.querySelectorAll('#m-navigation-product-list-wrapper form.form-desktop').forEach((form, index) => {
+                
+                const productId = parseInt(form.querySelector('input[name="product"]')?.value, 10);
+                const productData = buyPercentages.find(item => item.product_id === productId);
+                if (isRevenue === 1) {
+                let bestsellerDiv = form.querySelector('.product_lebel.bestseller_label.text-size12.font-semibold.text-white.text-center');
+                if (index < 5 && (!urlParams.has('p') || urlParams.get('p') === '1')) {
+                    let displayIndex = index + 1;
+                    if (productData && productData.has_revenue_data && productData.revenue > 0) {
+                        if (!bestsellerDiv) {
+                            // Create new if not exists
+                            bestsellerDiv = document.createElement('span');
+                            bestsellerDiv.className = 'product_lebel bestseller_label text-size12 font-semibold text-white text-center';
+
+                            // Find container where to append
+                            const labelContainer = form.querySelector('.product_lebel_container.active');
+                            if (labelContainer) {
+                                labelContainer.appendChild(bestsellerDiv);
+                            }
+                        }
+                        // Update text
+                        bestsellerDiv.innerText = `# ${displayIndex} Best Seller`;
+                    }else{
+                        if (bestsellerDiv) {
+                            bestsellerDiv.remove();
+                        }
+                    }
+                }else{
+                    if (bestsellerDiv) {
+                        bestsellerDiv.remove();
+                    }
+                }
+                }
+            });
+            
+            document.querySelectorAll('#m-navigation-product-list-wrapper form.form-mob').forEach((form, index) => {
+                
+                const productId = parseInt(form.querySelector('input[name="product"]')?.value, 10);
+                const productData = buyPercentages.find(item => item.product_id === productId);
+                if (isRevenue === 1) {
+                let bestsellerDiv = form.querySelector('.product_lebel.bestseller_label.text-size12.font-semibold.text-white.text-center');
+                if (index < 5 && (!urlParams.has('p') || urlParams.get('p') === '1')) {
+                    let displayIndex = index + 1;
+                    if (productData && productData.has_revenue_data && productData.revenue > 0) {
+                        if (!bestsellerDiv) {
+                            // Create new if not exists
+                            bestsellerDiv = document.createElement('span');
+                            bestsellerDiv.className = 'product_lebel bestseller_label text-size12 font-semibold text-white text-center';
+
+                            // Find container where to append
+                            const labelContainer = form.querySelector('.product_lebel_container_bestseller');
+                            if (labelContainer) {
+                                labelContainer.appendChild(bestsellerDiv);
+                            }
+                        }
+                        // Update text
+                        bestsellerDiv.innerText = `# ${displayIndex} Best Seller`;
+                    }else{
+                        if (bestsellerDiv) {
+                            bestsellerDiv.remove();
+                        }
+                    }
+                }else{
+                    if (bestsellerDiv) {
+                        bestsellerDiv.remove();
+                    }
+                }
+                }
+            });
+		}
+		// Select all filter links inside the category-top-filter block
+		const filterLinks = document.querySelectorAll('.category-top-filter a.special-filters');
+
+		filterLinks.forEach(link => {
+			const url = new URL(link.href, window.location.origin);
+			url.searchParams.set('product_list_dir', 'desc');
+			url.searchParams.set('product_list_order', 'revenue_ranking');
+			link.href = url.toString();
+		});
+    }
+    
+    async function getAllFilteredProductIdsCustom(categoryId) {
+          const endpoint = "/graphql"; // GraphQL endpoint (relative or absolute URL)
+          const pageSize = 100;
+          let currentPage = 1;
+          let allProducts = [];
+          let totalPages = 1;
+          
+          // Build filters dynamically
+          const filters = buildGraphQlFilters(categoryId);
+		  if (filters.srsltid) {
+			delete filters.srsltid;
+		  }
+		  if (filters.spotlight) {
+			delete filters.spotlight;
+		  }
+		  if (filters.category_id && filters.category_id.eq === "null") {
+			delete filters.category_id;
+		  }
+		  if (filters.revenue_ranking) {
+			delete filters.revenue_ranking;
+		  }
+
+          const query = `
+    query getFilteredProducts($currentPage: Int!, $pageSize: Int!, $filters: ProductAttributeFilterInput!) {
+      products(
+        filter: $filters
+        pageSize: $pageSize
+        currentPage: $currentPage
+      ) {
+        items {
+          id
+          sku
+          revenue_ranking
+        }
+        page_info {
+          current_page
+          total_pages
+        }
+      }
+    }
+  `;
+
+          do {
+            const response = await fetch('/graphql', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                query,
+                variables: { currentPage, pageSize, filters }
+              })
+            });
+
+            const result = await response.json();
+            const data = result.data.products;
+
+            if (data && data.items) {
+              allProducts.push(...data.items);
+              totalPages = data.page_info.total_pages;
+            } else {
+              break;
+            }
+
+            currentPage++;
+          } while (currentPage <= totalPages);
+
+          return allProducts;
+    }
+    
+    function buildGraphQlFilters(categoryId) {
+      const activeFilters = getActiveFiltersFromUrl();
+
+      // Start with category filter
+      const gqlFilters = {
+        category_id: { eq: String(categoryId) }
+      };
+
+      // Add dynamic attribute filters
+      Object.entries(activeFilters).forEach(([attribute, values]) => {
+        gqlFilters[attribute] = { in: values.map(String) };
+      });
+
+      return gqlFilters;
+    }
+    
+    function getActiveFiltersFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const filters = {};
+
+      for (const [key, value] of params.entries()) {
+        // Skip sorting/pagination params and non-filterable attributes
+        if ([
+          "product_list_dir",
+          "product_list_mode",
+          "product_list_order",
+          "p", // pagination
+          "product_list_limit",
+          "revenue_ranking", // Not a filterable attribute, used for sorting only
+          "srsltid",
+          "spotlight"
+        ].includes(key)) {
+          continue;
+        }
+		
+		if (!allattributesdata.includes(key)) {
+		  continue;
+		}
+
+        // Split comma-separated values (ex: "116475,116469")
+        const values = value.split(',').map(v => v.trim()).filter(v => v);
+
+        if (!filters[key]) {
+          filters[key] = [];
+        }
+        filters[key].push(...values);
+      }
+
+      return filters;
+    }
+    
+    function getActiveFilters() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Excluded params (not filters)
+        const excludedParams = [
+            'id',
+            'p',
+            'product_list_dir',
+            'product_list_order',
+            'product_list_limit',
+            'product_list_mode'
+        ];
+
+        let filterParams = {};
+
+        for (let [key, value] of urlParams.entries()) {
+			if (excludedParams.includes(key)) {
+			  continue;
+			}
+			if (!allattributesdata.includes(key)) {
+			  continue;
+			}
+            filterParams[key] = value;
+        }
+
+        return filterParams;
+    }
+    function getAllproductsIds() {
+        (async () => {
+          const categoryElement = document.querySelector('.products.wrapper');
+          const categoryId = categoryElement ? categoryElement.getAttribute('categoryid') : null;
+
+          const products = await getAllFilteredProductIdsCustom(categoryId);
+          // 🔄 Calculate total revenue
+          const totalRevenue = products.reduce((sum, p) => sum + (parseFloat(p.revenue_ranking) || 0), 0);
+
+          // 🔄 Convert to buyPercentages format
+          const buyPercentages = products.map(p => {
+            const revenue = parseFloat(p.revenue_ranking) || 0;
+            return {
+              product_id: p.id,
+              revenue: revenue,
+              buy_percentage: totalRevenue > 0 ? ((revenue / totalRevenue) * 100).toFixed(2) : 0,
+              has_revenue_data: revenue > 0
+            };
+          });
+		  
+		  // Select all filter links inside the category-top-filter block
+		const filterLinks = document.querySelectorAll('.category-top-filter a.special-filters');
+
+		filterLinks.forEach(link => {
+			const url = new URL(link.href, window.location.origin);
+			url.searchParams.set('product_list_dir', 'desc');
+			url.searchParams.set('product_list_order', 'revenue_ranking');
+			link.href = url.toString();
+		});
+          
+          displayBuyPercentages(buyPercentages);
+        })();
+    }
+    
+    function resetupdateDisplay() {
+        // Get current URL params
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Check if product_list_order exists and equals revenue_ranking
+        if (urlParams.get('product_list_order') === 'revenue_ranking') {
+        
+            document.querySelectorAll('#m-navigation-product-list-wrapper form.form-desktop').forEach((form, index) => {
+                let bestsellerDiv = form.querySelector('.product_lebel.bestseller_label.text-size12.font-semibold.text-white.text-center');
+                if (bestsellerDiv) {
+                    bestsellerDiv.remove();
+                }
+                let percentageDiv = form.querySelector('.buy_this_percentage');
+                if (percentageDiv) {
+                    percentageDiv.innerText = ``;
+                }
+            });
+            
+            document.querySelectorAll('#m-navigation-product-list-wrapper form.form-mob').forEach((form, index) => {
+                let bestsellerDiv = form.querySelector('.product_lebel.bestseller_label.text-size12.font-semibold.text-white.text-center');
+                if (bestsellerDiv) {
+                    bestsellerDiv.remove();
+                }
+                let percentageDiv = form.querySelector('.buy_this_percentage');
+                if (percentageDiv) {
+                    percentageDiv.innerText = ``;
+                }
+            });
+            
+        }
+    }
+    
+    // Setup filter change listeners
+    function setupFilterListeners() {
+        
+        // Listen for Mirasvit filter events
+        document.addEventListener('mst-nav__ajax-call', function() {
+			// Select all filter links inside the category-top-filter block
+			const filterLinks = document.querySelectorAll('.category-top-filter a.special-filters');
+
+			filterLinks.forEach(link => {
+				const url = new URL(link.href, window.location.origin);
+				url.searchParams.set('product_list_dir', 'desc');
+				url.searchParams.set('product_list_order', 'revenue_ranking');
+				link.href = url.toString();
+			});
+            setTimeout(resetupdateDisplay(), 100);
+            setTimeout(updateDisplay, 1000); // Wait for content to update
+            setTimeout(updateDisplay, 2000); // Wait for content to update
+        });
+        
+        document.addEventListener('mst-nav__content-updated', function() {
+            setTimeout(updateDisplay, 1000); // Wait for content to update
+        });
+        
+        document.addEventListener('mst-nav__filter-changed', function() {
+            setTimeout(updateDisplay, 1500); // Wait for content to update
+        });
+        
+        document.addEventListener('mst-nav__filter-removed', function() {
+            setTimeout(updateDisplay, 1500); // Wait for content to update
+        });
+        
+        document.addEventListener('mst-nav__state-changed', function() {
+            setTimeout(updateDisplay, 1500); // Wait for content to update
+        });
+        
+        // Listen for URL changes (back/forward navigation)
+        window.addEventListener('popstate', function() {
+            setTimeout(updateDisplay, 1000);
+        });
+        
+        // Listen for any click on filter elements
+        document.addEventListener('click', function(e) {
+            const filterElement = e.target.closest('[data-mst-nav-filter], .filter-option, .filter-item, .layered-filter');
+            if (filterElement) {
+                setTimeout(updateDisplay, 2000); // Wait for filter to apply
+            }
+        });
+    }
+    
+    // Initialize when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        const refreshBtn = document.getElementById('refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function() {
+                updateDisplay();
+            });
+        }
+        
+        // Setup automatic filter listeners
+        setupFilterListeners();
+        
+        // Initial update
+        updateDisplay();
+		
+		// Select all filter links inside the category-top-filter block
+		const filterLinks = document.querySelectorAll('.category-top-filter a.special-filters');
+
+		filterLinks.forEach(link => {
+			const url = new URL(link.href, window.location.origin);
+			url.searchParams.set('product_list_dir', 'desc');
+			url.searchParams.set('product_list_order', 'revenue_ranking');
+			link.href = url.toString();
+		});
+    
+    });
+    
+})();
+</script>

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Api/etc/extension_attributes.xsd">
+    <!-- Add to Magento Cart interface since that's what's actually being used -->
+    <extension_attributes for="Magento\Quote\Api\Data\CartInterface">
+        <attribute code="grand_total" type="float"/>
+        <attribute code="admin_user_assistance" type="string"/>
+    </extension_attributes>
+</config>

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- Register console command -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="dcw_cache_warmer_generate_urls" xsi:type="object">Dcw\CacheWarmer\Console\Command\GenerateWarmerUrlsCommand</item>
+            </argument>
+        </arguments>
+    </type>
+    
+    <!-- Plugin to preserve spotlight URLs when clearing queue -->
+    <type name="Amasty\Fpc\Model\QueuePageRepository">
+        <plugin name="dcw_cache_warmer_preserve_spotlight" type="Dcw\CacheWarmer\Plugin\QueuePageRepositoryPlugin" sortOrder="10"/>
+    </type>
+</config>

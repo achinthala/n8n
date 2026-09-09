@@ -1,0 +1,190 @@
+<?xml version="1.0"?>
+<csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp/etc/csp_whitelist.xsd">
+    <policies>
+        <policy id="script-src">
+            <values>
+             <value id="cloudflare" type="host">*.cloudflare.com</value>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="google-analytics" type="host">*.google-analytics.com</value>
+                <value id="twimg" type="host">*.twimg.com</value>
+                <value id="gstatic" type="host">*.gstatic.com</value>
+                <value id="trustedshops" type="host">*.trustedshops.com</value>
+                <value id="usercentrics" type="host">*.usercentrics.eu</value>
+                <value id="fontawesome" type="host">*.fontawesome.com</value>
+                <value id="bing" type="host">*.bing.com</value>
+                <value id="zopim" type="host">*.zopim.com</value>
+                <value id="zdassets" type="host">*.zdassets.com</value>
+                <value id="google" type="host">*.google.com</value>
+                 <value id="zendesk.com" type="host">*.zendesk.com</value>
+                 <value id="www.w3.org" type="host">http://www.w3.org/2000/svg</value>
+                 <value id="js-agent.newrelic.com" type="host">https://js-agent.newrelic.com</value>
+                 <value id="nr-data.net" type="host">https://bam.nr-data.net/</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="googleapis" type="host">*.googleapis.com</value>
+                <value id="gsmpi.sdk" type="host">https://d35p4vvdul393k.cloudfront.net/sdk_library/us/stg/ops/pc_gsmpi_web_sdk.js</value>
+                <value id="maps.google" type="host" >https://maps.google.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+                <value id="adobedtm" type="host">*.adobedtm.com</value>
+                <value id="paysysmetrics" type="host">https://paysysmetrics.com/</value>
+                <value id="userway" type="host">https://cdn.userway.org/</value>
+                <value id="googleadservices" type="host">www.googleadservices.com</value>
+                <value id="google-analytics" type="host">www.google-analytics.com</value>
+                <value id="adobedtm" type="host">*.adobedtm.com</value>
+                <value id="adobe" type="host">*.adobe.com</value>
+            </values>
+        </policy>
+        <policy id="style-src">
+            <values>
+                <value id="cloudflare" type="host">*.cloudflare.com</value>
+                <value id="googleapis" type="host">*.googleapis.com</value>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="twimg" type="host">*.twimg.com</value>
+                <value id="gstatic" type="host">*.gstatic.com</value>
+                <value id="typekit" type="host">*.typekit.net</value>
+                <value id="trustedshops" type="host">*.trustedshops.com</value>
+                <value id="fontawesome" type="host">*.fontawesome.com</value>
+                <value id="bing" type="host">*.bing.com</value>
+                <value id="use.fontawesome.com" type="host">https://use.fontawesome.com/</value>
+                <value id="nr-data.net" type="host">https://bam.nr-data.net/</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="applepay.cdn-apple" type="host">*.applepay.cdn-apple.com</value>
+                <value id="maps.google" type="host" >https://maps.google.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+            </values>
+        </policy>
+        <policy id="img-src">
+            <values>
+                <value id="cloudflare" type="host">*.cloudflare.com</value>
+                <value id="klarna-base" type="host">*.klarna.com</value>
+                <value id="googleadservices" type="host">*.googleadservices.com</value>
+                <value id="google-analytics" type="host">*.google-analytics.com</value>
+                <value id="paypal" type="host">*.paypal.com</value>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="amazonaws.com" type="host">*.amazonaws.com</value>
+                <value id="twimg" type="host">*.twimg.com</value>
+                <value id="vimeocdn" type="host">*.vimeocdn.com</value>
+                <value id="youtube-img" type="host">*.ytimg.com</value>
+                <value id="fontawesome" type="host">*.bing.com</value>
+                <value id="zopim" type="host">*.zopim.com</value>
+                <value id="zopimio" type="host">*.zopim.io</value>
+                <value id="doubleclick" type="host">*.doubleclick.net</value>
+                <value id="google" type="host">*.google.com</value>
+                <value id="googlein" type="host">*.google.co.in</value>
+                <value id="mastercard" type="host">*.mastercard.com</value>
+                <value id="www.w3.org" type="host">http://www.w3.org/2000/svg</value>
+                <value id="nr-data.net" type="host">https://bam.nr-data.net/</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="applepay.cdn-apple" type="host">*.applepay.cdn-apple.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+                <value id="behance" type="host">*.behance.net</value>
+                <value id="cloudfront" type="host">*.cloudfront.net</value>
+                <value id="adobedtm" type="host">*.adobedtm.com</value>
+                <value id="cdninstagram" type="host">*.cdninstagram.com</value>
+                <value id="paradoxlabs" type="host">*.paradoxlabs.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="adobe" type="host">*.adobe.com</value>
+                <value id="userway" type="host">https://cdn.userway.org/</value>
+                <value id="paysysmetrics" type="host">https://paysysmetrics.com/</value>
+                <value id="bazaarvoice" type="host">https://apps.bazaarvoice.com/</value>
+            </values>
+        </policy>
+        <policy id="connect-src">
+            <values>
+                <value id="google-analytics" type="host">www.google-analytics.com</value>
+                <value id="cloudflare" type="host">*.cloudflare.com</value>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="amazonaws.com" type="host">*.amazonaws.com</value>
+                <value id="paypal" type="host">*.paypal.com</value>
+                <value id="twimg" type="host">*.twimg.com</value>
+                <value id="zdassets" type="host">*.zdassets.com</value>
+                <value id="zopim" type="host">*.zopim.com</value>
+                <value id="zopimio" type="host">*.zopim.io</value>
+                <value id="mediator" type="host">wss://widget-mediator.zopim.com</value>
+                <value id="googleanalytics" type="host">*.google-analytics.com</value>
+                <value id="doubleclick" type="host">https://stats.g.doubleclick.net</value>
+                <value id="zendesk.com" type="host">*.zendesk.com</value>
+                <value id="www.w3.org" type="host">http://www.w3.org/2000/svg</value>
+                <value id="nr-data.net" type="host">https://bam.nr-data.net</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="applepay.cdn-apple" type="host">*.applepay.cdn-apple.com</value>
+                <value id="maps.google" type="host" >https://maps.google.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+                <value id="adobedtm" type="host">*.adobedtm.com</value>
+                <value id="cdninstagram" type="host">*.cdninstagram.com</value>
+                <value id="userway" type="host">https://api.userway.org/</value>
+            </values>
+        </policy>
+        <policy id="font-src">
+            <values>
+                <value id="cloudflare" type="host">*.cloudflare.com</value>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="gstatic" type="host">*.gstatic.com</value>
+                <value id="typekit" type="host">*.typekit.net</value>
+                <value id="twimg" type="host">*.twimg.com</value>
+                <value id="trustedshops" type="host">*.trustedshops.com</value>
+                <value id="googleapis" type="host">*.googleapis.com</value>
+                <value id="zopim" type="host">*.zopim.com</value>
+                <value id="zopimio" type="host">*.zopim.io</value>
+                <value id="use.fontawesome.com" type="host">https://use.fontawesome.com</value>
+                <value id="nr-data.net" type="host">https://bam.nr-data.net/</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="applepay.cdn-apple.woff" type="host">https://applepay.cdn-apple.com/jsapi/v1/assets/1.0.0/fonts/en-US.woff</value>
+                <value id="applepay.cdn-apple.woff2" type="host">https://applepay.cdn-apple.com/jsapi/v1/assets/1.0.0/fonts/en-US.woff2</value>
+                <value id="maps.google" type="host" >https://maps.google.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+                <value id="cdninstagram" type="host">*.cdninstagram.com</value>
+                <value id="klaviyo" type="host">https://static.klaviyo.com/</value>
+                <value id="userway" type="host">https://cdn.userway.org/</value>
+                <value id="bazaarvoice" type="host">https://apps.bazaarvoice.com/</value>
+            </values>
+        </policy>
+        <policy id="frame-src">
+            <values>
+                <value id="youtube.com" type="host">https://www.youtube.com</value>
+                <value id="sandbox.paypal.com" type="host">http://www.sandbox.paypal.com</value>
+                <value id="paypal.com" type="host">www.paypal.com</value>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="amazonaws.com" type="host">*.amazonaws.com</value>
+                <value id="zendesk.com" type="host">*.zendesk.com</value>
+                <value id="www.w3.org" type="host">http://www.w3.org/2000/svg</value>
+                <value id="nr-data.net" type="host">https://bam.nr-data.net</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="maps.google" type="host" >https://maps.google.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+                <value id="cdninstagram" type="host">*.cdninstagram.com</value>
+            </values>
+        </policy>
+        <policy id="media-src">
+            <values>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+                <value id="amazonaws.com" type="host">*.amazonaws.com</value>
+                <value id="zopim" type="host">*.zopim.com</value>
+                <value id="zopimio" type="host">*.zopim.io</value>
+                <value id="static.zdassets.com" type="host">https://static.zdassets.com/</value>
+                <value id="nr-data.net" type="host">https://bam.nr-data.net/</value>
+                <value id="sharethis" type="host">*.sharethis.com</value>
+                <value id="maps.google" type="host" >https://maps.google.com</value>
+                <value id="livechatinc" type="host">*.livechatinc.com</value>
+                <value id="crwdcntrl" type="host">*.crwdcntrl.net</value>
+                <value id="cdninstagram" type="host">*.cdninstagram.com</value>
+            </values>
+        </policy>
+        <policy id="form-action">
+            <values>
+                <value id="twitter.com" type="host">*.twitter.com</value>
+                <value id="certcapture.com" type="host">*.certcapture.com</value>
+            </values>
+        </policy>
+    </policies>
+</csp_whitelist>

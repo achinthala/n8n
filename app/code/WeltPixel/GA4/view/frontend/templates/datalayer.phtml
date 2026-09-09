@@ -1,0 +1,36 @@
+<?php
+// @codingStandardsIgnoreFile
+$_helper = $this->helper('WeltPixel\GA4\Helper\Data');
+$scriptAdditionalTag = '';
+if ($_helper->isDevMoveJsBottomEnabled()) {
+    $scriptAdditionalTag = ' exclude-this-tag="text/x-magento-template"';
+}
+$cspNonceProvider = $_helper->getCspNonceProvider();
+if ($cspNonceProvider) {
+    $scriptAdditionalTag .= ' nonce="'. $cspNonceProvider->generateNonce() .'"';
+}
+?>
+<?php if ($this->isEnabled()) : ?>
+    <?php $dataLayerObject = $this->getDataLayerAsJson(); ?>
+    <script<?=$scriptAdditionalTag?>>
+        if (window.ga4AllowServices) {
+            window.dataLayer = window.dataLayer || [];
+            <?php if ($dataLayerObject != '[[]]') : ?>
+            var dl4Objects = <?php echo $dataLayerObject; ?>;
+            for (var i in dl4Objects) {
+                window.dataLayer.push({ecommerce: null});
+                window.dataLayer.push(dl4Objects[i]);
+            }
+            <?php endif; ?>
+            var wpGA4Cookies = [<?php echo $this->getWpGA4CookiesForJs(); ?>];
+            wpGA4Cookies.map(function (cookieName) {
+                var cookieValue = window.getWpGA4Cookie(cookieName);
+                if (cookieValue) {
+                    var dl4Object = {};
+                    dl4Object[cookieName.replace('wp_ga4_', '')] = cookieValue;
+                    window.dataLayer.push(dl4Object);
+                }
+            });
+        }
+    </script>
+<?php endif; ?>

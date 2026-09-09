@@ -1,0 +1,21 @@
+{
+  "name": "dcw/module-dashboard",
+  "version": "1.0.0",
+  "description": "N/A",
+  "type": "magento2-module",
+  "require": {
+    "magento/framework": "*",
+    "magento/module-backend": "102.0.*"
+  },
+  "license": [
+    "Proprietary"
+  ],
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Dcw\\Dashboard\\": ""
+    }
+  }
+}

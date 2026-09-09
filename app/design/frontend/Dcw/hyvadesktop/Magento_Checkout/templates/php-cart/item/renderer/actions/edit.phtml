@@ -1,0 +1,35 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsSolid;
+use Magento\Checkout\Block\Cart\Item\Renderer\Actions\Edit;
+use Magento\Framework\Escaper;
+use Dcw\Checkout\ViewModel\Data;
+
+/** @var Edit $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsSolid $heroicons */
+$heroicons = $viewModels->require(HeroiconsSolid::class);
+/** @var Data $checkoutViewModel */
+$checkoutViewModel = $viewModels->require(Data::class);
+$getFrontName = $checkoutViewModel->getFrontName();
+?>
+<?php if ($block->isProductVisibleInSiteVisibility() && $getFrontName != 'amasty_quote'): ?>
+    <a class="action action-edit"
+       href="<?= $escaper->escapeUrl($block->getConfigureUrl()) ?>"
+       title="<?= $escaper->escapeHtmlAttr(__('Edit item parameters')) ?>"
+    >
+        <?= $heroicons->pencilHtml('h-6 w-6') ?>
+        <span class="edit-btn text-size14"><?= $escaper->escapeHtml(__('Edit')) ?></span>
+    </a>
+<?php endif ?>

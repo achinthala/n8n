@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="Hyva_MagentoProductRecommendationsLayout">
+        <sequence>
+            <module name="Magento_ProductRecommendationsLayout"/>
+            <module name="Hyva_CompatModuleFallback"/>
+            <module name="Hyva_MagentoDataServices"/>
+            <module name="Hyva_MagentoPageBuilderProductRecommendations"/>
+        </sequence>
+    </module>
+</config>

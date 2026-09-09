@@ -1,0 +1,77 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Catalog\Block\Product\View;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Escaper;
+
+/** @var View $block */
+/** @var Escaper $escaper */
+
+/** @var Product $product */
+$product = $block->getProduct();
+
+/**
+ * Add to cart url is set on 'product.info' block by
+ * @see \Magento\Checkout\Block\Cart\Item\Configure::_prepareLayout
+ */
+$productInfoBlock = $block->getLayout()->getBlock('product.info');
+?>
+
+<?php if ($product->isSaleable()): ?>
+
+<script>
+	window.addEventListener('load', function() {
+		setTimeout(() => {
+			let pdpPrice = document.getElementById("pdp-price");
+				if (pdpPrice) {
+					var custompice = pdpPrice.innerHTML;
+					custompice =  custompice.replace('$','');
+					document.getElementById('pdp-p-data').value = custompice;
+				}
+		}, 100);
+		
+		var addToCartButton = document.querySelector('.pdp-addtocart-btn');
+		if (addToCartButton) {
+			addToCartButton.classList.remove('pointer-events-none');
+			addToCartButton.classList.remove('opacity-50');
+		}
+	});
+</script>
+
+    <form method="post"
+          action="<?= $escaper->escapeUrl($productInfoBlock->getSubmitUrl($product)) ?>"
+          class="mb-6"
+          id="product_addtocart_form"<?php if ($product->getOptions()): ?> enctype="multipart/form-data"<?php endif; ?>
+    >
+        <input type="hidden" name="product" value="<?= (int)$product->getId() ?>" />
+        <input type="hidden" name="selected_configurable_option" value=""  />
+        <input type="hidden" name="related_product" id="related-products-field" value="" />
+        <input type="hidden" name="item"  value="<?= (int)$block->getRequest()->getParam('id') ?>"/>
+		<input type="hidden" name="custom_price"   id ="pdp-p-data" value=""/>
+		<input type="hidden" name="ship_to_text" id ="ship-to-text" value=""/>
+		<input type="hidden" name="RoomWidth" id ="room-width" value=""/>
+		<input type="hidden" name="CustomerRoomWidth" id ="customer-room-width" value=""/>
+		<input type="hidden" name="CustomerRoomLength" id ="customer-room-length" value=""/>
+		<input type="hidden" name="CustomerRoomLengthGroup" id ="customer-room-length-group" value=""/>
+		<input type="hidden" name="RoomLength" id ="room-length" value=""/>
+		<input type="hidden" name="RollType" id ="role-type" value=""/>
+		<input type="hidden" name="PricePerSqft " id ="price-per-sqft" value=""/>
+		<input type="hidden" name="PricePerLinearFoot" id ="price-per-linear" value=""/>
+		<input type="hidden" name="RollSize" id ="roll-size" value=""/>
+		<input type="hidden" name="selected_option_child_id" value="" />
+		<input type="hidden" name="custom_length" value="" />
+		<input type="hidden" id="is_page_loaded" value="" />
+        <?= $block->getBlockHtml('formkey') ?>
+
+        <?= $block->getChildHtml() ?>
+
+    </form>
+<?php endif; ?>

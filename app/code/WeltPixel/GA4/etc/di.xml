@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="WeltPixel\GA4\Api\ServerSide\ApiInterface" type="WeltPixel\GA4\Model\ServerSide\Api" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\PurchaseInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\Purchase" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\PurchaseItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\PurchaseItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\PurchaseBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\PurchaseBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\RefundInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\Refund" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\RefundItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\RefundItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\RefundBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\RefundBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SignupInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\Signup" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SignupBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\SignupBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\LoginInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\Login" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\LoginBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\LoginBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewItemItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewItemItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewItemBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewItemBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewItemListInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewItemList" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewItemListItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewItemListItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewItemListBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewItemListBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SelectItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\SelectItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SelectItemItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\SelectItemItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SelectItemBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\SelectItemBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SearchInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\Search" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\SearchBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\SearchBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddToCartInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddToCart" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddToCartItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddToCartItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddToCartBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddToCartBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\RemoveFromCartInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\RemoveFromCart" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\RemoveFromCartItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\RemoveFromCartItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\RemoveFromCartBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\RemoveFromCartBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewCartInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewCart" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewCartItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewCartItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\ViewCartBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\ViewCartBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\BeginCheckoutInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\BeginCheckout" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\BeginCheckoutItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\BeginCheckoutItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\BeginCheckoutBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\BeginCheckoutBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddPaymentInfoInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddPaymentInfo" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddPaymentInfoItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddPaymentInfoItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddPaymentInfoBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddPaymentInfoBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddShippingInfoInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddShippingInfo" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddShippingInfoItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddShippingInfoItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddShippingInfoBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddShippingInfoBuilder" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddToWishlistInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddToWishlist" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddToWishlistItemInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddToWishlistItem" />
+    <preference for="WeltPixel\GA4\Api\ServerSide\Events\AddToWishlistBuilderInterface" type="\WeltPixel\GA4\Model\ServerSide\Events\AddToWishlistBuilder" />
+    <type name="Magento\Checkout\Model\ShippingInformationManagement">
+        <plugin name="weltpixel-ga4-checkout-shippinginformation"
+                type="WeltPixel\GA4\Plugin\ShippingInformation" sortOrder="10"/>
+        <plugin name="weltpixel-ga4-serverside-shipping-info"
+                type="WeltPixel\GA4\Plugin\ServerSide\ShippingInformation" sortOrder="11"/>
+    </type>
+    <type name="Magento\Checkout\Model\PaymentInformationManagement">
+        <plugin name="weltpixel-ga4-checkout-paymentinformation"
+                type="WeltPixel\GA4\Plugin\PaymentInformation" sortOrder="10"/>
+    </type>
+    <type name="Magento\Checkout\Model\GuestPaymentInformationManagement">
+        <plugin name="weltpixel-ga4-checkout-guestpaymentinformation"
+                type="WeltPixel\GA4\Plugin\GuestPaymentInformation" sortOrder="10"/>
+    </type>
+    <type name="Magento\Wishlist\Model\Item">
+        <plugin name="weltpixel-ga4-wishlist-addtocart"
+                type="WeltPixel\GA4\Plugin\WishlistAddToCart" sortOrder="10"/>
+        <plugin name="weltpixel-ga4-serverside-wishlist-addtocart"
+                type="WeltPixel\GA4\Plugin\ServerSide\WishlistAddToCart" sortOrder="20"/>
+    </type>
+    <type name="Magento\Quote\Model\Quote\Config">
+        <plugin name="weltpixel-ga4-quote-config"
+                type="WeltPixel\GA4\Plugin\QuoteConfig" sortOrder="10"/>
+    </type>
+    <type name="Magento\Framework\App\Http\Context">
+        <plugin name="weltpixel-ga4-context"
+                type="WeltPixel\GA4\Plugin\HttpContext" sortOrder="1"/>
+    </type>
+    <type name="WeltPixel\GA4\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="WeltPixel\GA4\Logger\DebugCollectHandler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="WeltPixel\GA4\Logger\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">ga4Log</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">WeltPixel\GA4\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="WeltPixel\GA4\Logger\DebugCollectLogger">
+        <arguments>
+            <argument name="name" xsi:type="string">ga4DebugCollectLog</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">WeltPixel\GA4\Logger\DebugCollectHandler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="WeltPixel\GoogleTagManager\Helper\Data">
+        <plugin name="weltpixel-ga4-gtm-click-plugin"
+                type="WeltPixel\GA4\Plugin\ServerSide\SelectItemGtm" sortOrder="1"/>
+    </type>
+    <type name="WeltPixel\GA4\Helper\Data">
+        <plugin name="weltpixel-ga4-click-plugin"
+                type="WeltPixel\GA4\Plugin\ServerSide\SelectItem" sortOrder="1"/>
+    </type>
+    <type name="Magento\Framework\App\Cache\TypeListInterface">
+        <plugin name="weltpixel-ga4-clear-cache"
+                type="WeltPixel\GA4\Plugin\ServerSide\ClearCache" sortOrder="1"/>
+    </type>
+    <type name="Magento\Framework\App\Cache\Manager">
+        <plugin name="weltpixel-ga4-flush-cache"
+                type="WeltPixel\GA4\Plugin\ServerSide\FlushCache" sortOrder="1"/>
+    </type>
+    <type name="Magento\Checkout\Controller\Cart\UpdateItemOptions">
+        <plugin name="weltpixel-ga4-cart-edit-updateitemoptions"
+                type="WeltPixel\GA4\Plugin\CartUpdateItemOptions" sortOrder="1"/>
+    </type>
+</config>

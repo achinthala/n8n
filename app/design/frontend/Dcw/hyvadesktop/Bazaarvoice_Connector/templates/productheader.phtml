@@ -1,0 +1,48 @@
+<?php
+/**
+ * Copyright © Bazaarvoice, Inc. All rights reserved.
+ * See LICENSE.md for license details.
+ */
+?>
+
+<?php /** @var Magento\Framework\View\Element\Template $block */ ?>
+<?php /** @var Bazaarvoice\Connector\ViewModel\Product $viewModel */ ?>
+<?php $viewModel = $block->getViewModel(); ?>
+
+<?php if ($viewModel->isBvEnabled() && $viewModel->getProduct()): ?>
+    <!-- <?= $viewModel->getExtensionInjectionMessage(); ?> -->
+    <?php if ($viewModel->isConfigurable() && $viewModel->getConfigProvider()->isRrChildrenEnabled()): ?>
+    <?php endif; ?>
+    <?php if ($viewModel->isDccEnabled()) : ?>
+        <?php $configData = $viewModel->getDccConfig(); ?>
+        <?php if ($viewModel->canShowDebugDetails()) : ?>
+            <!-- <?php print_r(json_encode(json_decode($configData), JSON_PRETTY_PRINT)) ?> -->
+        <?php endif; ?>
+    <?php endif; ?>
+    <script async type="text/javascript">
+        <?php if ($viewModel->isDccEnabled()) : ?>
+            window.bvDCC = <?= $configData ?>;
+        <?php endif; ?>
+        window.bvCallback = function (BV) {
+            if (BV.reviews !== undefined) {
+                BV.reviews.on('show', function () {
+                    <?= $viewModel->getConfigProvider()->getRrDoShowContentJs(); ?>
+                });
+            }
+            if (BV.questions !== undefined) {
+                BV.questions.on('show', function () {
+                    <?= $viewModel->getConfigProvider()->getQaDoShowContentJs(); ?>
+                });
+            }
+            <?php if ($viewModel->isDccEnabled()) : ?>
+                for (var i = 0, len = window.bvDCC.catalogData.catalogProducts.length; i < len; ++i) {
+                    BV.pixel.trackEvent("CatalogUpdate", {
+                        type: 'Product',
+                        locale: window.bvDCC.catalogData.locale,
+                        catalogProducts: [window.bvDCC.catalogData.catalogProducts[i]]
+                    });
+                }
+            <?php endif; ?>
+        };
+    </script>
+<?php endif; ?>

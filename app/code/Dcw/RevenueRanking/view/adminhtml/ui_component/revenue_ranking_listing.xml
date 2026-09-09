@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">revenue_ranking_listing.revenue_ranking_listing_data_source</item>
+            <item name="deps" xsi:type="string">revenue_ranking_listing.revenue_ranking_listing_data_source</item>
+        </item>
+        <item name="spinner" xsi:type="string">revenue_ranking_columns</item>
+    </argument>
+    <dataSource name="revenue_ranking_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">revenue_ranking_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">id</argument>
+            <argument name="requestFieldName" xsi:type="string">id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                    <item name="storageConfig" xsi:type="array">
+                        <item name="indexField" xsi:type="string">id</item>
+                    </item>
+                </item>
+            </argument>
+        </argument>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filterSearch name="fulltext"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="revenue_ranking_columns">
+        <column name="id" sortOrder="10">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>asc</sorting>
+            </settings>
+        </column>
+        <column name="product_id" sortOrder="20">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Product ID</label>
+            </settings>
+        </column>
+        <column name="sku" sortOrder="25">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">SKU</label>
+            </settings>
+        </column>
+        <column name="base_revenue" sortOrder="30">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Base Revenue</label>
+            </settings>
+        </column>
+        <column name="manual_adjustment" sortOrder="40">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Manual Adjustment</label>
+                <dataType>price</dataType>
+            </settings>
+        </column>
+        <column name="adjusted_revenue" sortOrder="50">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Adjusted Revenue</label>
+                <dataType>price</dataType>
+            </settings>
+        </column>
+        <column name="last_updated" sortOrder="60">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Last Updated</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

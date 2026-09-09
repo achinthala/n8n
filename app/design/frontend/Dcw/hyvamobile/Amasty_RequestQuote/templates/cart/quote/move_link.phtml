@@ -1,0 +1,72 @@
+<?php
+/** @var \Amasty\RequestQuote\Block\Cart\Quote\Move $block */
+$blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+$itemId = $blockObj->getCartDetails()->getId();
+?>
+<script>
+    function moveCartToQuote() {  
+        return {
+			moveToQuoteLink: window.BASE_URL + 'dcw_amasty_quote/move/inQuote',
+            moveQuotes() {
+				document.getElementById("checkoutLoading").style.display = "block";
+				fetch(this.moveToQuoteLink, {
+                "headers": {
+                    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                },
+                "body": "form_key=" + document.querySelector('input[name=form_key]').value,
+                "method": "POST",
+                "mode": "cors",
+                "credentials": "include",
+            }).then(function (response) {
+				// Run second fetch when InQuote succeeded (redirect or 200 - CDN may cache and return 200 on staging/prod)
+				if (response.redirected || response.ok) {
+					<?php if($blockObj->getCustomerSession()->isLoggedIn()) { ?>
+						cart_id = <?= $itemId; ?>,
+						postUrl = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updatePost')) ?>',
+						formKey = document.querySelector('input[name=form_key]').value,
+						form = document.getElementById('form-validate');
+						// `checkout=context` is also present on the normal Save Cart form.
+						// Use a dedicated flag so backend can reliably detect Checkout Later.
+						let data = new URLSearchParams(new FormData(form)).toString() + '&update_cart_action=submit&checkout=context&checkout_later=1';
+						fetch(postUrl, {
+							"headers": {
+								"content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+								"X-Requested-With": "XMLHttpRequest"
+							},
+							"method": "POST",
+							"mode": "cors",
+							"credentials": "include",
+							"body": new URLSearchParams(data)
+						}).then((response) => {
+							document.getElementById("checkoutLoading").style.display = "none";
+							window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+							if (response.ok || response.redirected) {
+								window.location.href = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/quote/success/')) ?>';
+							} else {
+								self.isDisabled = false;
+							}
+						}).catch(function (err) {
+							document.getElementById("checkoutLoading").style.display = "none";
+							self.isDisabled = false;
+						})
+					<?php }  else {?>
+						document.getElementById("checkoutLoading").style.display = "none";
+						window.location.href = window.BASE_URL + 'request_quote/cart/#checkoutLaterEmail';
+					<?php } ?>
+                    }
+            }).then(function (response) {
+                 let reloadCustomerDataEvent = new CustomEvent("reload-customer-section-data");
+                 window.dispatchEvent(reloadCustomerDataEvent);
+            });
+			
+        }
+    }
+	}
+</script>
+    <button
+    class="amquote-addto-button amasty-quote-link btn btn-secondary-large w-full justify-center"
+    x-data="moveCartToQuote()"
+    x-on:click="moveQuotes()"
+    ><?= $escaper->escapeHtml(__('Checkout Later')) ?>
+    </button>
+<div id="checkoutLoading" style="display:none" class="checkout-later-loading"></div>

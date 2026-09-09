@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="sales_order_payment_place_end">
+        <observer name="dcw_checkmo_apply_configured_order_status"
+                  instance="Dcw\PaymentMethods\Observer\ApplyCheckmoConfiguredOrderStatus"/>
+    </event>
+    <event name="sales_model_service_quote_submit_success">
+        <observer name="dcw_checkmo_create_offline_invoice"
+                  instance="Dcw\PaymentMethods\Observer\CreateCheckmoOfflineInvoiceAfterQuoteSubmit"/>
+    </event>
+</config>

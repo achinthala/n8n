@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="checkout_cart_product_add_after">
+        <observer name="extension_checkout_cart_product_add_after" instance="Dcw\ShoppingCart\Observer\CheckoutCartAddObserver" />
+    </event>
+	 <event name="sales_model_service_quote_submit_before">
+        <observer name="extesnionadd" instance="Dcw\ShoppingCart\Observer\AddOptionToOrderObserver" />
+    </event>
+	<event name="checkout_cart_update_items_after">
+        <observer name="checkout_cart_updatepost_observer" instance="Dcw\ShoppingCart\Observer\UpdateCartItems" />
+    </event>
+    <event name="amasty_request_quote_submit_after">
+        <observer name="dcw_request_quote_auto_approve" instance="Dcw\ShoppingCart\Observer\Frontend\AutoApprove" />
+    </event>
+	<!--<event name="checkout_cart_update_item_complete">
+        <observer name="add_to_cart_qty" instance="Dcw\ShoppingCart\Observer\UpdateQty" />
+    </event>-->
+    <event name="layout_load_before">
+        <observer name="add_body_to_class" instance="Dcw\ShoppingCart\Observer\AddBodyClass" />
+    </event>
+	<event name="checkout_cart_product_update_after">
+        <observer name="update_additional_options" instance="Dcw\ShoppingCart\Observer\UpdateAdditionalData" />
+    </event>
+</config>

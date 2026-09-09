@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!--
+/** OrderRestrictions module xml
+ * @category  Dotcomweavers
+ * @package   Dotcomweavers_OrderRestrictions
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+ */
+ */
+-->
+<page xmlns:xsi="https://www.w3.org/2001/XMLSchema-instance" layout="admin-2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+    <referenceContainer name="left">
+        <block class="Dotcomweavers\OrderRestrictions\Block\Adminhtml\Restrictions\Rule\Edit\Tabs" name="restrictions_rule_edit_tabs">
+            <block class="Dotcomweavers\OrderRestrictions\Block\Adminhtml\Restrictions\Rule\Edit\Tab\Main" name="restrictions_rule_edit_tab_main"/>
+            <block class="Dotcomweavers\OrderRestrictions\Block\Adminhtml\Restrictions\Rule\Edit\Tab\Stores" name="restrictions_rule_edit_tab_stores"/>
+            <block class="Dotcomweavers\OrderRestrictions\Block\Adminhtml\Restrictions\Rule\Edit\Tab\Conditions" name="restrictions_rule_edit_tab_conditions"/>
+            <action method="addTab">
+                <argument name="name" xsi:type="string">main_section</argument>
+                <argument name="block" xsi:type="string">restrictions_rule_edit_tab_main</argument>
+            </action>
+            <action method="addTab">
+                <argument name="name" xsi:type="string">stores_section</argument>
+                <argument name="block" xsi:type="string">restrictions_rule_edit_tab_stores</argument>
+            </action>
+            <action method="addTab">
+                <argument name="name" xsi:type="string">conditions_section</argument>
+                <argument name="block" xsi:type="string">restrictions_rule_edit_tab_conditions</argument>
+            </action>
+        </block>
+    </referenceContainer>
+    <referenceContainer name="content">
+        <block class="Dotcomweavers\OrderRestrictions\Block\Adminhtml\Restrictions\Rule\Edit" name="restrictions_rule_edit"/>
+    </referenceContainer>
+    </body>
+</page>

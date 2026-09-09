@@ -1,0 +1,24 @@
+{
+    "name": "dcw/module-customcontent",
+    "description": "Custom product attributes custom_content and pdp_custom_content with PDP display",
+    "type": "magento2-module",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Dotcom Weavers",
+            "email": "info@dotcomweavers.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "~8.1.0||~8.2.0||~8.3.0"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Dcw\\CustomContent\\": ""
+        }
+    }
+}

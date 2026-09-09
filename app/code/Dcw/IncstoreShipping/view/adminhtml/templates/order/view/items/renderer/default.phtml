@@ -1,0 +1,31 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php
+    $priceHelper = $this->helper('Magento\Framework\Pricing\Helper\Data');
+?>
+<?php /** @var \Magento\Sales\Block\Adminhtml\Order\View\Items\Renderer\DefaultRenderer $block */ ?>
+<?php $_item = $block->getItem() ?>
+<?php $block->setPriceDataObject($_item) ?>
+<?php if ($_item->getShippingMetadata() !== null) {
+    $carrierArra = json_decode($_item->getShippingMetadata());
+    $carrierName = $carrierArra->carrierName;
+} else {
+    $carrierName = ''; 
+}?>
+<tr>
+    <?php $i = 0;
+    $columns = $block->getColumns();
+    $lastItemNumber = count($columns) ?>
+    <?php foreach ($columns as $columnName => $columnClass): ?>
+        <?php $i++; ?>
+        <td class="<?= /* @noEscape */ $columnClass ?><?= /* @noEscape */ ($i === $lastItemNumber ? ' last' : '') ?>">
+            <?= $block->getColumnHtml($_item, $columnName) ?>
+        </td>
+    <?php endforeach; ?>
+    <td><?php if ($carrierName!="") { echo $carrierName;} ?> </td>
+    <td><?php if ($_item->getIncstoreItemShipping()!="") { echo $priceHelper->currency($_item->getIncstoreItemShipping(), true, false);} ?> </td>
+</tr>

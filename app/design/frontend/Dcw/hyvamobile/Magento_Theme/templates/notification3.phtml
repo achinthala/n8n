@@ -1,0 +1,24 @@
+<?php 
+$resp_arr = $block->getAllData3();
+
+if ($resp_arr['full_action_name'] == 'catalog_product_view' || $resp_arr['full_action_name'] == 'catalog_category_view' ) {
+    if ($resp_arr['full_action_name'] == 'catalog_category_view') {            
+        echo $resp_arr['category_notification_bar3'];
+    }
+
+    if ($resp_arr['full_action_name'] == 'catalog_product_view') {       
+        echo $resp_arr['product_notification_bar3'];
+    }
+}else{
+    echo $resp_arr['glob_notif_3'];
+}
+
+/* 
+if ($request->getFullActionName() == 'cms_index_index') {
+//you are on the home page
+}
+if ($request->getFullActionName() == 'cms_page_view') {
+//you are on the cms page
+} */
+
+?>

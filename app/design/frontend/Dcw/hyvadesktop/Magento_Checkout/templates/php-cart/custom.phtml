@@ -1,0 +1,28 @@
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Select all tbody elements with a class that contains 'sku-'
+    let elements = document.querySelectorAll("tbody[class*='sku-']");
+    
+    let skuGroups = {};
+
+    elements.forEach(el => {
+        // Find the class that starts with 'sku-'
+        let skuClass = Array.from(el.classList).find(cls => cls.startsWith("sku-"));
+
+        if (skuClass) {
+            // Initialize array for each SKU type
+            if (!skuGroups[skuClass]) {
+                skuGroups[skuClass] = [];
+            }
+            skuGroups[skuClass].push(el);
+        }
+    });
+
+    // Loop through each SKU group and hide all except the last one
+    Object.values(skuGroups).forEach(group => {
+        group.forEach((el, index) => {
+            el.style.display = index === group.length - 1 ? "table-row-group" : "none";
+        });
+    });
+});
+</script>

@@ -1,0 +1,562 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package FAQ and Product Questions Hyva
+ */
+
+declare(strict_types=1);
+
+use Amasty\Faq\Block\Rating\Rating;
+use Magento\Framework\Escaper;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\GraphqlViewModel\ViewModel\GraphqlViewModel;
+use Amasty\FaqHyva\ViewModel\GraphQlQueries;
+use Hyva\Theme\ViewModel\Store as StoreViewModel;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\HeroiconsSolid;
+use Amasty\FaqHyva\ViewModel\QuestionsConfig;
+use Hyva\Theme\ViewModel\StoreConfig;
+
+/** @var Rating $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var GraphqlViewModel $viewModelGraphQl */
+$viewModelGraphQl = $viewModels->require(GraphqlViewModel::class);
+
+/** @var GraphQlQueries $viewModelQueries */
+$viewModelQueries = $viewModels->require(GraphQlQueries::class);
+
+/** @var StoreViewModel $viewModelStore */
+$viewModelStore = $viewModels->require(StoreViewModel::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var HeroiconsSolid $heroiconsSolid */
+$heroiconsSolid = $viewModels->require(HeroiconsSolid::class);
+
+/** @var QuestionsConfig $viewModelQuestions */
+$viewModelQuestions = $viewModels->require(QuestionsConfig::class);
+
+/** @var StoreConfig $storeConfig */
+$storeConfig = $viewModels->require(StoreConfig::class);
+
+$isSocialLoginEnabled = $viewModelQuestions->isSocialLoginHyvaEnabled();
+
+$uniqueId = uniqid();
+// phpcs:disable Generic.Files.LineLength.TooLong
+$isSocialPopupEnabled = $isSocialLoginEnabled ? $storeConfig->getStoreConfig('amsociallogin/general/popup_enabled') : false;
+?>
+<form
+    x-ref="captchaForm"
+    x-data="ratingData_<?= $escaper->escapeHtmlAttr($uniqueId) ?>()"
+    x-init="ratingInit_<?= $escaper->escapeHtmlAttr($uniqueId) ?>()"
+    x-bind="eventListeners"
+    x-spread="eventListeners"
+    x-show="isLoaded"
+    class="amfaq-rating-form"
+    @submit.prevent
+>
+    <!--
+      One InvisibleCaptcha trigger per rating block (NOT per question).
+      Amasty InvisibleCaptcha needs a DOM element inside a <form> to attach the widget.
+    -->
+    <button type="button" x-ref="captchaTarget" class="hidden" aria-hidden="true"></button>
+
+<div>
+    <template x-for="item in items">
+        <div class="bg-white border-container border border-gray-500 py-2 px-4 rounded text-sm">
+            <template x-if="votingBehavior === 'yesno' || votingBehavior === 'voting'">
+                <div class="flex items-center">
+                    <span><?= $escaper->escapeHtml(__('Was this answer helpful?')) ?></span>
+                    <a
+                        href="#"
+                        aria-label="<?= $escaper->escapeHtmlAttr(__('Vote yes')); ?>"
+                        class="text-blue-600"
+                        :class="{
+                            'font-semibold': item.isVoted && item.isPositiveVoted,
+                            'hover:underline': votingBehavior !== 'voting'
+                        }"
+                        @click.prevent="vote(item.id, 1)"
+                    >
+                        <template x-if="votingBehavior === 'yesno'">
+                            <span class="px-1"><?= $escaper->escapeHtml(__('Yes')) ?></span>
+                        </template>
+                        <template x-if="votingBehavior === 'voting'">
+                            <span class="px-1"><?= $heroicons->chevronUpHtml('inline-block', 24, 24) ?></span>
+                        </template>
+                    </a>
+                    <template x-if="votingBehavior === 'voting'">
+                        <span
+                            x-text="item.positiveRating"
+                            :class="{'font-bold': item.isVoted && item.isPositiveVoted}"
+                        ></span>
+                    </template>
+                    <span :class="{'ml-2' : votingBehavior === 'voting'}">|</span>
+                    <a
+                        href="#"
+                        aria-label="<?= $escaper->escapeHtmlAttr(__('Vote no')); ?>"
+                        class="text-blue-600"
+                        :class="{
+                            'font-semibold': item.isVoted && !item.isPositiveVoted,
+                            'hover:underline': votingBehavior !== 'voting'
+                        }"
+                        @click.prevent="vote(item.id, 0)"
+                    >
+                        <template x-if="votingBehavior === 'yesno'">
+                            <span class="px-1"><?= $escaper->escapeHtml(__('No')) ?></span>
+                        </template>
+                        <template x-if="votingBehavior === 'voting'">
+                            <span class="px-1"><?= $heroicons->chevronDownHtml('inline-block', 24, 24) ?></span>
+                        </template>
+                    </a>
+                    <template x-if="votingBehavior === 'voting'">
+                        <span
+                            x-text="item.negativeRating"
+                            :class="{'font-bold': item.isVoted && !item.isPositiveVoted}"
+                        ></span>
+                    </template>
+                    <template x-if="item.isVoted && votingBehavior !== 'voting'">
+                        <span class="amfaq-rating-data-wrapper">
+                            <span x-text="item.positiveRating"></span>
+                            <span><?= $escaper->escapeHtml(__('people of')) ?></span>
+                            <span x-text="getTotalRating(item.positiveRating, item.negativeRating)"></span>
+                            <span><?= $escaper->escapeHtml(__('found this answer helpful')) ?></span>
+                        </span>
+                    </template>
+                    <!-- Error message display for this question -->
+                    <template x-if="questionErrors[item.id]">
+                        <div class="mt-2 text-red-600 text-sm" x-text="questionErrors[item.id]"></div>
+                    </template>
+                </div>
+            </template>
+
+            <template x-if="votingBehavior === 'average'">
+                <div class="flex items-center">
+                    <span><?= $escaper->escapeHtml(__('Rate the answer?')) ?></span>
+                    <div class="flex mx-2">
+                        <template x-for="star in stars">
+                            <button
+                                type="button"
+                                class="cursor-pointer"
+                                :class="{'opacity-50': star <= hovered}"
+                                :aria-label="getStarsLabel(star)"
+                                @mouseover="hovered = star"
+                                @mouseleave="hovered = 0"
+                                @click="voteStar(item.id, star)"
+                            >
+                                <template x-if="votedQuestions[item.id] && star <= votedQuestions[item.id]">
+                                    <?= $heroiconsSolid->starHtml('text-yellow-400') ?>
+                                </template>
+                                <template x-if="!votedQuestions[item.id] || star > votedQuestions[item.id]">
+                                    <?= $heroiconsSolid->starHtml('text-gray-400') ?>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                    <template x-if="isShowZeroRating(parseFloat(item.average))">
+                        <span
+                            class="text-amfaq_gray"
+                            x-text="'<?= $escaper->escapeHtml(__('Total rating')) ?> '
+                                    + parseFloat(item.average).toFixed(1)"
+                        ></span>
+                    </template>
+                    <!-- Error message display for this question -->
+                    <template x-if="questionErrors[item.id]">
+                        <div class="mt-2 text-red-600 text-sm" x-text="questionErrors[item.id]"></div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <?= /** @noEscape  */ $block->fetchView($block->getTemplateFile('Hyva_Theme::ui/loading.phtml')) ?>
+</div>
+</form>
+
+<script>
+    function ratingData_<?= $escaper->escapeHtml($uniqueId) ?>() {
+        const starLabel = '<?= $escaper->escapeHtml(__('star'));?>';
+        const starsLabel = '<?= $escaper->escapeHtml(__('stars'));?>';
+
+        return {
+            votingBehavior: '<?= $escaper->escapeHtml($block->getVotingBehavior()) ?>',
+            hideZeroRating: <?= (int)$escaper->escapeHtml($block->isHideZeroRatingTotal()) ?>,
+            itemsIds: [<?= $escaper->escapeHtml($block->getQuestionIds()) ?>],
+            dataUrl: '<?= $escaper->escapeHtml($block->getDataUrl()) ?>',
+            isLoaded: false,
+            isLogin: false,
+            items: [],
+            isLoading: false,
+            stars: [1,2,3,4,5],
+            storageKey: 'amfaq-average-rating-storage',
+            votedQuestions: {},
+            hovered: 0,
+            isSocialLoginEnabled: <?= $viewModelQuestions->isSocialLoginHyvaEnabled() ? 'true' : 'false' ?>,
+            isGuestRatingAllowed: <?= $viewModelQuestions->isGuestRatingAllowed() ? 'true' : 'false' ?>,
+            isSocialPopupEnabled: <?= $isSocialPopupEnabled ? 'true' : 'false' ?>,
+            isCaptchaEnabled: <?= $viewModelQuestions->getCaptchaEnabled() ? 'true' : 'false' ?>,
+            captchaToken: '',
+            pendingVote: null,
+            questionErrors: {}, // Store errors per question ID
+
+            /**
+             * Amasty InvisibleCaptcha Hyva expects these handlers to exist on the Alpine component
+             * once it attaches x-on:amrecaptcha-*.window attributes to the captcha target element.
+             */
+            amRecaptchaModelExecute($event) {
+                window.amRecaptchaModel?.execute?.($event);
+            },
+
+            amRecaptchaModelRecaptchaCallback($event, $el) {
+                // Make sure the callback is routed through Amasty's handler
+                // and that our component can pick up the token & proceed.
+                $el ??= $event?.detail?.form;
+                window.amRecaptchaModel?.recaptchaCallback?.($event, $el);
+            },
+
+            amRecaptchaModelExpiredCallback($event, $el) {
+                $el ??= $event?.detail?.form;
+                window.amRecaptchaModel?.expiredCallback?.($event, $el);
+            },
+
+            ratingInit_<?= $escaper->escapeHtmlAttr($uniqueId) ?>() {
+                this.getVoted();
+
+                if (this.votingBehavior === 'average') {
+                    this.votedQuestions = this.localGet() ?? {};
+                }
+
+                // Listen for Amasty InvisibleCaptcha success callback.
+                // The token is stored in a hidden textarea inside the form.
+                window.addEventListener('amrecaptcha-callback', (event) => {
+                    const target = this.$refs?.captchaTarget;
+                    if (!target || event?.detail?.form !== target) {
+                        return;
+                    }
+                    this.captchaToken = this._readCaptchaToken() || '';
+                    if (this.pendingVote) {
+                        const { id, value, revote, isStar } = this.pendingVote;
+                        this.pendingVote = null;
+                        this._setRatingInternal(id, value, revote, isStar);
+                    }
+                });
+            },
+
+            setFAQRating: <?= /** @noEscape */ json_encode(
+                $viewModelGraphQl->query(
+                    'am_set_faq_rating',
+                    'mutation rateAmFaqQuestion(
+                        $id: Int!,
+                        $type: AmFaqVoteTypeEnum!,
+                        $value: String!,
+                        $revote: Boolean,
+                        $oldValue: String
+                    ) {'
+                    .$viewModelQueries->setFAQRating().
+                    '}'
+                )
+            ) ?>,
+
+            getVoted() {
+                let itemsURL = '',
+                    item = this.itemsIds[this.itemsIds.length - 1];
+
+                if (itemsURL) {itemsURL += '&'};
+                itemsURL += 'items[]=' + item;
+
+                fetch(this.dataUrl + '?'+itemsURL+'&isAjax=true', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                )
+                .then(response => response.json())
+                .then(result => { this.items = result })
+                .catch(this.displayError)
+                .finally(() => {
+                    this.isLoaded = true;
+                });
+            },
+
+            getTotalRating(positive, negative) {
+                return parseInt(positive) + Math.abs(parseInt(negative));
+            },
+
+            isShowZeroRating(rating) {
+                return !(this.hideZeroRating && rating === 0);
+            },
+
+            useQuery(query, variables) {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Store': '<?= /* @noEscape */ $viewModelStore->getStoreCode() ?>'
+                };
+
+                // Attach captcha token ONLY for FAQ rating mutation and only for guests.
+                // (So we don't impact other GraphQL calls.)
+                if (!this.isLogin && this.isCaptchaEnabled && this.captchaToken && query && query.includes('rateAmFaqQuestion')) {
+                    headers['X-ReCaptcha'] = this.captchaToken;
+                }
+
+                return fetch(BASE_URL + 'graphql', {
+                    method: 'POST',
+                    headers: headers,
+                    credentials: 'include',
+                    body: JSON.stringify({query: query, variables: variables}),
+                }).then(response => response.json()).catch(this.displayError)
+            },
+
+            _readCaptchaToken() {
+                const form = this.$refs?.captchaForm;
+                const tokenField = form
+                    ? (form.querySelector('.g-recaptcha-response') || form.querySelector('[name="g-recaptcha-response"]'))
+                    : null;
+                return tokenField?.value || '';
+            },
+
+            vote(id, value) {
+                // Clear any previous error for this question
+                this.clearQuestionError(id);
+                
+                // Guest rating disabled => keep original behavior (will error and show login popup/message)
+                if (!this.isGuestRatingAllowed && !this.isLogin) {
+                    this.setRating(id, value, false);
+                    return;
+                }
+
+                // Only require captcha for guests if enabled.
+                if (!this.isLogin && this.isCaptchaEnabled && window.amRecaptchaModel && this.$refs?.captchaTarget) {
+                    const revote = false;
+                    this.pendingVote = { id, value, revote, isStar: false };
+                    this.captchaToken = '';
+                    window.amRecaptchaModel.execute({ target: this.$refs.captchaTarget });
+                    return;
+                }
+
+                this.setRating(id, value, false);
+            },
+
+            voteStar(id, star) {
+                // Clear any previous error for this question
+                this.clearQuestionError(id);
+                
+                const revote = this.checkVoted(id);
+
+                if (!this.isGuestRatingAllowed && !this.isLogin) {
+                    this.setRating(id, star, revote);
+                    return;
+                }
+
+                if (!this.isLogin && this.isCaptchaEnabled && window.amRecaptchaModel && this.$refs?.captchaTarget) {
+                    this.pendingVote = { id, value: star, revote, isStar: true };
+                    this.captchaToken = '';
+                    window.amRecaptchaModel.execute({ target: this.$refs.captchaTarget });
+                    return;
+                }
+
+                this.setRating(id, star, revote);
+            },
+
+            _setRatingInternal(id, value, revote, isStar) {
+                // For star votes we preserve revote behavior
+                this.setRating(id, value, revote);
+            },
+
+            setRating(id, value, revote = false) {
+                let oldValue = this.localGet()?.[id];
+
+                if (parseInt(oldValue) === parseInt(value)) {
+                    return;
+                }
+
+                this.isLoading = true;
+                this.useQuery(
+                    this.setFAQRating, {
+                        id: id,
+                        type: this.votingBehavior.toUpperCase(),
+                        value: value,
+                        revote: revote,
+                        oldValue: oldValue ? oldValue : ''
+                    }
+                ).then(response => {
+                    // Check for GraphQL errors first (from exceptions like CAPTCHA validation)
+                    if (response?.errors && response.errors.length > 0) {
+                        const errorMessage = response.errors[0]?.message || 
+                            '<?= $escaper->escapeJs(__("An error occurred. Please try again.")) ?>';
+
+                        // Display error below the specific question
+                        this.setQuestionError(id, errorMessage);
+
+                        // Also try global message system
+                        this.showMessage('error', errorMessage);
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    const result = response?.data?.rateAmFaqQuestion;
+
+                    if (!result) {
+                        const errorMsg = '<?= $escaper->escapeJs(__("An error occurred. Please try again.")) ?>';
+                        this.setQuestionError(id, errorMsg);
+                        this.showMessage('error', errorMsg);
+                        this.isLoading = false;
+                        return;
+                    }
+
+                    if (result.error) {
+                        /* if enabled social login module*/
+                        if (this.isSocialLoginEnabled && !this.isGuestRatingAllowed && !this.isLogin && this.isSocialPopupEnabled) {
+                            window.dispatchEvent(
+                                new CustomEvent('amsl-show-popup', { detail: {
+                                    message: "<?= $escaper->escapeHtml(__('Please, login to rate the question.'))?>",
+                                    tabName: 'amsl-login'
+                                }})
+                            )
+                            return;
+                        }
+                        
+                        // Display error below the specific question
+                        this.setQuestionError(id, result.message);
+                        this.showMessage('error', result.message);
+
+                        return;
+                    }
+
+                    // Clear any error for this question on success
+                    this.clearQuestionError(id);
+
+                    if (result.message) {
+                        this.showMessage('success', result.message);
+                    }
+
+                    this.items.map(item => {
+                        if (item.id === id) {
+                            item.isVoted = true;
+
+                            if (this.votingBehavior === 'average') {
+                                this.recalculateAverage(id, value);
+                            } else {
+                                if (value) {
+                                    item.isPositiveVoted = true;
+                                    item.positiveRating = ++item.positiveRating;
+                                } else {
+                                    item.isPositiveVoted = false;
+                                    item.negativeRating = ++item.negativeRating;
+                                }
+                            }
+                        }
+                    });
+                }).finally(() => {
+                    this.isLoading = false;
+                    // Reset token after request to avoid reusing it.
+                    this.captchaToken = '';
+                });
+            },
+
+            // Legacy method used elsewhere (kept for compatibility)
+            setStarRating(id, value) {
+                this.voteStar(id, value);
+            },
+
+            // Recalculate Average after set
+            recalculateAverage(id, value) {
+                this.items.map(item => {
+                    if (item.id === id) {
+                        let total = parseInt(item.total),
+                            average = parseFloat(item.average),
+                            newAverage = (average * total + parseInt(value)) / (total + 1);
+
+                        if (this.votedQuestions && this.votedQuestions[id] !== undefined) {
+                            const oldValue = this.votedQuestions[id];
+                            newAverage = total > 1
+                                ? (average * total - parseInt(oldValue) + parseInt(value)) / total
+                                : parseInt(value);
+                        } else {
+                            item.total++;
+                        }
+
+                        this.votedQuestions[id] = value;
+                        this.localSet(this.votedQuestions);
+
+                        item.average = newAverage;
+                    }
+                })
+            },
+
+            // Check is rating vated
+            checkVoted(id) {
+                return this.votedQuestions && this.votedQuestions[id] !== undefined;
+            },
+
+            // Set Data to localStorage
+            localSet(value) {
+                window.localStorage.setItem(this.storageKey, JSON.stringify(value));
+            },
+
+            // Get Data from localStorage
+            localGet() {
+                return JSON.parse(window.localStorage.getItem(this.storageKey));
+            },
+
+            // Display error message
+            displayError(error) {
+                if (error.name === 'AbortError') {
+                    console.log('Fetch aborted');
+                } else {
+                    this.showMessage(
+                        'error',
+                        '<?= $escaper->escapeJs(__("Something went wrong. Please try again later.")) ?>'
+                    );
+                }
+            },
+
+            // Show message
+            showMessage(type, message) {
+                if (typeof window.dispatchMessages !== "undefined") {
+                    window.dispatchMessages(
+                        [{ type: type, text: message}], 10000
+                    );
+                } else if (typeof window.dispatchEvent !== "undefined") {
+                    // Fallback: emit Hyvä-style message event
+                    window.dispatchEvent(new CustomEvent('hyva-message', {
+                        detail: { type: type, text: message }
+                    }));
+                }
+            },
+
+            getStarsLabel(index) {
+                return index > 1 ? index + ' ' + starsLabel : index + ' ' + starLabel;
+            },
+
+            // Set error message for a specific question
+            setQuestionError(questionId, errorMessage) {
+                this.questionErrors[questionId] = errorMessage;
+                // Auto-clear error after 10 seconds
+                setTimeout(() => {
+                    this.clearQuestionError(questionId);
+                }, 10000);
+            },
+
+            // Clear error message for a specific question
+            clearQuestionError(questionId) {
+                if (this.questionErrors[questionId]) {
+                    delete this.questionErrors[questionId];
+                }
+            },
+
+            eventListeners: {
+                ['@private-content-loaded.window'](event) {
+                    const faqData = event.detail.data?.faq;
+
+                    if (faqData.name || faqData.email) {
+                        this.isLogin = true;
+                    }
+                }
+            }
+        }
+    }
+</script>

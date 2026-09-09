@@ -1,0 +1,18 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/** @var \Magento\Customer\Block\Form\Login\Info $block */
+?>
+<div class="block block-new-customer">
+    <div class="block-content" aria-labelledby="block-new-customer-heading">
+        <?php
+            echo $this->getLayout()
+            ->createBlock('Magento\Cms\Block\Block')
+            ->setBlockId('login-page-right-block')
+            ->toHtml();
+        ?>
+    </div>
+</div>

@@ -1,0 +1,76 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2023 Amasty (https://www.amasty.com)
+ * @package Ajax Cart Hyva Compatibility (System)
+ */
+
+use Amasty\AjaxCartHyva\ViewModel\CartSettings;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+/** @var Template $block */
+
+$cartConfig = $viewModels->require(CartSettings::class);
+?>
+
+<?php if ($cartConfig->isCompareWithAjax()): ?>
+    <script>
+        'use strict';
+
+        (function () {
+            const initCompareFunctions = ['initCompareOnProductList', 'initCompareOnProductView'];
+
+            initCompareFunctions.forEach(compareFunction => {
+                window[compareFunction] = function () {
+                    return {
+                        addToCompare: function (productId) {
+                            var loader=document.getElementById('loading');
+                            console.log("11111111");
+                            loader.style.display='block';
+                            console.log("Add To compare amasty ajax cart qqqqq");
+                            <?= $block->getChildHtml('loading') ?>
+                            const postUrl = BASE_URL + 'catalog/product_compare/add/';
+                            const headers = {
+                                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                            };
+                            const body = new URLSearchParams({
+                                form_key: hyva.getFormKey(),
+                                product: productId,
+                                is_ajax: true
+                            });
+
+                            fetch(postUrl, {headers: headers, body: body, method: 'POST'}).then((response) => {
+                                <?= $block->getChildHtml('loading') ?>
+                                if (response.redirected) {
+                                    window.location.href = response.url;
+                                } else if (response.ok) {
+                                    window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                } else {
+                                    typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                                        [{
+                                            type: "warning",
+                                            text: "<?= $escaper->escapeHtml(__('Could not add item to the comparison list.')) ?>"
+                                        }],
+                                        1000
+                                    );
+                                }
+                            }).catch((error) => {
+                                typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                                    [{
+                                        type: 'error',
+                                        text: error
+                                    }],
+                                    1000
+                                );
+                            });
+                        }
+                    };
+                };
+            });
+        })();
+    </script>
+<?php endif; ?>

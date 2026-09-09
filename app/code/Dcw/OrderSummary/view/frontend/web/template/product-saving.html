@@ -1,0 +1,8 @@
+<!-- ko if: savingsValue() > 0 -->
+<tr class="totals savings">
+    <th class="mark" scope="row" data-bind="i18n: 'Product Savings'"></th>
+    <td class="amount">
+        <span class="price" data-bind="html: savingsValue"></span>
+    </td>
+</tr>
+<!-- /ko -->

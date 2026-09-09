@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+     <preference for="Amasty\RequestQuote\Block\Account\Quote\Item\Price\Renderer" type="Dcw\RequestQuote\Block\Account\Quote\Item\Price\Renderer" />
+     <preference for="Magento\Customer\Controller\Section\Load" type="Dcw\RequestQuote\Controller\Section\Load" />
+     <preference for="Amasty\RequestQuote\Controller\Quote\RemoveFromMinicart" type="Dcw\RequestQuote\Controller\Quote\RemoveFromMinicart" />
+     <preference for="Amasty\RequestQuote\Controller\Cart\Delete" type="Dcw\RequestQuote\Controller\Cart\Delete" />
+      <preference for="Amasty\RequestQuote\Block\Quote\Success" type="Dcw\RequestQuote\Block\Quote\Success" />
+	  <preference for="Amasty\RequestQuote\Block\Email\Grid\Quote" type="Dcw\RequestQuote\Block\Email\Grid\Quote" />
+     
+     <!-- Quote Change Log -->
+     <preference for="Dcw\RequestQuote\Api\QuoteChangeLogRepositoryInterface" type="Dcw\RequestQuote\Model\QuoteChangeLogRepository" />
+     
+     <!-- Plugin to log quote changes -->
+     <type name="Amasty\RequestQuote\Model\Quote">
+         <plugin name="dcw_log_quote_changes" type="Dcw\RequestQuote\Plugin\Quote\LogQuoteChanges" sortOrder="10" />
+     </type>
+     
+    <!-- Plugin to ensure quote items are loaded in Cart Grid -->
+    <type name="Amasty\RequestQuote\Block\Cart\Grid">
+        <plugin name="dcw_load_cart_items" type="Dcw\RequestQuote\Plugin\Block\Cart\Grid\LoadItems" sortOrder="10" />
+    </type>
+    
+    <!-- Plugin to recalculate quote prices before displaying items in account view -->
+    <type name="Amasty\RequestQuote\Block\Account\Quote\Items">
+        <plugin name="dcw_recalculate_quote_prices" type="Dcw\RequestQuote\Plugin\Block\Account\Quote\ItemsPlugin" sortOrder="10" />
+    </type>
+    
+    <!-- Plugin to ensure quote has items loaded when retrieved from Amasty quote session -->
+    <type name="Amasty\RequestQuote\Model\Quote\Session">
+        <plugin name="dcw_load_quote_items" type="Dcw\RequestQuote\Plugin\Quote\Session\LoadQuoteItems" sortOrder="10" />
+    </type>
+    
+    <!-- Plugin to allow editing approved quotes by setting status to PENDING in memory -->
+    <type name="Magento\Checkout\Model\Cart">
+        <plugin name="dcw_allow_edit_approved_quote" type="Dcw\RequestQuote\Plugin\Cart\AllowEditApprovedQuote" sortOrder="10" />
+    </type>
+    
+    <!-- Override Amasty's observer to allow editing approved quotes -->
+    <preference for="Amasty\RequestQuote\Observer\Frontend\Quote\Item\Qty" type="Dcw\RequestQuote\Observer\Frontend\Quote\Item\Qty" />
+    
+    <!-- Plugin to validate discount threshold when updating cart items from moved quotes -->
+    <type name="Magento\Checkout\Controller\Cart\UpdatePost">
+        <plugin name="dcw_validate_threshold_update_post" type="Dcw\RequestQuote\Plugin\Checkout\Controller\Cart\UpdatePostPlugin" sortOrder="10" />
+    </type>
+
+</config>

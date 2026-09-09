@@ -1,0 +1,27 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Magento\DataServices\Block\Context;
+
+/**
+ * @var Context $block
+ */
+
+// Todo:: Move this over
+?>
+
+
+<script type="text/x-magento-init">
+    {
+        "*": {
+            "dataServicesDiscount": {
+                "isEnabled": <?= (int) $block->isEnabled() ?>
+            }
+        }
+    }
+</script>

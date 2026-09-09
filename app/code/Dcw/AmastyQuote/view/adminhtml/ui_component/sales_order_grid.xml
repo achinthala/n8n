@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+
+    <columns name="sales_order_columns">
+
+        <column name="amasty_quote_increment_id" sortOrder="65">
+            <settings>
+                <label translate="true">Amasty Quote ID</label>
+                <filter>text</filter>
+                <sortable>true</sortable>
+                <visible>true</visible>
+            </settings>
+        </column>
+
+    </columns>
+
+</listing>

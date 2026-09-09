@@ -1,0 +1,243 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ShipRegionAvailability\ViewModel\Product\ShipRegionAvailability;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var ShipRegionAvailability $shipRegionVm */
+$shipRegionVm = $viewModels->require(ShipRegionAvailability::class);
+
+if (!$shipRegionVm->isEnabledForProduct()) {
+    return;
+}
+?>
+<script>
+(function () {
+    'use strict';
+
+    const STORAGE_KEY = 'dcw_ship_region_zip';
+
+    function bindPanelUi() {
+        const panel = document.getElementById('dcw-ship-region-panel');
+        if (!panel) {
+            return;
+        }
+
+        const lookupUrl = panel.dataset.zipLookupUrl;
+        const zipInput = document.getElementById('dcw-ship-region-zip');
+        const applyBtn = document.getElementById('dcw-ship-region-apply');
+        const clearBtn = document.getElementById('dcw-ship-region-zip-clear');
+        const errorEl = document.getElementById('dcw-ship-region-error');
+        const labelEl = document.getElementById('dcw-ship-region-label');
+        const whyToggle = document.getElementById('dcw-ship-region-why-toggle');
+        const whyContent = document.getElementById('dcw-ship-region-why-content');
+
+        if (whyToggle && whyContent) {
+            whyToggle.addEventListener('click', () => {
+                const open = whyContent.classList.toggle('is-open');
+                whyToggle.classList.toggle('is-open', open);
+                whyToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+        }
+
+        function showError(message) {
+            if (!errorEl) return;
+            errorEl.textContent = message || '';
+            errorEl.classList.toggle('hidden', !message);
+        }
+
+        function getZipValue() {
+            return (zipInput?.value || '').trim();
+        }
+
+        function isZipEmpty() {
+            return getZipValue() === '';
+        }
+
+        function getSwatchAlpineRoot() {
+            const roots = document.querySelectorAll(
+                '.colors_swat[x-data], .roll_length_tab_content[x-data], .swatch___render'
+            );
+            for (let i = 0; i < roots.length; i++) {
+                const el = roots[i];
+                if (el.classList.contains('swatch___render')) {
+                    const parent = el.closest('[x-data]');
+                    if (parent) {
+                        return parent;
+                    }
+                }
+                if (el.hasAttribute('x-data')) {
+                    return el;
+                }
+            }
+            return document.querySelector('.colors_swat[x-data]')
+                || document.querySelector('.roll_length_tab_content[x-data]');
+        }
+
+        function syncToAlpine(regionCode, regionName, zipCode, attempt) {
+            attempt = attempt || 0;
+            if (typeof window.dcwEnsureShipRegionSwatchPatch === 'function') {
+                window.dcwEnsureShipRegionSwatchPatch();
+            }
+            const root = getSwatchAlpineRoot();
+            if (!root || typeof Alpine === 'undefined') {
+                if (attempt < 20) {
+                    window.setTimeout(() => syncToAlpine(regionCode, regionName, zipCode, attempt + 1), 100);
+                }
+                return false;
+            }
+            const data = Alpine.$data(root);
+            if (data && typeof data.applyShipRegionFilter === 'function') {
+                if (!data.optionConfig?.ships_from_region) {
+                    showError('<?= $escaper->escapeJs(__('Region data is not available for this product. Please refresh the page or contact support.')) ?>');
+                    return false;
+                }
+                data.applyShipRegionFilter(regionCode, regionName, zipCode);
+                return true;
+            }
+            if (attempt < 20) {
+                window.setTimeout(() => syncToAlpine(regionCode, regionName, zipCode, attempt + 1), 100);
+            }
+            return false;
+        }
+
+        function restoreLegacySwatchDomFallback() {
+            document.querySelectorAll('.colors_swat').forEach((el) => {
+                el.classList.remove('ship-region-zip-active');
+            });
+            document.querySelectorAll('.normal_color_swatch_option').forEach((el) => {
+                el.classList.remove('hidden');
+            });
+            document.querySelectorAll('.normal_color_swatch_option .color_swatches.mb-10').forEach((el) => {
+                el.style.display = '';
+            });
+        }
+
+        function clearAlpine(attempt) {
+            attempt = attempt || 0;
+            const root = getSwatchAlpineRoot();
+            if (!root || typeof Alpine === 'undefined') {
+                if (attempt < 20) {
+                    window.setTimeout(() => clearAlpine(attempt + 1), 100);
+                } else {
+                    restoreLegacySwatchDomFallback();
+                }
+                return false;
+            }
+            const data = Alpine.$data(root);
+            if (data && typeof data.clearShipRegionFilter === 'function') {
+                data.clearShipRegionFilter();
+                restoreLegacySwatchDomFallback();
+                return true;
+            }
+            if (attempt < 20) {
+                window.setTimeout(() => clearAlpine(attempt + 1), 100);
+            } else {
+                restoreLegacySwatchDomFallback();
+            }
+            return false;
+        }
+
+        async function lookupZip(zip) {
+            const url = new URL(lookupUrl, window.location.origin);
+            url.searchParams.set('zip', zip);
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            return response.json();
+        }
+
+        function restoreDefaultColorView() {
+            window.localStorage.removeItem(STORAGE_KEY);
+            showError('');
+            if (labelEl) {
+                labelEl.classList.add('hidden');
+            }
+            clearAlpine(0);
+            window.setTimeout(restoreLegacySwatchDomFallback, 50);
+            window.setTimeout(restoreLegacySwatchDomFallback, 300);
+        }
+
+        async function onApply() {
+            if (isZipEmpty()) {
+                return false;
+            }
+
+            const zip = getZipValue();
+            showError('');
+
+            try {
+                const result = await lookupZip(zip);
+                if (!result.success) {
+                    showError(result.message || '<?= $escaper->escapeJs(__('ZIP code not found.')) ?>');
+                    if (result.zip_code && zipInput) {
+                        zipInput.value = '';
+                    }
+                    return false;
+                }
+
+                window.localStorage.setItem(STORAGE_KEY, result.zip_code);
+                if (labelEl) {
+                    labelEl.textContent = '<?= $escaper->escapeJs(__('Shipping region:')) ?> ' + (result.region_name || result.region_code);
+                    labelEl.classList.remove('hidden');
+                }
+                syncToAlpine(result.region_code, result.region_name, result.zip_code);
+                return true;
+            } catch (e) {
+                showError('<?= $escaper->escapeJs(__('Unable to look up ZIP code. Please try again.')) ?>');
+                return false;
+            }
+        }
+
+        function onClear() {
+            if (isZipEmpty()) {
+                return false;
+            }
+            if (zipInput) {
+                zipInput.value = '';
+            }
+            restoreDefaultColorView();
+            return true;
+        }
+
+        applyBtn?.addEventListener('click', (e) => {
+            if (isZipEmpty()) {
+                e.preventDefault();
+                return false;
+            }
+            onApply();
+        });
+        zipInput?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (isZipEmpty()) {
+                    return false;
+                }
+                onApply();
+            }
+        });
+
+        clearBtn?.addEventListener('click', (e) => {
+            if (isZipEmpty()) {
+                e.preventDefault();
+                return false;
+            }
+            onClear();
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindPanelUi);
+    } else {
+        bindPanelUi();
+    }
+})();
+</script>

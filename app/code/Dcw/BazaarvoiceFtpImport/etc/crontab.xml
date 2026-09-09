@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="bazaarvoice_ftp_import">
+        <job name="bazaarvoice_ftp_import_cron" instance="Dcw\BazaarvoiceFtpImport\Cron\ImportCron" method="execute">
+            <schedule>0 2 * * *</schedule>
+        </job>
+        <job name="bazaarvoice_gmc_convert_cron" instance="Dcw\BazaarvoiceFtpImport\Cron\GmcConvertCron" method="execute">
+            <schedule>0 3 * * *</schedule>
+        </job>
+    </group>
+</config>

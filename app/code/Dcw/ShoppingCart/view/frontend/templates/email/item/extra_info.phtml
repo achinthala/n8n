@@ -1,0 +1,68 @@
+<?php
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\ShoppingCart\ViewModel\Data as ShoppingCartData;
+/** @var ViewModelRegistry $viewModels */
+/** @var ShoppingCartData $shoppingCartData */
+
+$shoppingCartData = $viewModels->require(ShoppingCartData::class);
+
+$item = $block->getItem();
+$product = $item->getProduct();
+$children = $item->getChildrenItems();
+$childProductId=$item->getProductId();
+if (!empty($children)) {
+    foreach ($children as $child) {
+        $childProductId = $child->getProductId();
+        // do something with $childProductId
+    }
+}
+$getPdpLineItem = $item->getPdpLineItem();
+$promiseDate = $shippingEstimate = "";
+if ($getPdpLineItem) {
+    $getPdpLineItem = json_decode($getPdpLineItem, true);
+    $promiseDate = $getPdpLineItem['promise_date'] ?? '';
+    $shippingEstimate = $getPdpLineItem['shipping_estimate'] ?? '';
+}
+$isNotPastDate=0;
+if($promiseDate){
+	$current_date = $shoppingCartData->getCurrentDate();
+	if (strpos($promiseDate, '-') !== false) {
+        // Date range
+        list($start, $end) = explode('-', $promiseDate);
+		$endDate = date('Y-m-d', strtotime(trim($end)));
+
+        if ($current_date <= $endDate) {
+            $isNotPastDate=1;
+        } else {
+            $isNotPastDate=0;
+        }
+
+    } else {
+        // Single date
+        $pdate = date('Y-m-d', strtotime($promiseDate));
+		if ($pdate >= $current_date) {
+			$isNotPastDate=1;
+		}
+    }
+}
+?>
+<?php $checkForQtyBackorderdata = $shoppingCartData->checkForQtyBackorderData($childProductId, $item->getQtyOrdered());
+$message='';
+ 
+ if ($checkForQtyBackorderdata) {
+    $message = $checkForQtyBackorderdata;
+
+    if ($promiseDate && $isNotPastDate) {
+        $message .= " [Estimated ship date: " . $promiseDate . "]";
+    }
+}?>
+<div class="custom-extra-info" style="margin-top: 5px; padding: 5px;">
+<?php if ($message): ?>
+	<p><?= $message; ?></p>
+<?php elseif ($promiseDate && $isNotPastDate): ?>
+        <p class="promise-date">Estimated Ship Date: <?= $promiseDate; ?></p>
+    <?php endif; ?>
+    <?php if ($shippingEstimate): ?>
+        <p class="shipping-estimate"><?= $shippingEstimate; ?></p>
+    <?php endif; ?>
+</div>

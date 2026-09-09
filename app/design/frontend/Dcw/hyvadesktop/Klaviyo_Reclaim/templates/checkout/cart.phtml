@@ -1,0 +1,19 @@
+<?php if ( $this->isKlaviyoEnabled() && $this->getPublicApiKey() ): ?>
+    <div x-data="initKlaviyoCartTracking()" x-init="sendKlaviyoCartData()" x-defer="interact"></div>
+    <script>
+        function initKlaviyoCartTracking() {
+            return {
+                sendKlaviyoCartData() {
+                    fetch(
+                        '/reclaim/checkout/reload?form_key=' + hyva.getFormKey(),
+                        {
+                            method: 'POST',
+                            body: {},
+                            headers: {contentType: 'application/json'}
+                        }
+                    )
+                }
+            }
+        }
+    </script>
+<?php endif; ?>

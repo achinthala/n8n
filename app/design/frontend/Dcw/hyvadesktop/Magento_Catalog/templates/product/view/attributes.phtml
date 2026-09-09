@@ -1,0 +1,268 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Catalog\Helper\Output as CatalogOutputHelper;
+use Magento\Catalog\Block\Product\View\Attributes;
+use Magento\Catalog\Model\Product;
+use Dcw\CustomAttribute\ViewModel\Data as CustomAttributeViewModelData;
+
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundHelper
+
+/** @var Escaper $escaper */
+/** @var CatalogOutputHelper $output */
+/** @var Attributes $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var CustomAttributeViewModelData $customAttributeViewModelData */
+$customAttributeViewModelData = $viewModels->require(CustomAttributeViewModelData::class);
+
+/** @var CatalogOutputHelper $catalogOutputHelper */
+$catalogOutputHelper = $this->helper(CatalogOutputHelper::class);
+
+/** @var Product $product */
+$product = $block->getProduct();
+
+$dcwBlock = $viewModels->require(Data::class);
+
+$tabshowattributes = $dcwBlock->getConfigValue('dcw_product_tab/tabs/tab_show_attribute');
+
+if ($tabshowattributes) {
+	$tabshowattributesArray = explode(',',$tabshowattributes);
+} else {
+  	$tabshowattributesArray = [];
+}
+
+$getDetailsAttributeHtml = $customAttributeViewModelData->getDetailsAttributeHtml($product->getId());
+$getDimensionsAttributeHtml = $customAttributeViewModelData->getDimensionsAttributeHtml($product->getId());
+
+$description = $catalogOutputHelper->productAttribute($product, $product->getIncstoresPimLongDescription(), 'description');
+$selectedtab='';
+
+if ($description || isset($getDimensionsAttributeHtml) || isset($getDimensionsAttributeHtml)) {
+  	$selectedtab='incstores_pim_long_description';
+} else {
+	foreach ( $tabshowattributesArray as $tabshowattr) {
+		if(!empty($product->getData($tabshowattr))){
+			$selectedtab=$tabshowattr;
+			break;
+		}
+  	}
+}
+?>
+
+<?php if($selectedtab):?>
+	<div class="spec_gap" id="specifications"></div>
+	<div class="productinfotab">
+		<div x-data="{ activeTab: '<?=$selectedtab?>' }">
+			<ul class="tab-sec flex tab-border mb-7">
+				<?php if(($description || isset($getDimensionsAttributeHtml) || isset($getDimensionsAttributeHtml)) ||
+							($tabshowattr == 'incstores_pim_long_description' && empty($description) && (!empty($product->getData('incstores_pim_document_msds_product_url_1')) || !empty($product->getData('incstores_pim_document_specifications_product_url_1'))))
+						):?>
+					<li class="-mb-px mr-1">
+						<a data-attribute_code="incstores_pim_long_description" class="description_tab" :class="{ 'active': activeTab === 'incstores_pim_long_description' }" href="#" @click.prevent="activeTab = 'incstores_pim_long_description'">
+							<?= $escaper->escapeHtml('Details & Specifications') ?>
+						</a>
+					</li>
+				<?php endif;?>
+				<?php  if (!empty($tabshowattributesArray)) { ?>
+					<?php foreach ( $tabshowattributesArray as $tabshowattr){ ?>
+						<?php  if(!empty($product->getData($tabshowattr)) ||
+							($tabshowattr == 'incstores_pim_installation_description' && empty($product->getData($tabshowattr)) && (!empty($product->getData('incstores_pim_document_installation_product_url_1')) || !empty($product->getData('incstores_pim_document_installation_product_url_2')))) ||
+							($tabshowattr == 'incstores_pim_maintenance_description' && empty($product->getData($tabshowattr)) && (!empty($product->getData('incstores_pim_document_maintenance_product_url_1')) || !empty($product->getData('incstores_pim_document_maintenance_product_url_2')))) ||
+							($tabshowattr == 'incstores_pim_warranty' && empty($product->getData($tabshowattr)) && !empty($product->getData('incstores_pim_document_warranty_product_url_1')))
+							) { ?>
+							<li class="mr-1">
+								<a data-attribute_code="<?=$tabshowattr?>" class="<?=$tabshowattr?>_tab" :class="{ 'active': activeTab === '<?=$tabshowattr?>' }"
+						href="#" @click.prevent="activeTab = '<?=$tabshowattr?>'">
+									<?= $product->getResource()->getAttribute($tabshowattr)->getFrontendLabel(); ?>
+								</a>
+							</li>
+						<?php } ?>
+					<?php } ?>
+				<?php } ?>
+			</ul>
+
+			<?php if(($description || isset($getDimensionsAttributeHtml) || isset($getDimensionsAttributeHtml)) ||
+					($tabshowattr == 'incstores_pim_long_description' && empty($description) && (!empty($product->getData('incstores_pim_document_msds_product_url_1')) || !empty($product->getData('incstores_pim_document_specifications_product_url_1'))))
+				):?>
+				<div x-show="activeTab === 'incstores_pim_long_description'">
+					<?= /* @noEscape */ $product->getResource()->getAttribute('incstores_pim_long_description')->getFrontend()->getValue($product);?>
+					<div class="productdetailsatt productsizeattribute mb-6" id="dimensions-attributes">
+						<?php echo $getDimensionsAttributeHtml;?>
+					</div>
+					<div class="productdetailsatt mb-12" id="details-attributes">
+						<?php echo $getDetailsAttributeHtml;?>
+					</div>
+
+					<?php if (!empty($product->getData('incstores_pim_document_msds_product_url_1'))) {?>
+						<div>
+						<?php
+							$mdsUrl1 = $product->getResource()->getAttribute('incstores_pim_document_msds_product_url_1')->getFrontend()->getValue($product);
+							$search = "/image/";
+							$replace = "/asset/";
+
+							$mdsUrl1Fianl = str_replace($search, $replace, $mdsUrl1);
+							?>
+							<a target="_blank" href="<?= /* @noEscape */ $mdsUrl1Fianl;?>?content-disposition=inline">MSDS Sheet</a>
+						</div>
+					<?php }?>
+					<?php if (!empty($product->getData('incstores_pim_document_specifications_product_url_1'))) {?>
+						<div>
+						<?php
+							$specificationsUrl1 = $product->getResource()->getAttribute('incstores_pim_document_specifications_product_url_1')->getFrontend()->getValue($product);
+							$search = "/image/";
+							$replace = "/asset/";
+
+							$specificationsUrl1Fianl = str_replace($search, $replace, $specificationsUrl1);
+							?>
+							<a target="_blank" href="<?= /* @noEscape */ $specificationsUrl1Fianl;?>?content-disposition=inline">Spec Sheet</a>
+						</div>
+					<?php }?>
+
+				</div>
+			<?php endif;?>
+
+			<?php  if (!empty($tabshowattributesArray)) { ?>
+				<?php foreach ($tabshowattributesArray as $tabshowattr) { ?>
+					<?php  if(!empty($product->getData($tabshowattr)) ||
+							($tabshowattr == 'incstores_pim_installation_description' && empty($product->getData($tabshowattr)) && (!empty($product->getData('incstores_pim_document_installation_product_url_1')) || !empty($product->getData('incstores_pim_document_installation_product_url_2')))) ||
+							($tabshowattr == 'incstores_pim_maintenance_description' && empty($product->getData($tabshowattr)) && (!empty($product->getData('incstores_pim_document_maintenance_product_url_1')) || !empty($product->getData('incstores_pim_document_maintenance_product_url_2')))) ||
+							($tabshowattr == 'incstores_pim_warranty' && empty($product->getData($tabshowattr)) && !empty($product->getData('incstores_pim_document_warranty_product_url_1')))
+						) { ?>
+						<div x-show="activeTab === '<?=$tabshowattr?>'">
+							<?= /* @noEscape */ $product->getResource()->getAttribute($tabshowattr)->getFrontend()->getValue($product);?>
+							<?php if (!empty($product->getData('incstores_pim_document_installation_product_url_1'))) {?>
+								<div x-show="activeTab === 'incstores_pim_installation_description'">
+								<?php
+									$installationUrl1 = $product->getResource()->getAttribute('incstores_pim_document_installation_product_url_1')->getFrontend()->getValue($product);
+									$search = "/image/";
+									$replace = "/asset/";
+
+									$installationUrl1Fianl = str_replace($search, $replace, $installationUrl1);
+									?>
+									<a target="_blank" href="<?= /* @noEscape */ $installationUrl1Fianl;?>?content-disposition=inline">Installation Document</a>
+								</div>
+							<?php }?>
+							<?php if (!empty($product->getData('incstores_pim_document_installation_product_url_2'))) {?>
+								<div x-show="activeTab === 'incstores_pim_installation_description'">
+								<?php
+									$installationUrl2 = $product->getResource()->getAttribute('incstores_pim_document_installation_product_url_2')->getFrontend()->getValue($product);
+									$search = "/image/";
+									$replace = "/asset/";
+
+									$installationUrl2Fianl = str_replace($search, $replace, $installationUrl2);
+									?>
+									<a target="_blank" href="<?= /* @noEscape */ $installationUrl2Fianl;?>?content-disposition=inline">Installation Document</a>
+								</div>
+							<?php }?>
+
+							<?php if (!empty($product->getData('incstores_pim_document_maintenance_product_url_1'))) {?>
+								<div x-show="activeTab === 'incstores_pim_maintenance_description'">
+									<?php
+									$maintenanceUrl1 = $product->getResource()->getAttribute('incstores_pim_document_maintenance_product_url_1')->getFrontend()->getValue($product);
+									$search = "/image/";
+									$replace = "/asset/";
+
+									$maintenanceUrl1Fianl = str_replace($search, $replace, $maintenanceUrl1);
+									?>
+									<a target="_blank" href="<?= /* @noEscape */ $maintenanceUrl1Fianl;?>?content-disposition=inline">Care and Maintenance Document</a>
+								</div>
+							<?php }?>
+							<?php if (!empty($product->getData('incstores_pim_document_maintenance_product_url_2'))) {?>
+								<div x-show="activeTab === 'incstores_pim_maintenance_description'">
+									<?php
+									$maintenanceUrl2 = $product->getResource()->getAttribute('incstores_pim_document_maintenance_product_url_2')->getFrontend()->getValue($product);
+									$search = "/image/";
+									$replace = "/asset/";
+
+									$maintenanceUrl2Fianl = str_replace($search, $replace, $maintenanceUrl2);
+									?>
+									<a target="_blank" href="<?= /* @noEscape */ $maintenanceUrl2Fianl;?>?content-disposition=inline">Care and Maintenance Document</a>
+								</div>
+							<?php }?>
+
+							<?php if (!empty($product->getData('incstores_pim_document_warranty_product_url_1'))) {?>
+								<div x-show="activeTab === 'incstores_pim_warranty'">
+								<?php
+									$warrantyUrl1 = $product->getResource()->getAttribute('incstores_pim_document_warranty_product_url_1')->getFrontend()->getValue($product);
+									$search = "/image/";
+									$replace = "/asset/";
+
+									$warrantyUrl1Fianl = str_replace($search, $replace, $warrantyUrl1);
+									?>
+									<a target="_blank" href="<?= /* @noEscape */ $warrantyUrl1Fianl;?>?content-disposition=inline">Warranty</a>
+								</div>
+							<?php }?>
+						</div>
+					<?php } ?>
+				<?php } ?>
+			<?php } ?>
+		</div>
+	</div>
+<?php endif;?>
+
+<?php $pdpBottomVideo=$catalogOutputHelper->productAttribute($product, $product->getPdpBottomVideo(), 'description'); ?>
+<?php if ($pdpBottomVideo):?>
+	<div class="buttomvideos mt-10">
+    	<h2 class="font-semibold mb-4">Videos</h2>
+  		<?= /* @noEscape */ $pdpBottomVideo ?>
+	</div>
+<?php endif;?>
+
+<?php $pdpBottomFeatures=$catalogOutputHelper->productAttribute($product, $product->getPdpBottomFeatures(), 'description'); ?>
+<?php if($pdpBottomFeatures):?>
+	<div class="buttomfeatures relative">
+		<div class="spec_gap" id="pdp-features"></div>
+		<h2 class="font-semibold mb-4 mt-22">Features</h2>
+		<?= /* @noEscape */ $pdpBottomFeatures ?>
+	</div>
+<?php endif;?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	// Select all <a> elements on the page
+    var links = document.querySelectorAll('a');
+
+    // Attach click event listener to each link
+    links.forEach(function(link) {
+    	link.addEventListener('click', function(event) {
+			// Make sure the link has a hash value
+			if (this.hash !== '') {
+				event.preventDefault();
+
+				// Get the target element based on the hash value
+				var target = document.querySelector(this.hash);
+
+				// Scroll to the target element smoothly
+				target.scrollIntoView({
+				behavior: 'smooth'
+				});
+			}
+      	});
+    });
+});
+</script>
+
+<style>
+.spec_gap{
+	position: absolute;
+	left: 0;
+	width: 1px;
+	height: 322px;
+	top: -322px;
+	z-index: -1;
+}
+@media(max-width:991px){
+	.spec_gap{
+		display: none;
+	}
+}
+</style>

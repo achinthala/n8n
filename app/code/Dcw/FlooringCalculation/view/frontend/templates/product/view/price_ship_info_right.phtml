@@ -1,0 +1,17 @@
+<div class="saving_price_info pt-1 pb-6">
+    <table class="saving_ship_info w-full">
+        <tr>
+        <td x-show="pdp_shipping_text != ''">
+            <td class="inter text-size13 font-medium ship-w">
+            <span class="quick-ship" x-html="pdp_shipping_text"></span>
+            </td>
+        </td>
+        <td x-show="pdp_shipping_text != ''" class="extra-line">|</td>
+        <td x-show="expected_days_ship != ''">
+            <td class="inter text-size13 font-medium">
+                <span class="ships" id ="s-ships" x-html="expected_days_ship"></span>
+            </td>
+        </td>
+        </tr>
+    </table>
+</div>

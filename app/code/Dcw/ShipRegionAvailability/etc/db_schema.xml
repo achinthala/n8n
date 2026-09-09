@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="dcw_ship_region" resource="default" engine="innodb" comment="Ship Region Availability Regions">
+        <column xsi:type="int" name="region_id" unsigned="true" nullable="false" identity="true" comment="Region ID"/>
+        <column xsi:type="varchar" name="code" nullable="false" length="64" comment="Region Code"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Region Name"/>
+        <column xsi:type="smallint" name="status" unsigned="true" nullable="false" default="1" comment="Status"/>
+        <column xsi:type="int" name="sort_order" unsigned="true" nullable="false" default="0" comment="Sort Order"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="region_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="DCW_SHIP_REGION_CODE">
+            <column name="code"/>
+        </constraint>
+        <index referenceId="DCW_SHIP_REGION_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+        <index referenceId="DCW_SHIP_REGION_GRID_FULLTEXT" indexType="fulltext">
+            <column name="code"/>
+            <column name="name"/>
+        </index>
+    </table>
+    <table name="dcw_ship_region_zip" resource="default" engine="innodb" comment="Ship Region ZIP Mappings">
+        <column xsi:type="int" name="zip_id" unsigned="true" nullable="false" identity="true" comment="ZIP ID"/>
+        <column xsi:type="varchar" name="zip_code" nullable="false" length="10" comment="ZIP Code"/>
+        <column xsi:type="int" name="region_id" unsigned="true" nullable="false" comment="Region ID"/>
+        <column xsi:type="smallint" name="status" unsigned="true" nullable="false" default="1" comment="Status"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="zip_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="DCW_SHIP_REGION_ZIP_CODE">
+            <column name="zip_code"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="DCW_SHIP_REGION_ZIP_REGION_ID"
+                    table="dcw_ship_region_zip" column="region_id"
+                    referenceTable="dcw_ship_region" referenceColumn="region_id" onDelete="CASCADE"/>
+        <index referenceId="DCW_SHIP_REGION_ZIP_REGION_ID" indexType="btree">
+            <column name="region_id"/>
+        </index>
+        <index referenceId="DCW_SHIP_REGION_ZIP_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+    </table>
+</schema>

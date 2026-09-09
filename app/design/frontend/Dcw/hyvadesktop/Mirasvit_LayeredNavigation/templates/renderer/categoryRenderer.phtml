@@ -1,0 +1,147 @@
+<?php
+/**
+ * @var $block \Mirasvit\LayeredNavigation\Block\Renderer\CategoryRenderer
+ * @var $escaper \Magento\Framework\Escaper
+ */
+$attributeCode = $block->getAttributeCode();
+$filterAccessor = $attributeCode;
+$lastLevel     = 0;
+$filterItems   = $block->getFilterItems();
+$filter        = $block->getFilter();
+
+$useAlphabeticalIndex = !$filter->isShowNestedCategories() && $filter->isUseAlphabeticalIndex();
+
+$checkedItemsCount = 0;
+
+$letter  = '';
+$revenueHelper = $this->helper('Dcw\RevenueRanking\Helper\Data');
+$filter_counts = $revenueHelper->getActiveFilterCount();
+?>
+
+<div data-mst-nav-filter="<?= $filterAccessor ?>" class="mst-nav__label mst-nav__category" x-data="initLabelRenderer()">
+    <?= $block->getSearchBoxElement($filterAccessor) ?>
+    <div data-holder="alphabetical"
+         x-data="initAlphabeticalIndex(<?= (int)($useAlphabeticalIndex && $filter->isAlphabeticalIndexAllowedByLimit()) ?>, <?= $filter->getAlphabeticalLimit() ?>)"
+         x-init="init()"
+    ></div>
+
+    <ol class="items">
+        <?php foreach ($filterItems as $key => $filterItem):
+            $label = $filterItem->getData('label');
+            $numberOfResults = $filterItem->getData('count');
+            $level = $filterItem->getData('level');
+	        $isParent = $filterItem->getData('is_parent');
+
+            $isItemChecked = $block->isFilterItemChecked($filterItem, true);
+
+            if ($isItemChecked) {
+                $checkedItemsCount++;
+            }
+
+            $cssClass = [
+                'item',
+                'mst-nav__label-item',
+                '_mode-' . $block->getFilterItemDisplayMode('category_ids'),
+                $isItemChecked ? '_checked' : '',
+                $isItemChecked && $block->isHighlightEnabled() ? '_highlight' : '',
+                $isParent ? '_parent' : '',
+            ];
+            ?>
+
+            <?= $level > $lastLevel
+            ? str_repeat('<ol class="items">', $level - $lastLevel)
+            : str_repeat('</ol>', $lastLevel - $level)
+            ?>
+
+            <?php if(
+                $useAlphabeticalIndex
+                && $filter->isSortByLabel()
+                && $letter !== $block->getFirstLetter($label)
+            ):
+            $letter = $block->getFirstLetter($label);
+            ?>
+            <li class="mst-nav__letter mst-nav__label-item" data-letter="<?= $letter ?>" data-element = filter>
+                <b><?= $letter ?></b>
+            </li>
+            <?php endif; ?>
+
+            <li data-element="filter"
+                data-hidden="false"
+                data-search-hidden="false"
+                data-letter-hidden="false"
+                data-value="<?= $filterItem->getValueString() ?>"
+                class="<?= implode(' ', $cssClass) ?>"
+                @click="handleClick"
+                <?= $useAlphabeticalIndex ? 'data-letter="' .  $block->getFirstLetter($label) . '"' : '' ?>
+            >
+                <?php if ($numberOfResults >= 0): ?>
+                    <?php
+                    $url = $isItemChecked ? $filterItem->getRemoveUrl() : $filterItem->getUrl();
+                    $id  = $block->getItemId($filterItem);
+                    if($filterItem->getData('count') > 0){
+                        $final_url = $escaper->escapeUrl($url);
+                        if (!str_contains($final_url, 'product_list_mode=list')) { 
+                            $final_url .= "&product_list_mode=list";
+                        }
+						if (str_contains($final_url, 'product_list_dir')) {
+							// Replace existing product_list_dir=xxx with product_list_dir=desc
+							$final_url = preg_replace('/product_list_dir=[^&]*/', 'product_list_dir=desc', $final_url);
+						} else {
+							// If not present, append
+							$final_url .= (str_contains($final_url, '?') ? '&' : '?') . "product_list_dir=desc";
+						}
+						if($filter_counts==1 && $isItemChecked){
+							$final_url = str_replace('product_list_order=revenue_ranking', 'product_list_order=position', $final_url);
+							$final_url = str_replace('product_list_dir=desc', 'product_list_dir=asc', $final_url);
+						}else{
+							  if (str_contains($final_url, 'product_list_order')) {
+								// Replace existing product_list_order=xxx with product_list_order=revenue_ranking
+								$final_url = preg_replace('/product_list_order=[^&]*/', 'product_list_order=revenue_ranking', $final_url);
+							} else {
+								// If not present, append
+								$final_url .= (str_contains($final_url, '?') ? '&' : '?') . "product_list_order=revenue_ranking";
+							}
+						}
+                    }else{
+                        $final_url = '#';
+                    } 
+                    ?>
+                    <a href="<?= $final_url ?>"
+                       rel="<?= $block->getRelAttributeValue() ?>"
+                       aria-label="<?= $escaper->escapeHtmlAttr($label) ?>"
+                    >
+                        <input id="<?= $id ?>" type="checkbox" <?= $isItemChecked ? 'checked' : '' ?>
+                            <?= $filterItem->getData('count') == 0 ? 'disabled' : '' ?> />
+
+                        <label for="<?= $id ?>">
+                            <span class="mst-nav__label-item__label"><?= $label ?></span>
+                            <span class="count text-primary"><?= $filterItem->getData('count') ?></span>
+                        </label>
+                    </a>
+                <?php else: ?>
+                    <span class="mst-nav__label-item__label"><?= $label ?></span>
+                    <span class="count text-primary"><?= $filterItem->getData('count') ?></span>
+                <?php endif ?>
+            </li>
+            <?php $lastLevel = $level ?>
+        <?php endforeach ?>
+
+        <?= $block->getSizeLimiterElement($filterAccessor) ?>
+    </ol>
+    <div class="hidden mst-clear-options-link" data-checked-count="<?= $checkedItemsCount ?>">
+        <div class="mst-nav__checked-counter__wrapper flex items-center mx-2">
+            <div class="mst-nav__checked-counter rounded px-2 bg-gray-200 mr-1"><?= $checkedItemsCount ?></div>
+            <a class="hover:underline text-2xl opacity-50" href="<?= $block->getAttributeClearUrl($attributeCode) ?>" data-element="filter">&#10005;</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .mst-nav__category ol.items {
+        margin-left: 1.5rem;
+    }
+
+    .mst-nav__category ol.items:first-child {
+        margin-left: 0;
+    }
+</style>

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_designer_tool>
+            <custom_size>
+                <width>10</width>
+                <length>16</length>
+            </custom_size>
+        </dcw_designer_tool>
+    </default>
+</config>

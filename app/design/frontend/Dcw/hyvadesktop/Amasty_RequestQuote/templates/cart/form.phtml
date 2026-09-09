@@ -1,0 +1,43 @@
+<?php
+/**  @var $block \Amasty\RequestQuote\Block\Cart\Grid */
+?>
+<?php $mergedCells = ($block->getTaxHelper()->displayCartBothPrices() ? 2 : 1); ?>
+<?= $block->getChildHtml('form_before') ?>
+<div x-data="cartQuoteTotals()"
+     class="relative flex-auto w-4/6 mt-2 float-left lg:order-1 lg:pr-8 quote-amstyleft"
+>
+<form action="<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updatePost')) ?>"
+      method="post"
+      id="form-validate"
+      data-mage-init='{"validation":{}}'
+      class="form form-cart amasty-quote-update"
+      enctype="multipart/form-data">
+    <?= $block->getBlockHtml('formkey') ?>
+    <?php
+    // Get relation_parent_id from quote object (set by EditQuoteProcessor when editing)
+    $quote = $block->getQuote();
+    $relationParentId = $quote ? $quote->getRelationParentId() : null;
+    if ($relationParentId): ?>
+        <input type="hidden" name="edit_quote_id" value="<?= (int)$relationParentId ?>" />
+        <input type="hidden" name="relation_parent_id" value="<?= (int)$relationParentId ?>" />
+    <?php endif; ?>
+    <div class="cart table-wrapper<?= $mergedCells == 2 ? ' detailed' : '' ?>">
+        <div id="shopping-cart-table"
+               class="table-row-items border-b border-container">
+             <div class="flex text-size18 font-semibold text-primary-lighter border-gray-1 border-container">
+                <div class="p-2 th prodct"><span><?= /* @noEscape */ __('Product') ?></span></div>
+                <div class="p-2 text-center th prce"><span><?= /* @noEscape */ __('Price') ?></span></div>
+                <div class="p-2 text-center th qutanty"><span><?= /* @noEscape */ __('Quantity') ?></span></div>
+                <div class="p-2 text-right th subt"><span><?= /* @noEscape */ __('Subtotal') ?></span></div>
+             </div>
+            <?php foreach ($block->getItems() as $item): ?>
+                <?= $block->getItemHtml($item) ?>
+            <?php endforeach ?>
+        </div>
+    </div>
+    <div class="cart main actions flex flex-col mt-5 mb-3 md:flex-row lg:mb-0 mt-4">
+    </div>
+</form>
+<?= $block->getChildHtml('checkout.cart.order.actions') ?>
+<?= $block->getChildHtml('shopping.cart.table.after') ?>
+</div>

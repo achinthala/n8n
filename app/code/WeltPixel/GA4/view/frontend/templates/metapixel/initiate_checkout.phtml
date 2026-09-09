@@ -1,0 +1,23 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\MetaPixel\InitiateCheckout */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+$cspNonceProvider = $metaPixelHelper->getCspNonceProvider();
+?>
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled() && $metaPixelHelper->shouldMetaPixelEventBeTracked(\WeltPixel\GA4\Model\Config\Source\MetaPixel\TrackingEvents::EVENT_INITIATE_CHECKOUT)) :
+?>
+<script <?php if ($cspNonceProvider) echo ' nonce="' .  $cspNonceProvider->generateNonce() . '" ' ?>>
+        if (window.ga4AllowServices) {
+        fbq('track', 'InitiateCheckout', {
+            content_type: "product",
+            content_ids: [<?= $block->getContentIds() ?>],
+            num_items: <?= $block->getNumItems() ?>,
+            contents: <?= $block->getContents() ?>,
+            value: <?= $block->getValue() ?>,
+            currency: "<?= $metaPixelHelper->getCurrencyCode() ?>"
+        });
+    }
+</script>
+<?php endif; ?>

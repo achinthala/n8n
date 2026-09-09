@@ -1,0 +1,45 @@
+<?php
+/**
+ * @var $block \Mirasvit\LayeredNavigation\Block\Css
+ */
+$css = $block->getCss();
+
+?>
+<?php if ($css): ?>
+    <style><?= $css ?></style>
+<?php endif ;
+
+$coast = "";
+
+if($coast != "") {
+    $dataHelper = $this->helper('Dcw\Localization\Helper\Data');
+    //$coast = $dataHelper->getCoast();
+    $options=$dataHelper->getShipFromValue();
+
+    if(array_key_exists($coast,$options)) {
+        $selectedCoast=$options[$coast];
+?>
+    <script>
+        function setCookie(cName, cValue, expDays = 30) {
+            let date = new Date();
+            date.setTime(date.getTime() + (expDays * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = cName + "=" + cValue + "; " + expires + "; path=/";
+        }
+        /*setTimeout(() => {
+            setCookie('ships_from','<?= $coast?>');
+            document.getElementById('m_ships_from[<?= $selectedCoast?>]').click();
+        }, 1000); */
+        var CONTROL_INTERVAL = setInterval(function(){
+            // Check if element exist
+            if(document.querySelector('.filter-option .filter-options-content .mst-nav__label .items .item')){
+                clearInterval(CONTROL_INTERVAL);
+                setCookie('ships_from','<?= $coast?>');
+                //document.getElementById('m_ships_from[<?= $selectedCoast?>]').click();
+            }
+        }, 500);
+    </script>
+<?php
+   } 
+}   
+?>

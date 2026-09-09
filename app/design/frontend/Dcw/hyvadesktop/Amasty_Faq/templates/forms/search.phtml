@@ -1,0 +1,263 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package FAQ and Product Questions Hyva
+ */
+
+declare(strict_types=1);
+
+use Amasty\Faq\Block\Forms\Search;
+use Magento\Framework\Escaper;
+
+/** @var Search $block */
+/** @var Escaper $escaper */
+
+$uniqueId = uniqid();
+?>
+<div
+    class="w-full"
+    x-data="amFAQSearchData_<?= $escaper->escapeHtmlAttr($uniqueId) ?>()"
+>
+    <form
+        id="amfaq_search"
+        class="relative"
+        action="<?= $escaper->escapeUrl($block->getUrlAction()) ?>"
+        method="get"
+    >
+        <input
+            class="form-input inline-flex w-full pr-8"
+            type="text"
+            placeholder="<?= $escaper->escapeHtml(__('Find answer (deliver, etc.)')) ?>"
+            title="<?= $escaper->escapeHtml(__('Search')) ?>"
+            aria-label="<?= $escaper->escapeHtml(__('Search')) ?>"
+            id="search-faq"
+            name="query"
+            autocomplete="off"
+            maxlength="100"
+            minlength="3"
+            x-model="query"
+            @keydown.enter="search"
+            @keyup="checkValue"
+        />
+        <div
+            class="absolute z-10 bg-white w-full border-container
+                border border-gray-900 border-t-0"
+            x-show="showSuggest"
+            @click.away="showSuggest = false"
+        >
+            <template x-if="searchSuggestCategory.length">
+                <ul class="searchSuggestCategory">
+                    <template x-for="suggest in searchSuggestCategory">
+                        <li class="border border-gray-200
+                                border-x-0 border-t-0 border-b-1">
+                            <a
+                                :href="suggest.url"
+                                class="inline-block px-4 py-2 text-blue-600 hover:underline text-primary"
+                            >
+                                <span class="search-label"><?= $escaper->escapeHtml(__('Category')) ?>:</span>
+                                <span x-text="suggest.title"></span>
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <template x-if="searchSuggestQuestions.length">
+                <ul class="searchSuggestQuestions">
+                    <template x-for="suggest in searchSuggestQuestions">
+                        <li class="border border-gray-200
+                                border-x-0 border-t-0 border-b-1 last:border-b-0">
+                            <a
+                                :href="suggest.url"
+                                class="block px-4 py-2 hover:bg-gray-200 text-primary"
+                            >
+                                <span class="block" x-text="suggest.title"></span>
+                                <span
+                                    class="block text-gray-600 text-sm"
+                                    x-text="'<?= $escaper->escapeHtml(__('Category:')) ?> '
+                                        + suggest.category"
+                                ></span>
+                            </a>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+        </div>
+        <div
+            class="bg-white bg-opacity-50 absolute top-0 left-0
+                w-full h-full flex items-center justify-center"
+            x-show="searchLoader"
+        >
+            <svg width="25" height="25" viewBox="0 0 57 57"
+                    xmlns="http://www.w3.org/2000/svg" stroke="#000">
+                <g fill="none" fill-rule="evenodd">
+                    <g transform="translate(1 1)" stroke-width="2">
+                        <circle cx="5" cy="50" r="5">
+                            <animate attributeName="cy"
+                                begin="0s" dur="2.2s"
+                                values="50;5;50;50"
+                                calcMode="linear"
+                                repeatCount="indefinite" />
+                            <animate attributeName="cx"
+                                begin="0s" dur="2.2s"
+                                values="5;27;49;5"
+                                calcMode="linear"
+                                repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="27" cy="5" r="5">
+                            <animate attributeName="cy"
+                                begin="0s" dur="2.2s"
+                                from="5" to="5"
+                                values="5;50;50;5"
+                                calcMode="linear"
+                                repeatCount="indefinite" />
+                            <animate attributeName="cx"
+                                begin="0s" dur="2.2s"
+                                from="27" to="27"
+                                values="27;49;5;27"
+                                calcMode="linear"
+                                repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="49" cy="50" r="5">
+                            <animate attributeName="cy"
+                                begin="0s" dur="2.2s"
+                                values="50;50;5;50"
+                                calcMode="linear"
+                                repeatCount="indefinite" />
+                            <animate attributeName="cx"
+                                from="49" to="49"
+                                begin="0s" dur="2.2s"
+                                values="49;5;27;49"
+                                calcMode="linear"
+                                repeatCount="indefinite" />
+                        </circle>
+                    </g>
+                </g>
+            </svg>
+        </div>
+        <button
+            class="absolute top-2 right-1"
+            :class="{'pointer-events-none opacity-50' : query.length < minCharacterLength}"
+            role="button"
+            title="<?= $escaper->escapeHtml(__('Search')) ?>"
+            aria-label="<?= $escaper->escapeHtml(__('Search')) ?>"
+            :disabled="query.length < minCharacterLength"
+            type="submit"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                @click="search"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                width="25"
+                height="25"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
+            </svg>
+        </button>
+    </form>
+</div>
+
+<script>
+    function amFAQSearchData_<?= $escaper->escapeHtml($uniqueId) ?>() {
+        return {
+            minCharacterLength: 3,
+            inputEventDelay: 1000,
+            controller: new AbortController(),
+            signal: null,
+            timeoutID: null,
+            showSuggest: false,
+            searchLoader: false,
+            formID: 'amfaq_search',
+            query: '<?= $escaper->escapeHtml($block->getQuery()) ?>',
+            suggestUrl: '<?= $escaper->escapeUrl($block->getSuggestUrl()) ?>',
+            searchSuggestCategory: [],
+            searchSuggestQuestions: [],
+
+            init() {},
+
+            search() {
+                this.searchLoader = true;
+                this.query = this.query.trim();
+                document.getElementById(this.formID).submit();
+            },
+
+            ajaxSearch() {
+                this.clearResault();
+                this.searchLoader = true;
+                fetch(this.suggestUrl + '?q=' + this.query, {
+                        method: 'POST',
+                        headers: {
+                            'Content-type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        signal: this.signal
+                    }
+                )
+                .then(response => response.json())
+                .then(result => {
+                    if (result && Object.keys(result).length) {
+                        result.map(item => {
+                            if (item.category) {
+                                this.searchSuggestQuestions.push(item);
+                            } else {
+                                this.searchSuggestCategory.push(item);
+                            }
+                        });
+
+                        this.showSuggest = true;
+                    }
+                })
+                .catch(this.displayError)
+                .finally(() => {
+                    this.searchLoader = false;
+                });
+            },
+
+            checkValue() {
+                window.clearTimeout(this.timeoutID);
+                this.fetchAbort();
+                if (this.query.length >= this.minCharacterLength) {
+                    this.timeoutID = window.setTimeout(() => {
+                        this.ajaxSearch();
+                    }, this.inputEventDelay);
+                }
+            },
+
+            clearResault() {
+                this.searchSuggestQuestions = [];
+                this.searchSuggestCategory = [];
+                this.showSuggest = false;
+            },
+
+            fetchAbort() {
+                this.controller.abort();
+                this.signal = null;
+                this.controller = new AbortController();
+                this.signal = this.controller.signal;
+            },
+
+            displayError(error) {
+                if (error.name === 'AbortError') {
+                    console.log('Fetch aborted');
+                } else {
+                    console.error(error);
+                    typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                        [{
+                            type: "error",
+                            text: "<?= $escaper->escapeJs(__("Something went wrong. Please try again.")) ?>"
+                        }], 10000
+                    );
+                }
+            }
+        }
+    }
+</script>
+
+<?= /** @escapeNotVerified */ $block->getChildHtml() ?>

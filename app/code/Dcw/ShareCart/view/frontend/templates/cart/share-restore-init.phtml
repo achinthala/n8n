@@ -1,0 +1,51 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ShareCart\ViewModel\ShareCartRestore;
+use Magento\Framework\Escaper;
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var Escaper $escaper */
+/** @var ShareCartRestore $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel) {
+    return;
+}
+
+$applyUrl = $viewModel->getApplyUrl();
+$formKey = $viewModel->getFormKey();
+$hashTokenParam = $viewModel->getHashTokenParam();
+$loadingMessage = (string) __('Loading your shared cart...');
+?>
+<div id="dcw-share-cart-restore-overlay" aria-live="polite" aria-busy="true">
+    <p><?= $escaper->escapeHtml($loadingMessage) ?></p>
+</div>
+<form id="dcw-share-cart-restore-form"
+      method="post"
+      action="<?= $escaper->escapeUrl($applyUrl) ?>"
+      style="display: none;">
+    <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($formKey) ?>">
+    <input type="hidden" name="share_cart_apply" value="1">
+    <input type="hidden" name="token" value="">
+</form>
+<script>
+    (function () {
+        if (!document.documentElement.classList.contains('dcw-share-cart-restoring')) {
+            return;
+        }
+
+        var hash = window.location.hash.replace(/^#/, '');
+        var params = new URLSearchParams(hash);
+        var token = (params.get('<?= $escaper->escapeJs($hashTokenParam) ?>') || '').trim();
+        var form = document.getElementById('dcw-share-cart-restore-form');
+
+        if (!token || !form) {
+            document.documentElement.classList.remove('dcw-share-cart-restoring');
+            return;
+        }
+
+        form.querySelector('[name="token"]').value = token;
+        form.submit();
+    })();
+</script>

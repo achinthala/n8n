@@ -1,0 +1,18 @@
+{
+    "name": "dcw/module-trackorder",
+    "description": "Simplified guest order lookup - Order ID + Email only",
+    "type": "magento2-module",
+    "license": "proprietary",
+    "minimum-stability": "dev",
+    "require": {
+        "magento/module-sales": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Dcw\\TrackOrder\\": ""
+        }
+    }
+}

@@ -1,0 +1,24 @@
+<?php
+$quote = $block->getQuote();
+
+$dcwAdminblock = $block->getLayout()->createBlock(\Dcw\RequestQuote\Block\Adminhtml\Index::class);
+$getReservedOrderId = "";
+
+if ($quote->getStatus() == 2) {
+    $getReservedOrderId = $quote->getReservedOrderId();
+    
+    if (!$getReservedOrderId) {
+        $getReservedOrderId = $dcwAdminblock->getReservedOrderId($quote->getId());
+    }
+
+    if ($getReservedOrderId) { ?>
+        <tr>
+            <th>Reserved Order Id</th>
+            <td>
+                <?php echo $getReservedOrderId; ?>
+            </td>
+        </tr>
+    <?php
+    }
+}
+?>

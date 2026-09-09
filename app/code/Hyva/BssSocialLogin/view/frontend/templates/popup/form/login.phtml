@@ -1,0 +1,111 @@
+<?php
+/**
+ * BSS Commerce Co.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the EULA
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://bsscommerce.com/Bss-Commerce-License.txt
+ *
+ * @category   BSS
+ * @package    Hyva_BssSocialLogin
+ * @author     Extension Team
+ * @copyright  Copyright (c) 2022 BSS Commerce Co. ( http://bsscommerce.com )
+ * @license    http://bsscommerce.com/Bss-Commerce-License.txt
+ */
+?>
+<?php
+//  @codingStandardsIgnoreFile
+?>
+<?php
+use Bss\SocialLogin\Block\SocialLogin\Authentication;
+use Magento\Framework\Escaper;
+
+/** @var Authentication $block */
+/** @var Escaper $escaper */
+?>
+<div class="block-customer-login" x-show="openLogin" x-data="{ show: false }">
+    <span class="or-label text-size14 font-normal text-darkblack"> <?= $escaper->escapeHtml(__('Or')) ?></span>
+
+    <form class="form form-login"
+          method="post"
+          @submit.prevent="submitForm();"
+          id="login-form"
+    >
+        <?= $block->getBlockHtml('form_repcapcha') ?>
+        <div class="fieldset login">
+            <div class="field email required">
+                <label class="label hidden" for="customer-email">
+                    <span><?= $escaper->escapeHtml(__('Email Address')) ?></span>
+                </label>
+                <div class="control">
+                    <input name="username"
+                           x-ref="customer-email"
+                           @change="errors = 0"
+                           type="email"
+                           required
+                           class="form-input input-text" id="customer-email" placeholder="Email address" 
+                    >
+                </div>
+            </div>
+            <div class="field password required" >
+                <label for="pass" class="label hidden">
+                    <span><?= $escaper->escapeHtml(__('Password')) ?></span>
+                </label>
+                <div class="control">
+                    <input name="password"
+                           type="password" 
+                           class="form-input input-text" id="pass" placeholder="Password" 
+                           required
+                           x-ref="customer-password"
+                           @change="errors = 0"
+                    >
+                </div>
+            </div>
+
+            <input name="context" type="hidden" value="checkout"/>
+             
+            <div class="actions-toolbar flex justify-between items-center" >
+                <div class="flex items-center">
+                    <input type="checkbox" name="show-password" @click="showPassword()" id="show-password" value="" class="checkbox">
+                    <label class="cursor-pointer text-size12 font-normal text-darkblack" style="margin:0;" for="show-password">Show password</label>                    
+                    <!-- <span class="cursor-pointer text-size12 font-normal text-darkblack" @click="showPasswordForLable()" id="show-password-label" >
+                        <?= $escaper->escapeHtml(__('Show Password')) ?> 
+                    </span> -->
+                </div>    
+                   <span class="cursor-pointer text-size12 font-normal text-darkblack" @click="openForgot = true,openLogin = false,openButtonLogin = false">
+                        <?= $escaper->escapeHtml(__('Forgot Your Password?')) ?>
+                    </span>
+                    
+            
+            </div>
+            <div class="actions-toolbar flex justify-between items-center">
+                 <button type="submit" class="inline-flex btn btn-primary login_btn">
+                        <?= $escaper->escapeHtml(__('Log In')) ?>
+                    </button>
+            </div>       
+        </div>
+    </form>
+</div>
+
+<script>
+     function showPassword(){
+        var showPwd=document.getElementById("show-password");
+        var password=document.getElementById("pass");
+        if(showPwd.checked==true) {
+            password.type="text";
+        } else {
+           password.type="password";
+        }
+    }    
+    function showPasswordForLable(){
+        var password=document.getElementById("pass");
+        if (password.type === "password") {
+            password.type = "text";
+        } else {
+            password.type = "password";
+        }
+    } 
+</script>

@@ -1,0 +1,11 @@
+<?php
+/** @var \WeltPixel\GA4\Helper\ServerSideTracking $ga4Helper */
+$ga4Helper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking');
+
+/** @var $block \WeltPixel\GA4\Block\Track\Checkout */
+?>
+<?php
+if ($ga4Helper->isServerSideTrakingEnabled() && $ga4Helper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_BEGIN_CHECKOUT)) :
+    $block->pushBeginCheckoutEvent();
+endif;
+?>

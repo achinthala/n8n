@@ -1,0 +1,156 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2022 Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+?>
+<?php
+/**
+ * @var \Amasty\RequestQuote\Block\Adminhtml\Quote\Create\Shipping\Address|\Amasty\RequestQuote\Block\Adminhtml\Quote\Create\Billing\Address $block
+ */
+?>
+<?php
+$fieldsContainerId = $block->getContainerId();
+$addressChoiceContainerId = $block->getAddressContainerId();
+$addtype='billing';
+if ($block->getIsShipping()):
+$addtype='shipping';
+    ?>
+    <script>
+    require(["Amasty_RequestQuote/quote/create/form"], function(){
+        quote.shippingAddressContainer = '<?= $escaper->escapeJs($fieldsContainerId) ?>';
+        quote.setAddresses(<?= /* @noEscape */ $block->getAddressCollectionJson() ?>);
+    });
+    </script>
+    <?php
+else:
+    ?>
+    <script>
+        require(["Amasty_RequestQuote/quote/create/form"], function(){
+            quote.billingAddressContainer = '<?= $escaper->escapeJs($fieldsContainerId) ?>';
+        });
+    </script>
+    <?php
+endif; ?>
+
+<fieldset class="admin__fieldset">
+    <legend class="admin__legend <?= $escaper->escapeHtmlAttr($block->getHeaderCssClass()) ?>">
+        <span><?= $escaper->escapeHtml($block->getHeaderText()) ?></span>
+    </legend><br>
+
+    <fieldset id="<?= $escaper->escapeHtmlAttr($addressChoiceContainerId) ?>" class="admin__fieldset quote-choose-address">
+    <?php if ($block->getIsShipping()): ?>
+        <div class="admin__field admin__field-option admin__field-shipping-same-as-billing">
+            <input type="checkbox" id="quote-shipping_same_as_billing"
+                   onclick="quote.setShippingAsBilling(this.checked)" class="admin__control-checkbox"
+                   value="1"
+                   <?php if ($block->getIsAsBilling()): ?>checked<?php endif; ?> />
+            <label for="quote-shipping_same_as_billing" class="admin__field-label">
+                <?= $escaper->escapeHtml(__('Same As Billing Address')) ?>
+            </label>
+        </div>
+    <?php endif; ?>
+        <div class="admin__field admin__field-select-from-existing-address">
+            <label class="admin__field-label"><?= $escaper->escapeHtml(__('Select from existing customer addresses:')) ?></label>
+            <?php $_id = $block->getForm()->getHtmlIdPrefix() . 'customer_address_id' ?>
+            <div class="admin__field-control">
+                <select id="<?= $escaper->escapeHtmlAttr($_id) ?>"
+                        onchange="quote.selectAddress(this, '<?= $escaper->escapeJs($fieldsContainerId) ?>')"
+                        class="admin__control-select">
+                    <option value=""><?= $escaper->escapeHtml(__('Add New Address')) ?></option>
+                    <?php foreach ($block->getAddressArray() as $addressId => $address): ?>
+                        <option
+                            value="<?= $escaper->escapeHtmlAttr($addressId) ?>"<?php if ($addressId == $block->getAddressId()): ?> selected="selected"<?php endif; ?>>
+                            <?= $escaper->escapeHtml($block->getCustomerAddressFormatter()->getAddressAsString($address)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="order-address admin__fieldset" id="<?= $escaper->escapeHtmlAttr($fieldsContainerId) ?>">
+	
+	
+        <?= $block->getForm()->toHtml() ?>
+
+        <?php if ($block->isSaveInAddressBook()): ?>
+        <div class="admin__field admin__field-option order-save-in-address-book">
+            <input name="<?= $escaper->escapeHtmlAttr($block->getForm()->getHtmlNamePrefix()) ?>[save_in_address_book]" type="checkbox" id="<?= $escaper->escapeHtmlAttr($block->getForm()->getHtmlIdPrefix()) ?>save_in_address_book" value="1"<?php if (!$block->getDontSaveInAddressBook()): ?> checked="checked"<?php endif; ?> class="admin__control-checkbox"/>
+            <label for="<?= $escaper->escapeHtmlAttr($block->getForm()->getHtmlIdPrefix()) ?>save_in_address_book"
+                   class="admin__field-label"><?= $escaper->escapeHtml(__('Save in address book')) ?></label>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php $hideElement = 'address-' . ($block->getIsShipping() ? 'shipping' : 'billing') . '-overlay'; ?>
+    <div style="display: none;" id="<?= /* @noEscape */ $hideElement ?>" class="order-methods-overlay">
+        <span><?= $escaper->escapeHtml(__('You don\'t need to select a shipping address.')) ?></span>
+    </div>
+
+    <script>
+        require(["Amasty_RequestQuote/quote/create/form"], function(){
+            quote.bindAddressFields('<?= $escaper->escapeJs($fieldsContainerId) ?>');
+            quote.bindAddressFields('<?= $escaper->escapeJs($addressChoiceContainerId) ?>');
+            <?php if ($block->getIsShipping() && $block->getIsAsBilling()): ?>
+            quote.disableShippingAddress(true);
+            <?php endif; ?>
+        });
+    </script>
+</fieldset>
+<script>
+    require(['jquery'], function($) {
+        $(document).ready(function() {
+            var input = document.getElementById('quote-<?=$addtype?>_address_street0');
+            var autocomplete = new google.maps.places.Autocomplete(input);
+
+            autocomplete.addListener('place_changed', function() {
+                var place = autocomplete.getPlace();
+                if (!place.geometry) {
+                    console.log("Autocomplete's returned place contains no geometry");
+                    return;
+                }
+
+                var shippingAddress = {
+                    street: place.name,
+                    city: '',
+                    region: '',
+                    postcode: '',
+                    countryId: '',
+                    telephone: '',
+                    saveInAddressBook: 0
+                };
+
+                for (var i = 0; i < place.address_components.length; i++) {
+                    var addressType = place.address_components[i].types[0];
+
+                    if (addressType === 'locality') {
+                        shippingAddress.city = place.address_components[i].long_name;
+                    } else if (addressType === 'administrative_area_level_1') {
+                        shippingAddress.region = place.address_components[i].short_name;
+                    } else if (addressType === 'postal_code') {
+                        shippingAddress.postcode = place.address_components[i].long_name;
+                    } else if (addressType === 'country') {
+                        shippingAddress.countryId = place.address_components[i].short_name;
+                    } else if (addressType === 'street_number') {
+                        shippingAddress.street = shippingAddress.street + ' ' + place.address_components[i].long_name;
+                    } else if (addressType === 'route') {
+                        shippingAddress.street = place.address_components[i].long_name + ' ' + shippingAddress.street;
+                    }
+                }console.log(shippingAddress);
+
+                $('#quote-<?=$addtype?>_address_street0').val(shippingAddress.street).trigger('change');
+                $('#quote-<?=$addtype?>_address_city').val(shippingAddress.city).trigger('change');
+                
+                $('#quote-<?=$addtype?>_address_postcode').val(shippingAddress.postcode).trigger('change');
+				//regionUpdater()
+				$('#quote-<?=$addtype?>_address_country_id').find('option[value="'+ shippingAddress.countryId +'"]').prop('selected', 'selected');
+				
+                $('#quote-<?=$addtype?>_address_country_id').val(shippingAddress.countryId).change(); 
+
+                $('#quote-<?=$addtype?>_address_telephone').val(shippingAddress.telephone).trigger('change');
+				$('#order-<?=$addtype?>_address_region').val(shippingAddress.region).trigger('change'); 
+            });
+        });
+    });
+</script>

@@ -1,0 +1,71 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Out Of Stock Notifications Hyva Compatibility
+ */
+
+/** This template is overriden from
+ *  vendor/hyva-themes/magento2-default-theme/Magento_Catalog/templates/product/view/stock-status.phtml
+ *  to insert amNotificationProductViewComponent for a configurable product on PDP
+ *
+ *  .amxnotif-block-wrapper selector is added as a wrapper for DOM elements
+ *
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\CurrentProduct;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Amasty\OutofstockHyvaCompatibility\ViewModel\Catalog\OutofstockData;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var CurrentProduct $currentProduct */
+
+/** @var Product $product */
+$product = $block->getProduct();
+if (!$product) {
+    $currentProduct = $viewModels->require(CurrentProduct::class);
+    $product = $currentProduct->get();
+}
+if (!$product || !$product->getId()) {
+    return;
+}
+
+$productTypeConfigurable = $product->getTypeId() === Configurable::TYPE_CODE;
+?>
+<div class="amxnotif-block-wrapper w-full stock__Status hidden">
+    <?php if ($productTypeConfigurable && $product->getIsSalable()): ?>
+        <!-- overriden part starts here -->
+        <div x-data="amNotificationProductViewComponent_<?= $escaper->escapeHtmlAttr($product->getId()) ?>()"
+             x-on:configurable-selection-changed.window="getSimpleProduct($event.detail)"
+             x-show="getAvailable()"
+             class="pl-2">
+            <p class="flex items-center align-middle available gap-x-2 stock" :title="title">
+                <span class="w-3 h-3 rounded-full flex-shrink-0" :class="options.additionalClass"></span>
+                <span x-text="options.label"></span>
+            </p>
+        </div>
+        <!-- overriden part ends here -->
+    <?php else: ?>
+        <?php if ($product->getIsSalable()): ?>
+            <p class="flex items-center align-middle available gap-x-2 stock pl-2"
+               title="<?= $escaper->escapeHtmlAttr(__('Availability')) ?>">
+                <span class="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></span>
+                <span><?= $escaper->escapeHtml(__('In stock')) ?></span>
+            </p>
+        <?php else: ?>
+            <p class="flex items-center align-middle gap-x-2 unavailable stock pl-2"
+               title="<?= $escaper->escapeHtmlAttr(__('Availability')) ?>">
+                <span class="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></span>
+                <span><?= $escaper->escapeHtml(__('Out of stock')) ?></span>
+            </p>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>

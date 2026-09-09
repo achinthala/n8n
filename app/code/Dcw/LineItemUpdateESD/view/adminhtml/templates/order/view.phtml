@@ -1,0 +1,63 @@
+<?php
+/**
+ * Admin Order Items – Estimated Ship Date form
+ *
+ * @var \Dcw\OrderGridLink\Block\Adminhtml\Order\View $block
+ */
+$items = $block->getVisibleItems();
+$order = $block->getOrder();
+?>
+
+<h2>
+    <strong><?= $block->escapeHtml(__('Order ID:')) ?></strong>
+    <?= $block->escapeHtml($order->getIncrementId()) ?>
+</h2>
+
+<h2><?= $block->escapeHtml(__('Order Items – Estimated Ship Dates')) ?></h2>
+
+<form method="post"
+      action="<?= $block->escapeUrl(
+          $block->getUrl('dcw_lineitemupdateesd/order/update')
+      ) ?>">
+    <?= /* @noEscape */ $block->getBlockHtml('formkey') ?>
+
+    <input type="hidden"
+           name="order_id"
+           value="<?= (int) $order->getEntityId() ?>" />
+
+    <table class="admin__table-primary">
+        <thead>
+        <tr>
+            <th><?= $block->escapeHtml(__('SKU')) ?></th>
+            <th><?= $block->escapeHtml(__('Product Name')) ?></th>
+            <th><?= $block->escapeHtml(__('Current Estimated Ship Date')) ?></th>
+            <th><?= $block->escapeHtml(__('New Estimated Ship Date')) ?></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($items as $item): ?>
+            <?php
+            /** @var \Magento\Sales\Model\Order\Item $item */
+            $currentDate = $block->getEstimatedShipDate($item);
+            ?>
+            <tr>
+                <td><?= $block->escapeHtml($item->getSku()) ?></td>
+                <td><?= $block->escapeHtml($item->getName()) ?></td>
+                <td><?= $block->escapeHtml($currentDate ?: '-') ?></td>
+                <td>
+                    <input type="text"
+                           name="items[<?= (int) $item->getItemId() ?>][estimated_ship_date]"
+                           class="admin__control-text"
+                           value="<?= $block->escapeHtmlAttr($currentDate) ?>" />
+                </td>
+            </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <br />
+
+    <button type="submit" class="action-primary">
+        <?= $block->escapeHtml(__('Update Estimated Ship Dates')) ?>
+    </button>
+</form>

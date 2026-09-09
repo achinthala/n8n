@@ -1,0 +1,142 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Out Of Stock Notifications Hyva Compatibility
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\CurrentProduct;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Escaper;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
+use Amasty\OutofstockHyvaCompatibility\ViewModel\Catalog\OutofstockData;
+use Amasty\OutofstockHyvaCompatibility\ViewModel\SubscribeQuery;
+use Hyva\Theme\ViewModel\Store as StoreViewModel;
+
+/** @var Product $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var CurrentProduct $currentProduct */
+
+/** @var StoreViewModel $viewModelStore */
+$viewModelStore = $viewModels->require(StoreViewModel::class);
+/** @var SubscribeQuery $viewModelSubscribeQuery */
+$viewModelSubscribeQuery = $viewModels->require(SubscribeQuery::class);
+
+/** @var OutofstockData $outofstockViewModel */
+$outofstockViewModel = $viewModels->require(OutofstockData::class);
+
+/** @var Product $product */
+$product = $block->getProduct();
+if (!$product) {
+    $currentProduct = $viewModels->require(CurrentProduct::class);
+    $product = $currentProduct->get();
+}
+
+if (!$product || !$product->getId()) {
+    return;
+}
+
+$productTypeConfigurable = $product->getTypeId() === Configurable::TYPE_CODE;
+$type = 'stock';
+// phpcs:disable Generic.Files.LineLength.TooLong
+?>
+
+<?= /** @noEscape */
+$block->fetchView(
+    $block->getTemplateFile('Amasty_OutofstockHyvaCompatibility::js/amnotification-init.phtml')
+) ?>
+
+<div x-data="{
+        ...amNotificationProductViewComponent_<?= $escaper->escapeHtmlAttr($product->getId()) ?>(),
+        ...amXnotifSubscribeComponentList_<?= $escaper->escapeHtmlAttr($product->getId()) ?>()
+        }"
+     x-on:configurable-select-changed.window="getSimpleProduct($event.detail, $el)"
+     x-show="getAvailable()"
+     id="stock_notification_<?= $escaper->escapeHtmlAttr($product->getId()) ?>"
+     class="text-right relative hidden">
+    <?php if ($outofstockViewModel->isCustomerLoggedIn() &&
+        $outofstockViewModel->isAllowedForCurrentCustomerGroup(OutofstockData::STOCK_ALERT_BLOCK) &&
+        $outofstockViewModel->isAllowAlertStock()): ?>
+        <div class="link-stock-alert alert stock amxnotif-form-stock">
+            <div class="amxnotif_guest_action">
+                <button type="button"
+                        @click.prevent="fetchSubscribe(productIndex)"
+                        :title="options.categoryNotificationLabel"
+                        :disabled="buttonDisabled"
+                        class="action alert subscribe-button">
+                    <span class="text-blue-600 hover:underline" x-text="options.categoryNotificationLabel"></span>
+                </button>
+            </div>
+        </div>
+    <?php endif; ?>
+    <?php if ($product->getIsSalable()): ?>
+        <p class="flex items-center justify-center align-middle available gap-x-2 stock" :title="title">
+            <span class="w-3 h-3 rounded-full flex-shrink-0" :class="options.additionalClass"></span>
+            <span x-text="options.label"></span>
+        </p>
+    <?php endif; ?>
+</div>
+<script>
+    'use strict';
+
+    function amXnotifSubscribeComponentList_<?= $escaper->escapeHtmlAttr($product->getId()) ?>() {
+        return {
+            mutationStockSubscription: `<?= /** @noEscape */ $viewModelSubscribeQuery->mutationStockSubscription() ?>`,
+            isInStock: '<?= $escaper->escapeHtmlAttr($product->getIsSalable()); ?>',
+            isConfigurable: '<?= /** @noEscape */ (bool)$productTypeConfigurable ?>',
+            productIdentifier: '<?= $escaper->escapeHtmlAttr($product->getId()) ?>',
+            isValid: true,
+            buttonDisabled: false,
+
+            getMessages(type, message) {
+                return typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                    [{
+                        type: type,
+                        text: message
+                    }]
+                );
+            },
+            fetchSubscribe(productId) {
+                let variables = {
+                    input: {
+                        product_uid: btoa(productId),
+                        parent_uid: this.isConfigurable ? btoa(this.productIdentifier) : '',
+                    }
+                };
+                this.buttonDisabled = true;
+                fetch(BASE_URL + 'graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Store': '<?= $escaper->escapeJs($viewModelStore->getStoreCode()); ?>',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({query: this.mutationStockSubscription, variables}),
+                    mode: "cors",
+                    credentials: "include"
+                })
+                    .then((response) => response.json())
+                    .then((result) => {
+                        if (result?.data?.AmxnotifStockSubscribe) {
+                            this.getMessages("success", result.data.AmxnotifStockSubscribe.response_message);
+                        } else {
+                            let message = result?.errors ? result.errors[0].message : "<?= $escaper->escapeHtml(__('Something went wrong.')); ?>";
+                            this.getMessages("error", message)
+                        }
+                        if (this.isConfigurable) {
+                            setTimeout(() => {
+                                window.dispatchEvent(new Event('showAmLoader'));
+                                window.location.reload()
+                            }, 2000)
+                        }
+                    })
+                    .finally(() => {
+                        this.buttonDisabled = false;
+                    })
+            }
+        }
+    }
+</script>

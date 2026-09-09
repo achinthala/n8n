@@ -1,0 +1,111 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+// phpcs:disable Magento2.Templates.ThisInTemplate
+
+/** @var $block \Magento\Sales\Block\Order\Email\Items\DefaultItems */
+
+/** @var $_item \Magento\Sales\Model\Order\Item */
+$_item = $block->getItem();
+$_order = $_item->getOrder();
+$_imageHelper = $this->helper('Magento\Catalog\Helper\Image');
+$sampleUrl = '';
+foreach ($block->getItemOptions() as $option) {
+    if($option['label']=="Configurable Product Image") {
+        $sampleUrl = $option['value'];
+    }    
+}
+?>
+<tr>
+    <td width="30">&nbsp;</td>
+    <td class="item-info<?= ($block->getItemOptions() ? ' has-extra' : '') ?>" valign="top" style="font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: left;padding-top: 10px !important;" colspan="2">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+                <td>
+                    <div style="width: 150px;min-height: 150px;float:left;">
+                    <?php if($sampleUrl!=''){ ?>
+                    <img style="border:1px solid #ececec;width: 100%;height: 150px;object-fit: cover;" src="<?= $sampleUrl?>" alt="<?= $block->escapeHtml($_item->getName()) ?>">
+                  <?php  } else { ?>
+                    <img style="border:1px solid #ececec;width: 100%;height: 150px;object-fit: cover;" src="<?= $_imageHelper->init($_item->getProduct(), 'image', ['type'=>'image'])->keepAspectRatio(true)->resize('150','150')->getUrl();?>" alt="<?= $block->escapeHtml($_item->getName()) ?>">
+                    <?php } ?>
+                </div>
+                    <div style="width: calc(100% - 150px);float:left;padding-left: 20px;box-sizing:border-box;">
+                        <p style="font-weight: 400;font-size: 13px;line-height: 20px;color: #000000;margin: 0 !important;width: 210px;" class="product-name"><?= $block->escapeHtml($_item->getName()) ?></p>
+                        <p style="margin: 0;font-weight: 400;font-size:13px;">Qty: <?= (float) $_item->getQtyOrdered() ?></p>                        
+                        <?php if ($block->getItemOptions()) : ?>
+                            <dl class="item-options" style="margin: 0 !important;display: inline-block !important;width: 100% !important;">
+                            <?php foreach ($block->getItemOptions() as $option) : ?>
+
+                                <?php
+                                $skipLabels = [
+                                    'Configurable Product Id',
+                                    'Configurable Product Url',
+                                    'Configurable Product Image',
+                                    'Main Configurable Product Image',
+                                    'Product Name',
+                                    'Configurable Product SKU',
+                                    'Configurable Product Category',
+                                    'Configurable Product Name',
+									'Color Display Name'
+                                ];
+
+                                if (in_array($option['label'], $skipLabels)) {
+                                    continue;
+                                }
+                                ?>
+								<?php
+									$labelMap = [
+										'Colors' => 'Color',
+										'Select An Option' => 'Variant'
+									];
+
+									$label = $block->escapeHtml($option['label']);
+								?>
+
+                                <div style="margin: 0 0 0px 0 !important;display: inline-block !important;width: 100% !important;clear: both !important;">
+                                    <dt style="float: left !important;padding: 0 2px 0 0 !important;font-weight: 400 !important;font-size: 13px !important;line-height: 20px !important;color: #000000 !important;"><strong style="font-weight: 400 !important;"><em style="font-style: normal !important;"><?php echo $labelMap[$label] ?? $label; ?>:</em></strong></dt>
+                                    <dd style="float: left !important;box-sizing: border-box !important;margin: 0 !important;font-weight: 400 !important;font-size: 13px !important;line-height: 20px !important;color: #000000 !important;">
+                                        <?= /* @noEscape */  nl2br($block->escapeHtml($option['value'])) ?>
+                                    </dd>
+                                </div>
+                            <?php endforeach; ?>
+                            </dl>
+                        <?php endif; ?>
+                        <?php $addInfoBlock = $block->getProductAdditionalInformationBlock(); ?>
+                        <?php if ($addInfoBlock) :?>
+                            <?= $addInfoBlock->setItem($_item)->toHtml() ?>
+                        <?php endif; ?>
+                        <?= $block->escapeHtml($_item->getDescription()) ?>
+                    </div>
+                </td>
+                <td style="width: 100px;text-align:right;vertical-align: top;">
+                    <?= /* @noEscape */ $block->getItemPrice($_item) ?>
+                </td>
+            </tr>
+        </table>
+    </td>    
+    <td width="30">&nbsp;</td>
+</tr>
+<?php if ($_item->getGiftMessageId()
+    && $_giftMessage = $this->helper(\Magento\GiftMessage\Helper\Message::class)
+        ->getGiftMessage($_item->getGiftMessageId())
+) : ?>
+    <tr>
+    <td colspan="3" class="item-extra">
+        <table class="message-gift">
+            <tr>
+                <td>
+                    <h3><?= $block->escapeHtml(__('Gift Message')) ?></h3>
+                    <strong><?= $block->escapeHtml(__('From:')) ?></strong> <?= $block->escapeHtml($_giftMessage->getSender()) ?>
+                    <br /><strong><?= $block->escapeHtml(__('To:')) ?></strong> <?= $block->escapeHtml($_giftMessage->getRecipient()) ?>
+                    <br /><strong><?= $block->escapeHtml(__('Message:')) ?></strong>
+                    <br /><?= $block->escapeHtml($_giftMessage->getMessage()) ?>
+                </td>
+            </tr>
+        </table>
+    </td>
+</tr>
+<?php endif; ?>

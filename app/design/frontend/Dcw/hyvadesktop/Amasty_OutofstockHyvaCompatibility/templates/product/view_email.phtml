@@ -1,0 +1,122 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Out Of Stock Notifications Hyva Compatibility
+ */
+
+declare(strict_types=1);
+
+use Magento\Framework\App\ActionInterface;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Amasty\OutofstockHyvaCompatibility\ViewModel\Catalog\OutofstockData;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\CurrentProduct;
+use Magento\Catalog\Model\Product;
+
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var Template $block */
+/** @var CurrentProduct $currentProduct */
+
+/** @var OutofstockData $outofstockViewModel */
+$outofstockViewModel = $viewModels->require(OutofstockData::class);
+
+/** @var Product $product */
+$product = $block->getProduct();
+if (!$product) {
+    $currentProduct = $viewModels->require(CurrentProduct::class);
+    $product = $currentProduct->get();
+}
+
+if (!$product || !$product->getId()) {
+    return;
+}
+
+$parentId = $block->getData('parent_product_id');
+$productId = (int)$product->getId();
+$isAlertBlockHidden = $product->getData('amxnotif_hide_alert');
+$type = 'stock';
+$isGrouped = empty($block->getNameInLayout());
+// phpcs:disable Generic.Files.LineLength.TooLong
+?>
+<?php if ($outofstockViewModel->isAllowAlertStock()): ?>
+    <?php if (!$outofstockViewModel->isCustomerLoggedIn() && !$isAlertBlockHidden
+        && $outofstockViewModel->isAllowedForCurrentCustomerGroup(OutofstockData::STOCK_ALERT_BLOCK)): ?>
+        <div class="amxnotif-block-wrapper amxnotif-subscribe-wrapper w-full"
+             x-cloak
+             x-data="amXnotifSubscribeComponent_<?= $escaper->escapeHtmlAttr($product->getId()) ?>()"
+             x-show="!(isInStock === true || isInStock === 1 || isInStock === '1')">
+            <div class="amxnotif-block w-full">
+                <?= /** @noEscape */
+                $block->fetchView($block->getTemplateFile('Hyva_Theme::ui/loading.phtml')) ?>
+                <form :id="'form-validate-stock' + ('<?= $escaper->escapeHtml($escaper->escapeHtml($isGrouped)) ?>'
+                ? groupedIndex : productIdentifier)"
+                      class="amxnotif-form-stock stock__StatusForm w-full mb-4"
+                      method="post"
+                      :action="BASE_URL + '<?= $escaper->escapeUrl('xnotif/email/stock'); ?>'"
+                      x-on:submit.prevent="fetchSubscribe('<?= $escaper->escapeHtml($type); ?>',
+                      ('<?= $escaper->escapeHtml($isGrouped) ?>' ? groupedIndex : productIdentifier))">
+                    <?= $block->getBlockHtml('formkey') ?>
+                    <label :for="'amxnotif-guest-email-' +('<?= $escaper->escapeHtml($isGrouped) ?>'
+                ? groupedIndex : productIdentifier)">
+                        <?= $escaper->escapeHtml(__('Subscribe to back in stock notification')); ?>
+                    </label>
+                    <div class="notification-container flex w-full items-center"
+                         :id="'notification-container-' + ('<?= $escaper->escapeHtml($isGrouped) ?>'
+                     ? groupedIndex : productIdentifier)">
+                        <div class="input-fields fieldset">
+                            <input type="email"
+                                   @input.debounce="validateForm($event.target)"
+                                   name="guest_email"
+                                   :id="'amxnotif-guest-email-' + ('<?= $escaper->escapeHtml($isGrouped) ?>'
+                               ? groupedIndex : productIdentifier)"
+                                   class="input-text amxnotif-guest-email w-full"
+                                   x-model="emailInput"
+                                   required
+                                   placeholder="<?= $escaper->escapeHtml($outofstockViewModel->getPlaceholder()); ?>"
+                            />
+                            <input type="hidden" name="product_id"
+                                   :value="('<?= $escaper->escapeHtml($isGrouped) ?>'
+                               ? groupedIndex : productIdentifier)"/>
+                            <?php if ($parentId):?>
+                                <input type="hidden" name="parent_id"
+                                       value="<?= $escaper->escapeHtmlAttr($parentId); ?>"/>
+                            <?php endif; ?>
+                            <input type="hidden" name="type" value="email"/>
+                            <input type="hidden"
+                                   name="<?= $escaper->escapeHtml(ActionInterface::PARAM_NAME_URL_ENCODED); ?>"
+                                   value="<?= $escaper->escapeUrl($outofstockViewModel->encodeUrl()); ?>"/>
+                            <?php if ($outofstockViewModel->isGDRPEnabled()): ?>
+                                <div class="amxnotif-stock-gdrp field flex gap-x-2">
+                                    <input type="checkbox"
+                                           class="mt-1"
+                                           name="gdrp"
+                                           :id="'amxnotif-stock-gdrp-' + ('<?= $escaper->escapeHtml($isGrouped) ?>'
+                                       ? groupedIndex : productIdentifier)"
+                                           title="<?= $escaper->escapeHtml(__('GDRP')); ?>"
+                                           value="1"
+                                           x-model="isGdprChecked"
+                                           required>
+                                    <label class="label"
+                                           :for="'amxnotif-stock-gdrp-' + ('<?= $escaper->escapeHtml($isGrouped) ?>'
+                                       ? groupedIndex : productIdentifier)">
+                                        <?= /* @noEscape */ $outofstockViewModel->getGDRPText(); ?>
+                                    </label>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="actions-toolbar amxnotif_guest_action border-gray-300">
+                            <div class="primary">
+                                <button type="submit" class="action submit primary subscribe-button">
+                                    <span><?= $escaper->escapeHtml(__('Subscribe')); ?></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
+<?php endif; ?>

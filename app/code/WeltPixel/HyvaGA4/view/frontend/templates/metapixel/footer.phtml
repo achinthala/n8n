@@ -1,0 +1,31 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\MetaPixel\Common */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+?>
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled()) : ?>
+    <script>
+        let allowGa4ServicesMeta = window.ga4AllowServices ?? true;
+        if (allowGa4ServicesMeta) {
+            const {fetch: originalFetchMeta} = window;
+            window.fetch = async (...args) => {
+                let [resource, config] = args;
+                let response = await originalFetchMeta(resource, config);
+
+                if ((typeof resource == 'string') && resource.search('/customer\/section\/load/') > 0) {
+                    response.clone().json().then(data => {
+                        if (data.wp_ga4 && data.wp_ga4.metapixel) {
+                            const metaPixel = JSON.parse(data.wp_ga4.metapixel);
+                            for (index in metaPixel) {
+                                fbq(metaPixel[index].track, metaPixel[index].eventName, metaPixel[index].eventData);
+                            }
+                        }
+                    });
+                }
+                return response;
+            };
+        }
+    </script>
+<?php endif; ?>

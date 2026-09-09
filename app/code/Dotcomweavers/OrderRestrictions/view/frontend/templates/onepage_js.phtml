@@ -1,0 +1,84 @@
+<script>
+require([
+    'jquery',
+    'Magento_Ui/js/modal/modal'
+],function($, modal) {
+   
+    var options = {
+        type: 'popup',
+        responsive: true,
+        innerScroll: true,
+        modalClass: 'order-restriction-popup',
+        //buttons: false,
+        title: 'Unable to place order',
+        keyEventHandlers: {
+            escapeKey: function () { return; } // escape key disable
+        }
+    };
+
+    var order_restriction_popup = modal(options, $('#popup-order-restriction'));
+       
+    $('.checkout-container').on('click','#shipping-method-buttons-container .continue', function(){
+        jQuery('body').trigger('processStart');
+        var customer_address_id =$('.shipping-address-items .shipping-address-item.selected-item').attr('id');
+        jQuery('#updating-shipping-popup').addClass('active');
+        jQuery('.loading-mask').hide();
+        const form = document.querySelector('form[data-role="email-with-possible-login"]');
+
+        // Initialize a variable to store the value
+        let username = "";
+
+        // Check if the form exists
+        if (form) {
+            // Find the input field with the name 'username' inside the form
+            const input = form.querySelector('input[name="username"]');
+            if (input && input.value.trim() !== "") {
+                username = input.value.trim(); // Store the value
+            }
+        }
+        jQuery.ajax({
+            data:'newUsername='+username+'&customer_address_id='+customer_address_id+'&'+$( "#checkout-step-shipping .form-login" ).serialize()+'&'+$( "#co-shipping-form" ).serialize(),
+            type:'post',
+            url: '<?= $block->escapeUrl($block->getUrl('orderrestrictions/index/checkrestriction')) ?>',
+                //async:false,
+                dataType:	'json',                
+            success:function(response){    
+                jQuery('.loading-mask').hide();            
+                if(response.rule_result == 1){
+                    $('#popup-order-restriction').modal('openModal');
+                    $('#popup-order-restriction .popup-order-restriction-msg').html(response.message);
+					if(response.rule_name == 'heavy weight order'){
+						$('.order-restriction-popup .modal-header .modal-title').html('');
+					}
+                }else if(response.rule_result==2){
+                    require(['Magento_Ui/js/model/messageList'], function (messageList) {
+                        messageList.addErrorMessage({ message: "Your order requires our flooring experts to make sure you get the best shipping rates please chat or call at 866-416-6388 for assistance." });
+                    });
+                }else{
+                    $('#co-shipping-method-form').submit();                    
+                }
+                jQuery('body').trigger('processStop');      
+                jQuery('#updating-shipping-popup').removeClass('active');                        
+            },
+            error:function (XMLHttpRequest, textStatus, errorThrown) {
+                if (textStatus == 'timeout'){}
+                else if (textStatus == 'error'){}
+                else if (textStatus == 'parsererror'){}
+
+                jQuery('body').trigger('processStop');      
+                jQuery('#updating-shipping-popup').removeClass('active');
+                jQuery('.shipping-new-address-form .continue').prop('disabled', false);
+
+                require(['Magento_Ui/js/model/messageList'], function (messageList) {
+                    messageList.addErrorMessage({ message: "Your order requires our flooring experts to make sure you get the best shipping rates please chat or call at 866-416-6388 for assistance." });
+                });
+            }
+        });
+
+    })
+});
+</script>
+
+<div id="popup-order-restriction">
+    <div class="popup-order-restriction-msg"></div>
+</div>

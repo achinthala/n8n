@@ -1,0 +1,159 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Catalog\Block\Product\View;
+
+/** @var View $block */
+
+$product = $block->getProduct();
+?>
+<section class="text-gray-700 body-font">
+    <div class="flex lg:flex-row flex-col items-center">
+        <div class="flex flex-wrap order-first w-full">
+            <?= $block->getChildHtml('product.media') ?>
+            <?= $block->getChildHtml('product.info') ?>
+        </div>
+    </div>
+</section>
+<div class="best-selling-products-container-section"> </div>
+<div class="related-products-section"> </div>
+<section>
+    <?= $block->getChildHtml('product_options_wrapper_bottom') ?>
+</section>
+
+<?= $block->getChildHtml('product.info.details'); ?>
+
+<section x-data x-defer="intersect">
+    <!-- <//?= $block->getChildHtml('related') ?> -->
+    
+    <?= /* @noEscape */ $block->getChildHtml('amasty_faq_product_custom'); ?>
+
+    <?= $block->getChildHtml('upsell') ?>
+    <?= $block->getChildHtml('review_list') ?>
+    <?= $block->getChildHtml('review_form') ?>
+</section>
+
+<script>
+    function makeMessagesSticky() {
+        const header = document.querySelector('#header');
+        const messages = document.querySelector('.page.messages #messages');
+        const page = document.querySelector('.page.messages');
+        const breadcrumbs = document.querySelector('.breadcrumbs');
+
+        const headerRect = header.getBoundingClientRect(); 
+        const messagesRect = messages.getBoundingClientRect();
+        const pageRect = page.getBoundingClientRect();
+        const breadcrumbsRect = breadcrumbs.getBoundingClientRect();
+
+        const bodyElement = document.querySelector('body');
+        const isSticky = bodyElement.classList.contains('sticki');
+
+        const gallery = document.querySelector('#gallery');
+        const galleryRect = gallery.getBoundingClientRect();
+        var productMainContentHeight = document.querySelector('.product-main-content').offsetHeight;
+        var productMainContentHeight1 = productMainContentHeight / 2;
+        const productMainContent = document.querySelector('.product-main-content');
+        const productMainContentRect = productMainContent.getBoundingClientRect();
+
+        const middleSection1 = document.querySelector('.middle-section1');
+        // const middleSection1Rect = middleSection1.getBoundingClientRect();
+
+        if (isSticky) {
+            if (pageRect.top <= headerRect.bottom) {
+                document.querySelector('.catalog-product-view .page.messages #messages').style.position = 'fixed';
+                document.querySelector('.catalog-product-view .page.messages #messages').style.top = `${headerRect.bottom}px`;
+                document.querySelector('.catalog-product-view .page.messages #messages').style.width = '100%';
+            } 
+            else {
+                document.querySelector('.catalog-product-view .page.messages #messages').style.position = 'static';
+                document.querySelector('.catalog-product-view .page.messages #messages').style.top = 'auto';
+            }
+
+            const middleSection = document.querySelector('.catalog-product-view #gallery .middle-section');
+            const middleSectionRect = middleSection.getBoundingClientRect();
+            if (galleryRect.top <= headerRect.bottom + 24) {
+                // middleSection.style.top = `${window.pageYOffset + middleSectionRect.top}px`;
+                middleSection.style.top = `${headerRect.bottom + 24}px`;
+                middleSection.classList.add('middleSticky');
+            } else {
+                middleSection.style.top = 'auto';
+                middleSection.classList.remove('middleSticky');
+            }
+
+            var galleryHgt = document.querySelector('#gallery').offsetHeight;
+            var thumbsHgt = document.querySelector('#thumbs').offsetHeight;
+            var sliderHgt1 = galleryHgt - thumbsHgt - 350;
+            var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            var pdpIconContainer = document.querySelectorAll('.pdp_icon_container').length;
+        } 
+        else {
+            if (breadcrumbsRect.bottom <= 0) {
+                document.querySelector('.catalog-product-view .page.messages #messages').style.position = 'fixed';
+                document.querySelector('.catalog-product-view .page.messages #messages').style.top = '0';
+                document.querySelector('.catalog-product-view .page.messages #messages').style.width = '100%';
+            } else {
+                document.querySelector('.catalog-product-view .page.messages #messages').style.position = 'static';
+                document.querySelector('.catalog-product-view .page.messages #messages').style.top = 'auto';
+            }
+        }
+    }
+    window.addEventListener("scroll", function() {
+        makeMessagesSticky();
+        successMsgSticky();
+    });
+
+    function successMsgSticky(){
+        var headerHeight = document.querySelector('header.page-header').offsetHeight;
+        var breadcrumbsHeight = document.querySelector('.breadcrumbs').offsetHeight;
+        var hHgt = headerHeight + breadcrumbsHeight;
+        var mesgs = document.querySelector('.page.messages #messages');
+        var scrollTop = window.scrollY;
+
+        if (scrollTop >= hHgt) {
+            document.body.classList.add('scroll-reached-hHgt');
+        } 
+        else {
+            document.body.classList.remove('scroll-reached-hHgt');
+        }
+    }
+
+    window.addEventListener("resize", successMsgSticky);
+    window.addEventListener("load", successMsgSticky);
+</script>    
+
+<script>
+    const bazaarVoiceElement = document.querySelector('#bazaarvoice\\.reviews\\.tab');
+    const amfaqProductTabElement = document.querySelector('.amfaq-product-tab');
+    if (bazaarVoiceElement && amfaqProductTabElement) {
+        amfaqProductTabElement.insertAdjacentElement('afterend', bazaarVoiceElement);
+    } else {
+    }
+</script>
+<style>
+    .overage_percent_sec .over_percentage_tooltip .over_percentage_tooltip_content{width: 300px;background: #ebf0f6;padding: 10px 10px;top: -90px;left: 0px;}
+    .overage_percent_sec .over_percentage_tooltip .over_percentage_tooltip_content:before{content: "";width: 0;height: 0;border-left: 5px solid transparent;border-right: 5px solid transparent;border-top: 10px solid #ebf0f6;position: absolute;left: 7px;bottom: -7px;}
+    .overage_percent_sec .over_percentage_tooltip:hover .over_percentage_tooltip_content{display: block;}
+    @media(min-width: 1024px){
+        .catalog-product-view #maincontent{display: unset;}
+        .catalog-product-view #maincontent .product-info-main #gallery .middle-section-top{display: unset;}
+        .catalog-product-view #maincontent .product-info-main #gallery .middle-section-top .middle-section.middleSticky{display: unset;position: sticky !important;}
+    }
+    @media(max-width:1024px){
+        .catalog-product-view.scroll-reached-hHgt .page.messages .messages.container{position: static !important;}
+        .catalog-product-view.scroll-reached-hHgt .page.messages #messages{position: fixed !important;top: 0px !important;width: 100% !important;}
+        .overage_percent_sec .over_percentage_tooltip .over_percentage_tooltip_content{left: -70px;}
+        .overage_percent_sec .over_percentage_tooltip .over_percentage_tooltip_content:before{left: 75px;}
+    }
+    @media(max-width: 767px){
+        .overage_percent_sec .over_percentage_tooltip .over_percentage_tooltip_content{left: auto;right: -89px;}
+        .overage_percent_sec .over_percentage_tooltip .over_percentage_tooltip_content:before{left: auto;right: 92px;}
+    }
+</style>
+

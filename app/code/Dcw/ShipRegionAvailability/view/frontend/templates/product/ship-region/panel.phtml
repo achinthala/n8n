@@ -1,0 +1,104 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Shipping Saver ZIP panel — markup/CSS aligned with shipping-module-mockup.html
+ * (.shipping-saver block, lines ~1019–1061).
+ */
+
+use Dcw\ShipRegionAvailability\ViewModel\Product\ShipRegionAvailability;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var ShipRegionAvailability $shipRegionVm */
+$shipRegionVm = $viewModels->require(ShipRegionAvailability::class);
+
+if (!$shipRegionVm->isEnabledForProduct()) {
+    return;
+}
+
+$zipLookupUrl = $shipRegionVm->getZipLookupUrl();
+?>
+<div class="dcw-shipping-saver" id="dcw-ship-region-panel" data-zip-lookup-url="<?= $escaper->escapeUrl($zipLookupUrl) ?>">
+    <svg class="dcw-shipping-saver__truck" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="4" y="20" width="36" height="22" rx="2" fill="#f43f5e"/>
+        <rect x="40" y="26" width="18" height="16" rx="2" fill="#fbbf24"/>
+        <rect x="44" y="29" width="11" height="8" rx="1" fill="#fff"/>
+        <circle cx="16" cy="46" r="6" fill="#0f172a"/>
+        <circle cx="16" cy="46" r="3" fill="#475569"/>
+        <circle cx="48" cy="46" r="6" fill="#0f172a"/>
+        <circle cx="48" cy="46" r="3" fill="#475569"/>
+        <rect x="6" y="24" width="32" height="2" fill="rgba(255,255,255,0.3)"/>
+    </svg>
+
+    <span class="dcw-shipping-saver__badge"><?= $escaper->escapeHtml(__('Shipping Saver')) ?></span>
+
+    <h2 class="dcw-shipping-saver__headline">
+        <?= $escaper->escapeHtml(__('Find colors that ship')) ?>
+        <span class="dcw-shipping-saver__accent-green"><?= $escaper->escapeHtml(__('faster')) ?></span>
+        &amp;
+        <span class="dcw-shipping-saver__accent-yellow"><?= $escaper->escapeHtml(__('cheaper')) ?></span>
+    </h2>
+
+    <p class="dcw-shipping-saver__sub">
+        <?= $escaper->escapeHtml(__('Drop in your ZIP code and we\'ll surface the colors stocked at the facility closest to you — quicker delivery, lower shipping cost.')) ?>
+    </p>
+
+    <div class="dcw-shipping-saver__zip-row">
+        <div class="dcw-shipping-saver__zip-input-wrap">
+            <svg class="dcw-shipping-saver__pin" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 0C7.6 0 4 3.6 4 8c0 5.4 7 13.6 7.3 13.9.4.4 1 .4 1.4 0C13 21.6 20 13.4 20 8c0-4.4-3.6-8-8-8zm0 11c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z"/>
+            </svg>
+            <input type="text"
+                   id="dcw-ship-region-zip"
+                   maxlength="5"
+                   inputmode="numeric"
+                   pattern="[0-9]*"
+                   placeholder="<?= $escaper->escapeHtmlAttr(__('ZIP code')) ?>"
+                   class="dcw-shipping-saver__input"
+                   autocomplete="postal-code"/>
+            <button type="button"
+                    class="dcw-shipping-saver__clear"
+                    id="dcw-ship-region-zip-clear"
+                    title="<?= $escaper->escapeHtmlAttr(__('Clear')) ?>"
+                    aria-label="<?= $escaper->escapeHtmlAttr(__('Clear ZIP code')) ?>">×</button>
+        </div>
+        <button type="button" class="dcw-shipping-saver__cta" id="dcw-ship-region-apply">
+            <span><?= $escaper->escapeHtml(__('Show My Colors')) ?></span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+            </svg>
+        </button>
+    </div>
+
+    <p class="dcw-shipping-saver__error hidden" id="dcw-ship-region-error" role="alert"></p>
+    <p class="dcw-shipping-saver__region-label hidden" id="dcw-ship-region-label"></p>
+
+    <button type="button"
+            class="dcw-shipping-saver__why-toggle"
+            id="dcw-ship-region-why-toggle"
+            aria-expanded="false"
+            aria-controls="dcw-ship-region-why-content">
+        <svg class="dcw-shipping-saver__why-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+        <span><?= $escaper->escapeHtml(__('Why does shipping rubber matter?')) ?></span>
+        <svg class="dcw-shipping-saver__chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+        </svg>
+    </button>
+
+    <div class="dcw-shipping-saver__why-content" id="dcw-ship-region-why-content">
+        <div class="dcw-shipping-saver__why-inner">
+            <?= $escaper->escapeHtml(__('Rubber rolls are heavy — a single 4\'×10\' roll at 3/8" weighs ~100 lbs. Cross-country freight on heavy product can add $50–$200 to your order. By picking a color stocked at the warehouse closest to you, most customers save 20–40% on shipping and get their floor 3–5 days faster.')) ?>
+        </div>
+    </div>
+</div>

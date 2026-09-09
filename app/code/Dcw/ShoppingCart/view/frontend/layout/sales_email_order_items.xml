@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!-- <referenceBlock name="additional.product.info">
+            <block class="Magento\Sales\Block\Order\Email\Items\Order\DefaultOrder" name="order.email.extra.item.info" template="Dcw_ShoppingCart::cart/item/extra_info.phtml" />
+        </referenceBlock> -->
+
+        <referenceBlock name="sales.email.order.renderers">
+            <block class="Magento\Sales\Block\Order\Email\Items\Order\DefaultOrder"
+                   as="custom_order_renderer"
+                   template="Magento_Sales::email/items/order/default.phtml">
+                <block class="Magento\Framework\View\Element\Template"
+                       name="additional.product.info"
+                       template="Dcw_ShoppingCart::email/item/extra_info.phtml"
+                       as="additional_product_info"/>
+            </block>
+        </referenceBlock>
+    </body>
+</page>

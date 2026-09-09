@@ -1,0 +1,97 @@
+<div class="payment-method" data-bind="attr: {id: getCode()+'-payment'}, css: {'_active': (getCode() == isChecked())}">
+    <div class="payment-method-title field choice">
+        <input type="radio"
+               name="payment[method]"
+               class="radio"
+               data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()"/>
+        <label data-bind="attr: {'for': getCode()}" class="label">
+            <span data-bind="text: getTitle()"></span>
+        </label>
+    </div>
+    <div class="payment-method-content">
+        <!-- ko foreach: getRegion('messages') -->
+        <!-- ko template: getTemplate() --><!-- /ko -->
+        <!--/ko-->
+        <div class="payment-method-billing-address">
+            <!-- ko foreach: $parent.getRegion(getBillingAddressFormName()) -->
+            <!-- ko template: getTemplate() --><!-- /ko -->
+            <!--/ko-->
+        </div>
+        <form class="form form-purchase-order" data-role="dcw-po-gateway-form">
+            <fieldset class="fieldset payment method" data-bind='attr: {id: "payment_form_" + getCode()}'>
+                <div class="message step-title dcw-po-contact-intro">
+                    <span><!-- ko i18n: 'Please confirm contact details:'--><!-- /ko --></span>
+                </div>
+                <div class="field field-contact-name required">
+                    <label for="dcw_po_contact_name" class="label">
+                        <span><!-- ko i18n: 'Name'--><!-- /ko --></span>
+                    </label>
+                    <div class="control">
+                        <input type="text"
+                               id="dcw_po_contact_name"
+                               name="payment[po_contact_name]"
+                               class="input-text"
+                               data-validate='{"required":true}'
+                               data-bind="
+                                attr: {title: $t('Name')},
+                                value: contactName"/>
+                    </div>
+                </div>
+                <div class="field field-contact-phone required">
+                    <label for="dcw_po_contact_phone" class="label">
+                        <span><!-- ko i18n: 'Phone number'--><!-- /ko --></span>
+                    </label>
+                    <div class="control">
+                        <input type="tel"
+                               id="dcw_po_contact_phone"
+                               name="payment[po_contact_phone]"
+                               class="input-text"
+                               maxlength="10"
+                               inputmode="numeric"
+                               autocomplete="tel"
+                               data-validate='{"required":true,"validate-digits":true,"minlength":10,"maxlength":10}'
+                               data-bind="
+                                attr: {title: $t('Phone number')},
+                                value: contactPhone,
+                                valueUpdate: 'input'"/>
+                    </div>
+                </div>
+                <div class="field field-contact-email required">
+                    <label for="dcw_po_contact_email" class="label">
+                        <span><!-- ko i18n: 'Email'--><!-- /ko --></span>
+                    </label>
+                    <div class="control">
+                        <input type="email"
+                               id="dcw_po_contact_email"
+                               name="payment[po_contact_email]"
+                               class="input-text"
+                               autocomplete="email"
+                               data-validate='{"required":true,"validate-email":true}'
+                               data-bind="
+                                attr: {title: $t('Email')},
+                                value: contactEmail"/>
+                    </div>
+                </div>
+            </fieldset>
+            <div class="checkout-agreements-block">
+                <!-- ko foreach: $parent.getRegion('before-place-order') -->
+                <!-- ko template: getTemplate() --><!-- /ko -->
+                <!--/ko-->
+            </div>
+            <div class="actions-toolbar">
+                <div class="primary">
+                    <button class="action primary checkout"
+                            type="submit"
+                            data-bind="
+                            click: placeOrder,
+                            attr: {title: $t('Place Order')},
+                            enable: (getCode() == isChecked()),
+                            css: {disabled: !isPlaceOrderActionAllowed()}
+                            ">
+                        <span data-bind="i18n: 'Place Order'"></span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

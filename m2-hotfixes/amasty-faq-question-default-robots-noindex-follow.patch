@@ -1,0 +1,13 @@
+--- a/vendor/amasty/module-faq-product-questions/Block/View/Question.php
++++ b/vendor/amasty/module-faq-product-questions/Block/View/Question.php
+@@ -143,8 +143,8 @@
+                 );
+             }
+ 
+-            // Set NOINDEX,NOFOLLOW by default for all FAQ questions
+-            $this->pageConfig->setRobots('NOINDEX,NOFOLLOW');
++            // Set NOINDEX,FOLLOW by default for all FAQ questions
++            $this->pageConfig->setRobots('NOINDEX,FOLLOW');
+ 
+             if ($question->isNoindex() || $question->isNofollow()) {
+                 if ($question->isNoindex() && $question->isNofollow()) {

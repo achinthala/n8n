@@ -1,0 +1,40 @@
+<?php
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+use Magento\Catalog\Block\Category\View;
+use Magento\Catalog\ViewModel\Category\Output;
+
+/**
+ * @var View $block
+ * @var ViewModelRegistry $viewModels
+ * @var CustomViewModel $customViewModel
+ */
+$currentCategory = $block->getCurrentCategory();
+
+$curcatid = (int)$currentCategory->getId();
+
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+$allCatId = (int)$customViewModel->getAllCategoryId();
+
+if ($curcatid !== $allCatId):
+    $display_type = $currentCategory->getDisplayMode();
+
+    if ($display_type === 'PAGE' || $display_type === 'PRODUCTS_AND_PAGE'):
+        $customerFavorite = (string)$currentCategory->getCustomerFavorite();
+        $aboutCategory = (string)$currentCategory->getAboutCategory();
+        $categoryOverview = (string)$currentCategory->getCategoryOverview();
+    ?>
+    <div class="category-description-after">
+        <?php $output = $viewModels->require(Output::class) ?>
+        <?= $block->getChildHtml('cpp_shop_by_category') ?>
+        <?= $output->categoryAttribute($currentCategory, $customerFavorite, 'description') ?>
+        <?= $output->categoryAttribute($currentCategory, $aboutCategory, 'description') ?>
+        <?= $block->getChildHtml('cpp_fAQ_content') ?>
+        <?= $output->categoryAttribute($currentCategory, $categoryOverview, 'description') ?>
+    </div>
+    <?php
+    endif;
+endif;

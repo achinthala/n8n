@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_productimage" translate="label" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Product Image</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_ProductImage::config</resource>
+            <group id="product_image_config" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Product Image Settings</label>
+                <field id="default_product_image_baseurl" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Image Base URL</label>
+                </field>
+                <field id="default_product_image_original" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Original Image px</label>
+                </field>
+                <field id="default_product_image_base" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Base Image px</label>
+                </field>
+                <field id="default_product_image_small" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Small Image px</label>
+                </field>
+                <field id="default_product_image_thumbnail" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Thumbnail Image px</label>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

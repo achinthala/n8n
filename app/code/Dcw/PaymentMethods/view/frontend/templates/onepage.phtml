@@ -1,0 +1,281 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/** @var $block \Magento\Checkout\Block\Onepage */
+/** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */
+?>
+
+<div id="checkout" data-bind="scope:'checkout'" class="checkout-container">
+<!--    <div class="checkout_payment_static">-->
+        <?php
+            /*echo $this->getLayout()
+            ->createBlock('Magento\Cms\Block\Block')
+            ->setBlockId('check-payment')
+            ->toHtml();*/
+        ?>
+<!--    </div>-->
+    <div id="checkout-loader" data-role="checkout-loader" class="loading-mask" data-mage-init='{"checkoutLoader": {}}'>
+        <div class="loader">
+            <img src="<?= $block->escapeUrl($block->getViewFileUrl('images/loader-1.gif')) ?>"
+                 alt="<?= $block->escapeHtmlAttr(__('Loading...')) ?>">
+        </div>
+    </div>
+    <?= /* @noEscape */ $secureRenderer->renderStyleAsTag("position: absolute;", "#checkout-loader img") ?>
+    <!-- ko template: getTemplate() --><!-- /ko -->
+    <script type="text/x-magento-init">
+        {
+            "#checkout": {
+                "Magento_Ui/js/core/app": <?= /* @noEscape */ $block->getJsLayout() ?>
+            }
+        }
+    </script>
+    <?php $serializedCheckoutConfig = /* @noEscape */ $block->getSerializedCheckoutConfig();
+    $scriptString = <<<script
+        window.checkoutConfig = {$serializedCheckoutConfig};
+        // Create aliases for customer.js model from customer module
+        window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
+        window.customerData = window.checkoutConfig.customerData;
+script;
+    ?>
+    <?= /* @noEscape */ $secureRenderer->renderTag('script', [], $scriptString, false) ?>
+    <?php $scriptString = <<<script
+        require([
+            'mage/url',
+            'Magento_Ui/js/block-loader'
+        ], function(url, blockLoader) {
+            blockLoader("{$block->escapeJs($block->escapeUrl($block->getViewFileUrl('images/loader-1.gif')))}");
+            return url.setBaseUrl('{$block->escapeJs($block->escapeUrl($block->getBaseUrl()))}');
+        })
+script;
+    ?>
+    <?= /* @noEscape */ $secureRenderer->renderTag('script', [], $scriptString, false) ?>
+    <div id="updating-shipping-popup" style="display: none;">
+        <div class="size-3">
+            <div class="padded bottom_content">
+                <div class="center middel-content">
+                    <div class="popup-logo">
+                        <img src="<?php echo $this->getViewFileUrl('images/flooringinc-logo.svg'); ?>" width="200" height="60" alt="logo">
+                    </div>
+                    <div class="middel-content-in">
+                        <div class="padded-bottom bold heading">
+                            Searching multiple carriers for the lowest rate
+                        </div>
+                        <div class="padded-bottom loader">
+                            <div>
+                                <div class="loader">
+                                    <img src="<?php echo $this->getViewFileUrl('images/loading-loading-forever.gif'); ?>" width="60" height="60" alt="loader">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="padded-bottom bottom-content">
+                    <div class="bold heading">
+                        Lowest Shipping Price Guaranteed
+                    </div>
+                    <div class="bottom-content-options">
+                        <label>
+                            <input type="checkbox" class="brand-color" checked  />
+                            <span>Best Shipping Rates</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" class="brand-color" checked  />
+                            <span>FREE Lift Gate</span>
+                        </label>
+                        <label>
+                            <input type="checkbox" class="brand-color" checked  />
+                            <span>No Residential Upgrade Fee</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function splitPaymentSubmitFunc(){
+        window.location.href = BASE_URL + 'splitpayment';
+    }
+
+    require(['jquery'],function($){
+        $(function() {
+            /*$('.checkout-container').on('click','#paypal_express', function(){
+                $('.paypal_express-submit-btn').trigger('click');
+            });*/
+        })
+    });
+</script>
+
+<script>
+    require(['jquery', 'jquery/ui', 'domReady!'], function ($) {
+        $(document).ready(function () {
+            function updateInputClass() {
+                setTimeout(function () {
+                    $('.checkout-shipping-address .input-text, #shipping-new-address-form .input-text').each(function () {
+                        if ($(this).val() != '') {
+                            $(this).removeClass('empty-field').addClass('has-value');
+                            $(this).parent().removeClass('empty-field').addClass('has-value');
+                            $(this).parent().parent().removeClass('empty-field').addClass('has-value');
+                            $(this).removeClass('empty').addClass('has-value');
+                        } else {
+                            $(this).parent().removeClass('has-value').addClass('empty-field');
+                            $(this).parent().parent().removeClass('has-value').addClass('empty-field');
+                            if(($(this)[0].name!="company") && ($(this)[0].name!="street[1]") && ($(this)[0].name!="custom_attributes[phone_ext]")){
+                            $(this).removeClass('has-value').addClass('empty');
+                            }
+                        }
+                    });
+
+                    if ($("#shipping-new-address-form").parent().find('.empty').length != 0) {
+                        $('.shipping-new-address-form .continue').prop('disabled', true);
+                    } else {
+                        $('.shipping-new-address-form .continue').prop('disabled', false);
+                    }
+
+                    $('input[name$="telephone"]').attr('type','number');
+                    $('input[name$="postcode"]').attr('type','number');
+
+                    if ($(".shipping-address-items").parent().find('.selected-item').length != 0) {
+                        $('.shipping-new-address-form .continue').prop('disabled', false);
+                    }
+                    updateInputClass();
+                }, 0);
+            }
+            updateInputClass();
+            $(window).load(function() {
+                updateInputClass();
+                console.info('loaded');
+            });
+        });
+    });
+</script>
+
+<script>
+require(['jquery', 'jquery/ui'], function ($) {
+    var CONTROL_INTERVAL_CPS = setInterval(function(){
+        var checkoutPaymentStatic = $('.checkout_payment_static');
+        var opcWrapper = $('.opc-wrapper');
+        if (checkoutPaymentStatic.length > 0 && opcWrapper.length > 0) {
+            checkoutPaymentStatic.appendTo(opcWrapper);
+            clearInterval(CONTROL_INTERVAL_CPS);
+        }
+    }, 1000); // check for every 100ms
+
+});
+</script>
+
+<script type="text/javascript">
+    require(['jquery', 'jquery/ui', 'domReady!'], function ($) {
+        $(document).ready(function() {
+            $(document).on('click', function() {
+                $('.billing-address-form .input-text').each(function () {
+                    if ($(this).val()!='') {
+                        $(this).parent().addClass('has-value');
+                    } else {
+                        $(this).parent().removeClass('has-value');
+                    }
+                });
+            });
+
+            $(document).on('change keyup','.billing-address-form .input-text', function() {
+                if ($(this).val()!='') {
+                    $(this).parent().addClass('has-value');
+                } else {
+                    $(this).parent().removeClass('has-value');
+                }
+            });
+
+            function samplePaymentPage() {
+                setTimeout(function () {
+                    var bodyElement = document.body;
+                    if (bodyElement.classList.contains('shipping-step')) {
+                        bodyElement.classList.remove('payment-step');
+                        bodyElement.classList.remove('sample-payment');
+                    } else if (!bodyElement.classList.contains('shipping-step') || !bodyElement.classList.contains('payment-step')) {
+                        bodyElement.classList.add('payment-step');
+                        bodyElement.classList.add('sample-payment');
+                    } else {
+
+                    }
+                }, 5000);
+            }
+
+            samplePaymentPage();
+
+            var CHECKOUT_PAYMENT_INTERVAL = setInterval(function(){
+                if($('#authnetcim-payment #authnetcim').length > 0){
+                    if($('.all-payments-container .payment-method._active').length > 0) {
+                    } else {
+                        $('#authnetcim-payment #authnetcim').trigger('click');
+                    }
+                    clearInterval(CHECKOUT_PAYMENT_INTERVAL);
+                }
+            }, 200);
+        });
+    });
+</script>
+<style>
+#payflowpro,
+#payflowpro + label {
+    display: none; /* Hides the input and the associated label */
+}
+</style>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        function setupPayFlow() {
+            var payFlowElement = document.getElementById('payflowpro');
+            var authnetCimPayment = document.getElementById('authnetcim-payment');
+            if (payFlowElement && authnetCimPayment) {
+                var paymentMethodElement = payFlowElement.closest('.payment-method');
+                if (paymentMethodElement) {
+                    paymentMethodElement.id = 'pay__flow__method';
+                    authnetCimPayment.insertAdjacentElement('afterend', paymentMethodElement);
+
+                    function toggleAuthnetCimClass() {
+                        if (paymentMethodElement.classList.contains('_active')) {
+                            authnetCimPayment.classList.add('active');
+                        } else {
+                            authnetCimPayment.classList.remove('active');
+                        }
+                    }
+                    var observer = new MutationObserver(toggleAuthnetCimClass);
+                    observer.observe(paymentMethodElement, { attributes: true, attributeFilter: ['class'] });
+                    toggleAuthnetCimClass();
+                    clearInterval(checkInterval);
+                }
+            }
+        }
+        setupPayFlow();
+        var checkInterval = setInterval(setupPayFlow, 500);
+    });
+</script>
+
+<script>
+    function logOutClass() {
+        if (document.querySelector('.lac-notification')) {
+            document.body.classList.add('customer-logged-in');
+        } else {
+            document.body.classList.remove('customer-logged-in');
+        }
+    }
+    logOutClass();
+    const observer = new MutationObserver(logOutClass);
+    observer.observe(document.body, { childList: true, subtree: true });
+</script>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        function purchaseOrderCheck() {
+            var purchaseOrderMethod = document.querySelector('.purchase-order-payment-method') || document.getElementById('purchaseorder-payment');
+            var paymentGroup = document.querySelector('.payment-group');
+            if (purchaseOrderMethod && paymentGroup) {
+                paymentGroup.classList.add('purchase__order__method');
+                clearInterval(checkInterval);
+            }
+        }
+        var checkInterval = setInterval(purchaseOrderCheck, 500);
+    });
+</script>

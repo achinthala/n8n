@@ -1,0 +1,38 @@
+<?php
+/**
+ * Get New Quote confirmation modal content
+ */
+
+use Hyva\Theme\Model\Modal\ModalBuilderInterface;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var ModalBuilderInterface $modal */
+/** @var Escaper $escaper */
+/** @var Template $block */
+?>
+
+<div class="flex flex-col w-full">
+    <h3 class="text-lg font-semibold mb-3">
+        <?= $escaper->escapeHtml(__('Create New Quote from Expired Quote')) ?>
+    </h3>
+    <p class="mb-2">
+        <?= $escaper->escapeHtml(__('This will create a new quote based on your expired quote with current pricing and availability.')) ?>
+    </p>
+    <p class="text-sm text-gray-600">
+        <?= $escaper->escapeHtml(__('Are you sure you want to continue?')) ?>
+    </p>
+</div>
+<div class="w-full flex flex-row gap-3 mt-4">
+    <button type="button"
+            class="btn btn-secondary"
+            @click="hide('<?= $escaper->escapeHtmlAttr($modal->getDialogRefName()) ?>')">
+        <?= $escaper->escapeHtml(__('Cancel')) ?>
+    </button>
+    <button type="button"
+            class="btn btn-primary"
+            @click="proceedToGetNewQuote()">
+        <?= $escaper->escapeHtml(__('Continue')) ?>
+    </button>
+</div>
+

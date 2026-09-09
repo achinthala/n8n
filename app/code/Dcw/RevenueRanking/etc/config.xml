@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_revenue_ranking>
+            <general>
+                <sales_period_days>30</sales_period_days>
+                <enable_buy_percentage>1</enable_buy_percentage>
+            </general>
+            <cron_settings>
+                <enabled>0</enabled>
+                <cron_schedule>0 2 * * *</cron_schedule>
+            </cron_settings>
+        </dcw_revenue_ranking>
+    </default>
+</config>

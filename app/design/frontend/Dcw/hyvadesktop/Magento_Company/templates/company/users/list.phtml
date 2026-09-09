@@ -1,0 +1,88 @@
+
+<?php $users = $block->getUsers() ?>
+<?php  if ($users->getSize()): ?>
+
+<div x-cloak 
+    x-data="{
+        showModal: false,
+        jobititle:'',
+        role:'',
+        fname:'',
+        lname:'',
+        email:'',
+        mobile:'',
+        status:0
+    }" class="table_wrapper">
+    <div class="actions">
+        <button type="button" title="Add New User" class="action primary" 
+        x-on:click="showModal = true,addtimeblank()">
+            <span>Add New User</span>
+        </button>
+    </div>
+    <div class="modal" x-show="showModal">
+        <div class="modal-overlay" x-on:click="showModal = false"></div>
+        <div class="modal-content">
+            <button class="closemodal" type="button" x-on:click="showModal = false">X</button>
+            <?= $block->getChildHtml('dialog.customer.add') ?>
+        </div>
+    </div>
+
+
+    <div class="table_information">
+    <table class="table_info">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Team</th>
+                <th>Status</th>
+                <th>Actions</th>                        
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($users as $user): ?>
+                <?php
+                $customer=$block->getCustomerDetailsById($user->getCustomerId());
+                $name=$customer->getFirstname().' '.$customer->getLastname();
+                $roles=$block->getUserRoal($user->getCustomerId());
+                $roletext='';
+                if (count($roles)) {
+                    foreach ($roles as $role) {
+                        $roletext = $block->escapeHtml($role->getRoleName());
+                        break;
+                    }
+                }
+
+                ?>
+            
+                <?php
+                $statustext='Inactive';
+                if ($user->getStatus()==1) {
+                    $statustext='Active';
+    
+                }?>        
+
+                <tr>
+                    <td><?= /** @noEscape */$name?></td>
+                    <td><?= /** @noEscape */$customer->getEmail() ?></td>
+                    <td><?= /** @noEscape */$roletext ?></td>
+                    <td>-</td>
+                    <td><?= /** @noEscape */$statustext?></td>
+                    <td>
+                    
+        <div x-cloak x-data="{cid: <?= /** @noEscape */$user->getCustomerId()?>}">
+            <button type="button" x-on:click="showModal = true,fetchuserfromContent(cid)">
+                <?= $escaper->escapeHtml(__('Edit')) ?>
+            </button>
+        </div>    
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php else: ?>
+    <p>No users found.</p>
+<?php endif; ?> 
+</div>

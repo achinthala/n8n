@@ -1,0 +1,22 @@
+{
+  "name": "dcw/module-category-filter-attribute",
+  "version": "1.0.0",
+  "description": "N/A",
+  "type": "magento2-module",
+  "require": {
+    "magento/framework": "*",
+    "magento/module-catalog": "104.0.*",
+    "mirasvit/layered-navigation": "2.7.*"
+  },
+  "license": [
+    "Proprietary"
+  ],
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Dcw\\CategoryFilterAttribute\\": ""
+    }
+  }
+}

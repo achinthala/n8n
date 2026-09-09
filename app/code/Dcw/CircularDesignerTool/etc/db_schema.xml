@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="cdt_tab" resource="default" engine="innodb" comment="Circle Designer Tool Tab">
+        <column xsi:type="int" name="cdt_tab_id" padding="11" unsigned="true" nullable="false" identity="true" comment="cdt_tab_id"/>
+        <column xsi:type="varchar" name="cdt_tab_title" comment="cdt_tab_title" nullable="false"/>
+        <column xsi:type="int" name="cdt_tab_sort_order" padding="11" unsigned="true" nullable="false" comment="cdt_tab_sort_order"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="cdt_tab_id"/>
+        </constraint>
+    </table>
+
+    <table name="cdt_attribute" resource="default" engine="innodb" comment="Circle Designer Tool attribute">
+        <column xsi:type="int" name="cdt_attribute_id" padding="11" unsigned="true" nullable="false" identity="true" comment="cdt_attribute_id"/>
+        <column xsi:type="int" name="cdt_tab_id" padding="11" unsigned="true" nullable="false" comment="cdt_tab_id" />
+        <column xsi:type="varchar" name="cdt_attribute_title" comment="cdt_attribute_title" nullable="false" length="255"/>
+        <column xsi:type="text" name="cdt_attribute_value_display" comment="cdt_attribute_value_display" nullable="false"/>
+        <column xsi:type="text" name="cdt_attribute_value" comment="cdt_attribute_value" nullable="false"/>
+        <column xsi:type="text" name="description" comment="description" nullable="true"/>
+        <column xsi:type="varchar" name="sections" comment="sections" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="validation" comment="validation" nullable="false" length="255"/>
+        <column xsi:type="int" name="cdt_attribute_sort_order" padding="11" unsigned="true" nullable="false" comment="cdt_attribute_sort_order"/>
+        <column xsi:type="varchar" name="image" comment="image" nullable="false" length="255"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="cdt_attribute_id"/>
+        </constraint>
+    </table>
+
+    <table name="circular_designer_tool" resource="default" engine="innodb" comment="Circle Designer Tool">
+        <column xsi:type="int" name="id" padding="11" unsigned="true" nullable="false" identity="true" comment="id"/>
+        <column xsi:type="varchar" name="name" comment="name" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="school" comment="school" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="zipcode" comment="zipcode" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="phone" comment="phone" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="email" comment="email" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="heard_about" comment="heard_about" nullable="false" length="255"/>
+        <column xsi:type="text" name="comments" comment="comments" nullable="false"/>
+        <column xsi:type="text" name="raw_designer_data" comment="raw_designer_data" nullable="false"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+    </table>
+</schema>

@@ -1,0 +1,100 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Customer\Block\Address\Book;
+use Magento\Framework\Escaper;
+
+/** @var Book $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+?>
+<div class="block-addresses-default">
+    <div class="block-title">
+            <?= $escaper->escapeHtml(__('Default Addresses')) ?>
+    </div>
+    <div class="flex flex-wrap">
+        <?php if ($customerDefaultBillingAddress = $block->getDefaultBilling()): ?>
+            <div class="grow">
+                <div class="box box-address-billing block-content">
+                    <h2 class="text-size18 font-semibold">
+                        <span><?= $escaper->escapeHtml(__('Default Billing Address')) ?></span>
+                    </h2>
+                    <div class="box-content">
+                        <address>
+                            <?= $block->getAddressHtml($block->getAddressById($customerDefaultBillingAddress)) ?>
+                        </address>
+                    </div>
+                    <div class="box-actions">
+                        <a href="<?= $escaper->escapeUrl($block->getAddressEditUrl($customerDefaultBillingAddress)) ?>"
+                           class="font-normal text-size16"
+                           >
+                            <span>
+                                <?= $escaper->escapeHtml(__('Edit Address')) ?>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="grow">
+                <div class="box box-billing-address block-content">
+                    <h2 class="text-size18 font-semibold">
+                        <span>
+                            <?= $escaper->escapeHtml(__('Default Billing Address')) ?>
+                        </span>
+                    </h2>
+                    <div class="box-content">
+                        <p><?= $escaper->escapeHtml(__('You have no default billing address in your address book.')) ?></p>
+                    </div>
+                </div>
+            </div>
+        <?php endif ?>
+
+        <?php if ($customerDefaultBillingAddress = $block->getDefaultShipping()): ?>
+            <div class="grow">
+                <div class="box box-address-shipping block-content">
+                    <h2 class="text-size18 font-semibold">
+                        <span><?= $escaper->escapeHtml(__('Default Shipping Address')) ?></span>
+                    </h2>
+                    <div class="box-content">
+                        <address>
+                            <?= $block->getAddressHtml($block->getAddressById($customerDefaultBillingAddress)) ?>
+                        </address>
+                    </div>
+                    <div class="box-actions">
+                        <a href="<?= $escaper->escapeUrl($block->getAddressEditUrl($customerDefaultBillingAddress)) ?>"
+                           class="font-normal text-size16"
+                        >
+                            <span><?= $escaper->escapeHtml(__('Edit Address')) ?></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="grow">
+                <div class="box box-shipping-address block-content">
+                    <h2 class="text-size18 font-semibold">
+                        <span>
+                            <?= $escaper->escapeHtml(__('Default Shipping Address')) ?>
+                        </span>
+                    </h2>
+                    <div class="box-content">
+                        <p>
+                            <?= $escaper->escapeHtml(__('You have no default shipping address in your address book.')) ?>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        <?php endif ?>
+    </div>
+</div>

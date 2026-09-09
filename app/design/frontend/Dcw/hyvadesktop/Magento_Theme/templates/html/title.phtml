@@ -1,0 +1,47 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Theme\Block\Html\Title;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+
+/** @var Escaper $escaper */
+/** @var Title $block */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+$cssClass = $block->getCssClass() ? ' ' . $block->getCssClass() : 'text-3xl';
+$titleHtml = '';
+if (trim((string)$block->getPageHeading())) {
+    $titleHtml = '<span class="base" data-ui-id="page-title-wrapper" '
+        . $block->getAddBaseAttribute()
+        . '>'
+        . $escaper->escapeHtml($block->getPageHeading())
+        . '</span>';
+}
+?>
+<?php $actionfullname = $customViewModel->getRequest()->getFullActionName(); ?>
+<?php if ($titleHtml): ?>
+<div class="container flex flex-col md:flex-row flex-wrap font-bold">
+    <h1 class="text-gray-900 page-title title-font"
+        <?php if ($block->getId()): ?> id="<?= $escaper->escapeHtmlAttr($block->getId()) ?>" <?php endif; ?>>
+		<?php if ($actionfullname =="amasty_quote_account_view"){
+					echo  str_replace("Quote","Cart Id",$titleHtml);
+					
+		} else {?>
+				<?= /* @noEscape */ $titleHtml ?>
+		<?php } ?>
+    </h1>
+    <?= $block->getChildHtml() ?>
+</div>
+<?php endif; ?>

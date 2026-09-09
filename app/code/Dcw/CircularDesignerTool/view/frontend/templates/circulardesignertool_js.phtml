@@ -1,0 +1,143 @@
+<script src="<?= /* @noEscape */ $block->getViewFileUrl('Dcw_CircularDesignerTool/js/matdesigner.js')?>"></script>
+
+<script>
+    var theForm = document.forms['aspnetForm'];
+    if (!theForm) {
+        theForm = document.aspnetForm;
+    }
+    function __doPostBack(eventTarget, eventArgument) {
+
+        if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+           // theForm.__EVENTTARGET.value = eventTarget;
+            //theForm.__EVENTARGUMENT.value = eventArgument;
+            theForm.submit();
+        }
+    }
+
+    $('#submitdesign').on('click.submitwrestling', function (e) {
+        updateContactData();
+
+        if (!$('#aspnetForm').valid()) {
+            e.preventDefault();
+        }
+    });
+
+    function updateContactData() {
+        contact['name'] = document.getElementById('name').value;
+        contact['zip'] = document.getElementById('zip').value;
+        contact['email'] = document.getElementById('email').value;
+        contact['school'] = document.getElementById('school').value;
+        contact['phone'] = document.getElementById('phone').value;
+        contact['howfound'] = document.getElementById('howfound').value;
+        contact['comments'] = document.getElementById('comments').value;
+
+        draw_a();
+    };
+
+    var a_canvas = document.getElementById("a");
+    //a_canvas.addEventListener("mousedown",zoom, false);
+
+    jQuery.validator.addMethod("zipcode", function (value, element) {
+        return this.optional(element) || /^\d{5}(?:-\d{4})?$/.test(value);
+    }, "Invalid zipcode.");
+
+    var offline = false;
+    $("#aspnetForm").validate({
+        debug: true,
+        rules: {
+            zip: {
+                zipcode: true
+            }
+        },
+        messages: {
+            email: {
+                email: "Invalid email."
+            }
+        },
+        submitHandler: function (form) {
+            //contact['name'] = document.getElementById('name').value;
+            //contact['zip'] = document.getElementById('zip').value;
+            //contact['email'] = document.getElementById('email').value;
+            //contact['school'] = document.getElementById('school').value;
+            //contact['phone'] = document.getElementById('phone').value;
+            //contact['howfound'] = document.getElementById('howfound').value;
+            //contact['comments'] = document.getElementById('comments').value;
+            //mat['randomid'] = document.getElementById('randomid').value;
+
+            //draw_a();
+            //               return;
+
+            //$.ajax({
+            // type: "POST",
+            // url: "process.php",
+            // data: { mat : mat, contact : contact }
+            //}).done(function(data) {
+            $('#finalform').addClass("hidden");
+            $('#finalresult').removeClass("hidden");
+            //$('#finalresult').html(data);
+            $('#finishflash').toggle().fadeOut(400);
+            //  if (offline == true) {
+            //   var randm = Math.floor((Math.random()*10000)+1);
+            //   localStorage.setItem('mat'+randm,JSON.stringify(mat));
+            //   localStorage.setItem('contact'+randm,JSON.stringify(contact));
+            //  }
+            //});
+        }
+        //invalidHandler: function(event, validator) {
+        // //console.log("invalid");
+        //}
+    });
+
+    //$('#submitdesign').click(function() { 
+    // if ($('#design').valid()) {
+    //           popup.open('mat-submission-modal');
+    // }
+    //      });
+
+    /*
+    if ($(window).height() < 670 && $(window).width() > 500) {
+        $('#header').addClass('hidden');
+        $('#container').css({'margin-top':'10px','margin-bottom':'10px'});
+        $('#messagebox').css('margin-top','10px');
+        $('#nav').css('display','none');
+    }
+    */
+
+    function filter(cat) {
+        if (cat == "all") {
+            $('#logos > a.hidden').removeClass('hidden');
+        }
+        else {
+            $('#logos > a').addClass('hidden');
+            $('#logos > a.' + cat).removeClass('hidden');
+        }
+    }
+
+    draw_a();
+
+    <?php if (!empty($block->getRequest()->getParam('id'))) {
+        $matSize = $block->getMatSize($block->getRequest()->getParam('id'));
+        ?>
+
+        var CONTROL_INTERVAL = setInterval(function(){
+            if (!$('#matloading').hasClass("selected")) {
+                $('input[name="matsize"][value="<?= /* @noEscape */ $matSize?>"]').trigger('click');
+                //$('#matthick2').trigger('click');
+
+                var globalTimeout = null;
+        
+                if (globalTimeout != null) {
+                clearTimeout(globalTimeout);
+                }
+
+                globalTimeout = setTimeout(function() {
+                    globalTimeout = null;
+                    $('input[name="matsize"][value="<?= /* @noEscape */ $matSize?>"]').trigger('click');
+                }, 1000);
+
+                clearInterval(CONTROL_INTERVAL);
+            }
+        }, 100); // check for every 100ms
+    <?php }?>
+    
+</script>

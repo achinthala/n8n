@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Narvar_Accord::config"
+          title="Narvar Accord"
+          module="Narvar_Accord"
+          sortOrder="51"
+          resource="Narvar_Accord::config"/>
+        <add id="Narvar_Accord::Settings" 
+          title="Configuration" 
+          module="Narvar_Accord" 
+          sortOrder="99" 
+          parent="Narvar_Accord::config" 
+          action="adminhtml/system_config/edit/section/narvar_accord" 
+          resource="Narvar_Accord::narvar_settings"/>
+    </menu>
+</config>
+
+

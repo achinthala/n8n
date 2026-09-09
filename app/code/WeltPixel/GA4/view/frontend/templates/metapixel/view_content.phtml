@@ -1,0 +1,26 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \Magento\Catalog\Block\Product\View */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+?>
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled() && $metaPixelHelper->shouldMetaPixelEventBeTracked(\WeltPixel\GA4\Model\Config\Source\MetaPixel\TrackingEvents::EVENT_VIEW_CONTENT)) :
+    $product = $block->getProduct();
+    if ($product) :
+        $productCategoryIds = $product->getCategoryIds();
+?>
+<script>
+    if (window.ga4AllowServices) {
+        fbq('track', 'ViewContent', {
+            content_type: "product",
+            content_ids: ["<?= $metaPixelHelper->getMetaProductId($product) ?>"],
+            content_name: "<?= html_entity_decode($product->getName() ?? '') ?>",
+            content_category: "<?= addslashes(str_replace('"', '&quot;', $metaPixelHelper->getContentCategory($productCategoryIds))) ?>",
+            value: "<?= floatval(number_format($product->getPriceInfo()->getPrice('final_price')->getValue() ?? 0, 2, '.', '')); ?>",
+            currency: "<?= $metaPixelHelper->getCurrencyCode() ?>"
+        });
+    }
+</script>
+    <?php endif; ?>
+<?php endif; ?>

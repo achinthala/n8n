@@ -1,0 +1,90 @@
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+
+<!-- ko foreach: getRegion('before_details') -->
+<!-- ko template: getTemplate() --><!-- /ko -->
+<!-- /ko -->
+
+<div class="product-item-details">
+
+    <div class="product-item-inner">
+        <div class="product-info-section">
+            <div class="product-item-name-block">
+                <strong class="product-item-name" data-bind="html: getNameUnsanitizedHtml($parent)"></strong>
+            </div>
+            <!-- ko if: (getParsedOptions($parent).length > 0) -->
+            <div class="product options">
+                <dl class="item-options">
+                    <!-- ko foreach: getParsedOptions($parent).slice().reverse() -->
+                    <!-- ko ifnot: ["Weight", "", "Custom Roll Length", "Configurable Product Id", "Configurable Product Url", "Configurable Product Image", "Main Configurable Product Image", "Product Name", "Configurable Product SKU", "Configurable Product Category", "Configurable Product Name", "Color Display Name"].includes($data.label) -->
+                    <dt class="label" data-bind="text: label === 'Select An Option' ? '' : label"></dt>
+                    <!-- ko if: ($data.full_view) -->
+                    <!-- ko with: { full_viewUnsanitizedHtml: $data.full_view } -->
+                    <dd class="values" data-bind="html: full_viewUnsanitizedHtml"></dd>
+                    <!-- /ko -->
+                    <!-- /ko -->
+                    <!-- ko ifnot: ($data.full_view) -->
+                    <!-- ko with: { valueUnsanitizedHtml: $data.value } -->
+                    <dd class="values" data-bind="html: valueUnsanitizedHtml"></dd>
+                    <!-- /ko -->
+                    <!-- /ko -->
+                    <!-- ko if: ($parents[1] && $parents[1].item_id && $parents[1].showCount != 1) -->
+                    <div class="product-weight_block">
+                        <span class="product-weight" data-bind="html: $parent.getProductWeight($parents[1])"></span>
+                    </div>
+                    <div class="product-weight_block">
+                        <div class="product-square-feet-price" data-bind="html: '(' + $parent.getCalculatedSquareFeetPrice($parents[1]) + ')'"></div>
+                    </div>
+                    <!-- ko ifnot: ($parents[1].showCount = 1) -->
+                    <!-- /ko -->
+                    <!-- /ko -->
+                    <!-- /ko -->
+                    <!-- /ko -->
+                </dl>
+            </div>
+            <!-- /ko -->
+        </div>
+        <div class="product-price-section">
+            <!-- ko foreach: getRegion('after_details') -->
+
+            <!-- ko template: getTemplate() --><!-- /ko -->
+            <!-- /ko -->
+
+            <!-- ko if: getCutPrice($parent) -->
+            <div class="product-cut-price">
+                <span data-bind="html: getCutPrice($parent)"></span>
+            </div>
+            <!-- /ko -->
+
+            <!-- ko if: getDiscountPercentage($parent) -->
+            <div class="product-discount-percentage">
+                <span data-bind="html: getDiscountPercentage($parent)"></span>
+            </div>
+            <!-- /ko -->
+        </div>
+    </div>
+
+    <div class="details-qty">
+        <span class="label"><!-- ko i18n: 'Qty' --><!-- /ko --></span>
+        <span class="value" data-bind="text: $parent.qty.toLocaleString(window.LOCALE)"></span>
+    </div>
+
+    <!-- ko foreach: getRegion('item_message') -->
+    <!-- ko template: getTemplate() --><!-- /ko -->
+    <!-- /ko -->
+    <!-- ko if: getStockStatus($parent) -->
+    <div class="product-stock-status">
+        <span data-bind="html: getStockStatus($parent)"></span>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko if: getShippingEstimate($parent) -->
+    <div class="product-shipping-date">
+        <span data-bind="html: getShippingEstimate($parent)"></span>
+    </div>
+    <!-- /ko -->
+</div>

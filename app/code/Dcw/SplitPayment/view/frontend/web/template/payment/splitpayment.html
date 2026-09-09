@@ -1,0 +1,59 @@
+<div class="payment-method" data-bind="attr: {id: getCode()+'-payment'}, css: {'_active': (getCode() == isChecked())}">
+    <div class="payment-heading payment-method-title  field choice">
+        <input type="radio"
+               name="payment[method]"
+               class="radio"
+               data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()">
+        <label data-bind="attr: {'for': getCode(), class: getCode()+'-label label'}" class="label">
+            <span> Split Payment </span>
+            <span>
+                <img data-bind="attr: {'src': require.toUrl('Dcw_PaymentMethods/images/split-giftcard.png'), 'alt': $t('Split Giftcard')}" />
+                <img data-bind="attr: {'src': require.toUrl('Dcw_PaymentMethods/images/split-card.png'), 'alt': $t('Split CC')}" />
+            </span>
+        </label>
+    </div>
+    <div class="payment-method-content">
+        <!-- ko foreach: getRegion('messages') -->
+        <!-- ko template: getTemplate() --><!-- /ko -->
+        <!--/ko-->
+        <div class="split-payment_info">
+            <p>We make it easy for you to split your payments using various cards.</p>
+            <p>Note: eGift Card balances are applied in full. Any remaining total will automatically update for credit cards entered.</p>
+        </div>
+        <div class="split-payment_buttons">
+            <button class="splitPaymentSubmitBtn"
+                    type="button"
+                    onclick="splitPaymentSubmitFunc()"
+                    data-type="gc"
+                    data-bind="
+                    attr: {title: $t('Add eGift card')},
+                    css: {disabled: !isPlaceOrderActionAllowed()},
+                    enable: (getCode() == isChecked())
+                    "
+                    disabled>
+                <span data-bind="i18n: 'Add eGift card'"></span>
+            </button>
+            <button class="splitPaymentSubmitBtn"
+                    type="button"
+                    onclick="splitPaymentSubmitFunc()"
+                    data-type="cc"
+                    data-bind="
+                    attr: {title: $t('Add Credit or Debit Card')},
+                    css: {disabled: !isPlaceOrderActionAllowed()},
+                    enable: (getCode() == isChecked())
+                    "
+                    disabled>
+                <span data-bind="i18n: 'Add Credit or Debit Card'"></span>
+            </button>
+        </div>
+
+        <div class="checkout-agreements-block">
+            <!-- ko foreach: $parent.getRegion('before-place-order') -->
+                <!-- ko template: getTemplate() --><!-- /ko -->
+            <!--/ko-->
+        </div>
+    </div>
+</div>
+<script>
+
+</script>

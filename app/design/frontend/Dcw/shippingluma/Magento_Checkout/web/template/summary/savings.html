@@ -1,0 +1,8 @@
+<!-- ko if: isDisplayed() -->
+<tr class="totals savings" data-bind="css: getSavingsClass()">
+    <th class="mark" data-bind="i18n: 'Product savings'"></th>
+    <td class="amount">
+        <span data-bind="text: getSavingsValue()"></span> 
+    </td>
+</tr>
+<!-- /ko -->

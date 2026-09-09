@@ -1,0 +1,51 @@
+<script>
+    function samplesubmit(mainproduct,inputValue,productids,colors,spidsColors,confproname,confproid,childproids) {
+        this.isLoading = true;
+        const formKey = hyva.getFormKey();
+        const postUrl = BASE_URL + 'sampleproduct/Sample/Products/';
+        fetch(postUrl, {
+            "headers": {
+                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+            },
+            "body": "form_key=" + formKey + "&action_type=" + inputValue+ "&pids=" + productids+ "&colors=" + colors+ "&spidsColors=" + spidsColors+ "&confproname=" + confproname+ "&confproid=" + confproid +"&childproid=" + childproids,
+            "method": "POST",
+            "mode": "cors",
+            "credentials": "include"
+        }).then(response => {
+            //this.isLoading = false;
+            //window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+            //fetchHtmlContent(mainproduct);
+            if (! response.ok) console.warn('GET request failed');
+            return response.json();
+        }).then(result => {
+            this.isLoading = false;
+            window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+            fetchHtmlContent(mainproduct,result.is_sample_added); 
+         }); 
+    }
+  </script>  
+  <script>
+  function fetchHtmlContent(pid,is_sample_added) {
+    console.log('Fetching HTML content for PID:', pid);
+    const formKey = hyva.getFormKey();
+    const randomString = Math.random().toString(36).substring(2, 15);
+    const postUrl = BASE_URL + 'sampleproduct/sample/popup/?pid='+pid;
+    fetch(postUrl)
+      .then(response => response.text())
+      .then(html => {
+        console.log('Response received:', html);
+      let myDivelements = document.getElementsByClassName('htmlcontent'+pid);
+      var numberofelements=myDivelements.length;
+      for(var i=0;i<numberofelements;++i){
+        myDivelements[i].innerHTML = html;
+      }
+      if(is_sample_added == 1 ){ //&& window.innerWidth <= 767
+        document.querySelector(".order-free-sample-popup .closemodal").dispatchEvent(new Event('click'));
+        document.querySelector("#menu-cart-icon").dispatchEvent(new Event('click'));
+      }
+    })
+      .catch(error => {
+        console.error(error);
+      });
+  }
+</script>  

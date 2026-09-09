@@ -1,0 +1,8 @@
+{
+    "sales_order": {
+        "column": {
+            "backorder_notification_sent": true
+        }
+    }
+}
+

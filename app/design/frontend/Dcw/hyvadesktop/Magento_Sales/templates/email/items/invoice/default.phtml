@@ -1,0 +1,40 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php $_item = $block->getItem() ?>
+<?php $_order = $block->getItem()->getOrder(); ?>
+<tr>
+    <td width="30">&nbsp;</td>
+    <td class="item-info<?= ($block->getItemOptions() ? ' has-extra' : '') ?>" valign="top" style="font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: left;padding-top: 10px !important;padding-bottom: 38px !important">
+        <p style="font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;margin: 0 0 14px 0 !important;width: 210px;" class="product-name"><?= $block->escapeHtml($_item->getName()) ?></p>        
+        <?php if ($block->getItemOptions()) : ?>
+            <div style="margin: 0 0 4px 0 !important;display: inline-block !important;width: 100% !important;clear: both !important;">
+                <dl style="margin: 0 !important;display: inline-block !important;width: 100% !important;">
+                    <?php foreach ($block->getItemOptions() as $option) : 
+                            if($option['label']!="") {
+                        ?>                        
+                               <dt style="float: left !important;padding:0 2px 0 0 !important;font-weight: 400 !important;font-size: 13px !important;line-height: 20px !important;color: #000000 !important;"><strong style="font-weight: 400 !important;"><em style="font-style: normal !important;"><?= $block->escapeHtml($option['label']) ?>:</em></strong></dt>
+                        <?php } ?>                                    
+                        <dd style="float: left !important;box-sizing: border-box !important;margin: 0 !important;font-weight: 400 !important;font-size: 13px !important;line-height: 20px !important;color: #000000 !important;">
+                            <?= /* @noEscape */  nl2br($block->escapeHtml($option['value'])) ?>
+                        </dd>
+                        <br>
+                    <?php endforeach; ?>
+                </dl>
+            </div>
+        <?php endif; ?>
+        <?php $addInfoBlock = $block->getProductAdditionalInformationBlock(); ?>
+        <?php if ($addInfoBlock) : ?>
+            <?= $addInfoBlock->setItem($_item->getOrderItem())->toHtml() ?>
+        <?php endif; ?>
+        <?= $block->escapeHtml($_item->getDescription()) ?>
+    </td>
+    <td class="item-qty" valign="top" style="font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: center;padding-top: 10px !important;padding-bottom: 38px !important;"><?= (float) $_item->getQty() ?></td>
+    <td class="item-price" valign="top" style="font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: right;padding-top: 10px !important;padding-bottom: 38px !important;">
+        <?= /* @noEscape */ $block->getItemPrice($_item->getOrderItem()) ?>
+    </td>
+    <td width="30">&nbsp;</td>
+</tr>

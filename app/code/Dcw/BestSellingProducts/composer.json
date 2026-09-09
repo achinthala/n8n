@@ -1,0 +1,22 @@
+{
+    "name": "dcw/module-bestsellingproducts",
+    "description": "Display top-selling products that belong to the same attribute set as the currently viewed product",
+    "type": "magento2-module",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Dotcom Weavers",
+            "email": "info@dotcomweavers.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Dcw\\BestSellingProducts\\": ""
+        }
+    }
+}

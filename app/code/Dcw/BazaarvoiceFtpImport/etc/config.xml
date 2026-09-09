@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <bazaarvoice_ftp>
+            <ftp_settings>
+                <enabled>0</enabled>
+                <host></host>
+                <username></username>
+                <password></password>
+                <remote_path>/</remote_path>
+                <file_pattern>*.xml.gz</file_pattern>
+            </ftp_settings>
+            <import_settings>
+                <auto_import>0</auto_import>
+                <cron_schedule>0 2 * * *</cron_schedule>
+                <keep_original_files>0</keep_original_files>
+            </import_settings>
+            <gmc_settings>
+                <enabled>0</enabled>
+                <publisher_name>FlooringInc</publisher_name>
+                <aggregator_name>Bazaarvoice</aggregator_name>
+                <review_statuses>approved,published</review_statuses>
+                <default_rating>5</default_rating>
+                <rating_range>5</rating_range>
+                <cron_schedule>0 3 * * *</cron_schedule>
+            </gmc_settings>
+        </bazaarvoice_ftp>
+    </default>
+</config>

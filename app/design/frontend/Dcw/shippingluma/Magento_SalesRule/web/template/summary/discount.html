@@ -1,0 +1,19 @@
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+
+ <!-- ko if: isDisplayed() -->
+ <tr class="totals discount">
+    <th class="mark" scope="row">
+        <span data-bind="i18n: 'Promo Code'"></span>
+        <span data-bind="text: getCouponCode()"></span>
+    </th>
+    <td class="amount">
+        <span data-bind="text: getValue()"></span>
+    </td>
+</tr>
+<!-- /ko -->
+

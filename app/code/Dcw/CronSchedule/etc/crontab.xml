@@ -1,0 +1,177 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="default">
+        <!-- Override bulk_cleanup schedule from Every Minute to Every 12 Hours -->
+        <job name="bulk_cleanup" instance="Magento\AsynchronousOperations\Cron\BulkCleanup" method="execute">
+            <schedule>0 */12 * * *</schedule>
+        </job>
+        
+        <!-- Override bulk_mark_incomplete_operations_as_failed schedule from Every 10 Minutes to Every 36 Minutes -->
+        <job name="bulk_mark_incomplete_operations_as_failed" instance="Magento\AsynchronousOperations\Cron\MarkIncompleteOperationsAsFailed" method="execute">
+            <schedule>*/36 * * * *</schedule>
+        </job>
+        
+        <!-- Override captcha_delete_expired_images schedule from Every 10 Minutes to Every 35 Minutes -->
+        <job name="captcha_delete_expired_images" instance="Magento\Captcha\Cron\DeleteExpiredImages" method="execute">
+            <schedule>*/35 * * * *</schedule>
+        </job>
+        
+        <!-- Override captcha_delete_old_attempts schedule from Every 30 Minutes to Every 55 Minutes -->
+        <job name="captcha_delete_old_attempts" instance="Magento\Captcha\Cron\DeleteOldAttempts" method="execute">
+            <schedule>*/55 * * * *</schedule>
+        </job>
+        
+        <!-- Override magento_newrelicreporting_cron schedule from Every 2 Minutes to Every 9 Minutes -->
+        <job name="magento_newrelicreporting_cron" instance="Magento\NewRelicReporting\Model\Cron" method="runCron">
+            <schedule>*/9 * * * *</schedule>
+        </job>
+        
+        <!-- Override newsletter_send_all schedule from Every 5 Minutes to Every 15 Minutes -->
+        <job name="newsletter_send_all" instance="Magento\Newsletter\Model\Observer" method="scheduledSend">
+            <schedule>*/15 * * * *</schedule>
+        </job>
+        
+        <!-- Override mf_blogplus_facebook_autopublish schedule from Every 5 Minutes to Every 15 Minutes -->
+        <job name="mf_blogplus_facebook_autopublish" instance="Magefan\BlogPlus\Cron\Facebook\AutoPublishPost" method="execute">
+            <schedule>*/15 * * * *</schedule>
+        </job>
+        
+        <!-- Override catalog_product_frontend_actions_flush schedule from Every Minute to Every 2 Minutes -->
+        <job name="catalog_product_frontend_actions_flush" instance="Magento\Catalog\Cron\FrontendActionsFlush" method="execute">
+            <schedule>*/2 * * * *</schedule>
+        </job>
+        
+        <!-- Override catalog_product_outdated_price_values_cleanup schedule from Every Minute to Every 4 Minutes -->
+        <job name="catalog_product_outdated_price_values_cleanup" instance="Magento\Catalog\Cron\DeleteOutdatedPriceValues" method="execute">
+            <schedule>*/4 * * * *</schedule>
+        </job>
+        
+        <!-- Override catalog_product_attribute_value_synchronize schedule from Every 5 Minutes to Every 8 Minutes -->
+        <job name="catalog_product_attribute_value_synchronize" instance="Magento\Catalog\Cron\SynchronizeWebsiteAttributes" method="execute">
+            <schedule>*/8 * * * *</schedule>
+        </job>
+        
+        <!-- Override flush_preview_quotas schedule from Every 2 Minutes to Every 13 Minutes -->
+        <job name="flush_preview_quotas" instance="Magento\CheckoutStaging\Model\PreviewQuotaManager" method="flushOutdated">
+            <schedule>*/13 * * * *</schedule>
+        </job>
+        
+        <!-- Override outdated_authentication_failures_cleanup schedule from Every Minute to Every 28 Minutes -->
+        <job name="outdated_authentication_failures_cleanup" instance="Magento\Integration\Cron\CleanExpiredAuthenticationFailures" method="execute">
+            <schedule>*/28 * * * *</schedule>
+        </job>
+        
+        <!-- Override inventory_in_store_pickup_sales_send_order_notified_emails schedule from Every Minute to Every 22 Minutes -->
+        <job name="inventory_in_store_pickup_sales_send_order_notified_emails" instance="Magento\InventoryInStorePickupSales\Model\NotifyOrdersAreReadyForPickupEmailSender" method="execute">
+            <schedule>*/22 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="index">
+        <!-- Override indexer_reindex_all_invalid schedule from Every Minute to Every 5 Minutes -->
+        <job name="indexer_reindex_all_invalid" instance="Magento\Indexer\Cron\ReindexAllInvalid" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        
+        <!-- Override indexer_update_all_views schedule from Every Minute to Every 5 Minutes -->
+        <job name="indexer_update_all_views" instance="Magento\Indexer\Cron\UpdateMview" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="staging">
+        <!-- Override staging_apply_version schedule from Every Minute to Every 5 Minutes -->
+        <job name="staging_apply_version" instance="Magento\Staging\Model\StagingApplier" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        
+        <!-- Override staging_remove_updates schedule from Every Minute to Every 5 Minutes -->
+        <job name="staging_remove_updates" instance="Magento\Staging\Model\Update\Cleaner" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+        
+        <!-- Override staging_synchronize_entities_period schedule from Every Minute to Every 5 Minutes -->
+        <job name="staging_synchronize_entities_period" instance="Magento\Staging\Model\SynchronizeEntityPeriod" method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="amasty_feed">
+        <!-- Override amfeed_feed_refresh schedule from Every 10 Minutes to Every 20 Minutes -->
+        <job name="amfeed_feed_refresh" instance="Amasty\Feed\Cron\RefreshData" method="execute">
+            <schedule>*/20 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="magefan_blog_default">
+        <!-- Override magefan_blog_cron_resave_existing_posts schedule from Every Minute to Every 6 Minutes -->
+        <job name="magefan_blog_cron_resave_existing_posts" instance="Magefan\Blog\Cron\ReSaveExistingPosts" method="execute">
+            <schedule>*/6 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="resync_failed_feeds_data_exporter">
+        <!-- Override categories_feed_resend_failed_items schedule from Every 5 Minutes to Every 7 Minutes -->
+        <job name="categories_feed_resend_failed_items" instance="Magento\SaaSCategory\Cron\CategorySubmitFeed" method="execute">
+            <schedule>*/7 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="catalog_event">
+        <!-- Override catalog_event_status_checker schedule from Every Minute to Every 3 Minutes -->
+        <job name="catalog_event_status_checker" instance="Magento\CatalogEvent\Cron\StatusChecker" method="execute">
+            <schedule>*/3 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="saas_data_exporter">
+        <!-- Override submit_scopes_website_feed schedule from Every Minute to Every 6 Minutes -->
+        <job name="submit_scopes_website_feed" instance="Magento\SaaSScopes\Cron\ScopesWebsiteSubmitFeed" method="execute">
+            <schedule>*/6 * * * *</schedule>
+        </job>
+        
+        <!-- Override submit_scopes_customergroup_feed schedule from Every Minute to Every 26 Minutes -->
+        <job name="submit_scopes_customergroup_feed" instance="Magento\SaaSScopes\Cron\ScopesCustomerGroupSubmitFeed" method="execute">
+            <schedule>*/26 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="baseprovider">
+        <!-- Override avalara_queue_consumer schedule from Every 10 Minutes to Every 12 Minutes -->
+        <job name="avalara_queue_consumer" instance="Avalara\AvaTax\BaseProvider\Model\Queue\Consumer" method="process">
+            <schedule>*/12 * * * *</schedule>
+        </job>
+    </group>
+    
+    <group id="avatax">
+        <!-- Override avatax_batch_queue_transactions_response_process schedule from Every 15 Minutes to Every 25 Minutes -->
+        <job name="avatax_batch_queue_transactions_response_process" instance="Avalara\AvaTax\Model\Queue\BatchResponseProcessing" method="cronProcessResponse">
+            <schedule>*/25 * * * *</schedule>
+        </job>
+        
+        <!-- Override avatax_config_sync schedule from Every 15 Minutes to Every 35 Minutes -->
+        <job name="avatax_config_sync" instance="Avalara\AvaTax\Model\Config\Task" method="cronSyncConfigFromAvaTax">
+            <schedule>*/35 * * * *</schedule>
+        </job>
+        
+        <!-- Override avatax_items_hscode_sync schedule from Every 10 Minutes to Every 15 Minutes -->
+        <job name="avatax_items_hscode_sync" instance="Avalara\AvaTax\Model\Items\Task" method="cronSyncItemsHsCodeToAvaTax">
+            <schedule>*/15 * * * *</schedule>
+        </job>
+        
+        <!-- Override avatax_new_items_sync schedule from Every 10 Minutes to Every 17 Minutes -->
+        <job name="avatax_new_items_sync" instance="Avalara\AvaTax\Model\Items\Task" method="cronSyncNewItemsToAvaTax">
+            <schedule>*/17 * * * *</schedule>
+        </job>
+        
+        <!-- Override avatax_pending_items_sync schedule from Every 10 Minutes to Every 19 Minutes -->
+        <job name="avatax_pending_items_sync" instance="Avalara\AvaTax\Model\Items\Task" method="cronSyncPendingItemsToAvaTax">
+            <schedule>*/19 * * * *</schedule>
+        </job>
+        
+        <!-- Override avatax_processqueue schedule from Every 5 Minutes to Every 8 Minutes -->
+        <job name="avatax_processqueue" instance="Avalara\AvaTax\Model\Queue\Task" method="cronProcessQueue">
+            <schedule>*/8 * * * *</schedule>
+        </job>
+    </group>
+</config>

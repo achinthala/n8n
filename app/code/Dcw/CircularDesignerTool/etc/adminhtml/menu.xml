@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+    <!-- <add id="Dcw_CircularDesignerTool::base" title="Circular Designer Tool" module="Dcw_CircularDesignerTool" sortOrder="30" resource="Dcw_CircularDesignerTool::circulardesignertool"/>
+
+    <add id="Dcw_CircularDesignerTool::circulardesignertool" title="CircularDesignerTool Manager" module="Dcw_CircularDesignerTool" sortOrder="10" parent="Dcw_CircularDesignerTool::base" resource="Dcw_CircularDesignerTool::circulardesignertool_circulardesignertool"/>  -->
+	
+	<!--<add id="Dcw_CircularDesignerTool::circulardesignertool" title="CircularDesignerTool Manager" translate="title" module="Dcw_CircularDesignerTool" sortOrder="50" parent="Magento_Catalog::catalog" resource="Dcw_CircularDesignerTool::circulardesignertool" />
+		
+    <add id="Dcw_CircularDesignerTool::circulardesignertool_circulardesignertooltab" title="Circular Designer Tool Tab" module="Dcw_CircularDesignerTool" sortOrder="10" parent="Dcw_CircularDesignerTool::circulardesignertool" action="circulardesignertool/circulardesignertooltab" resource="Dcw_CircularDesignerTool::circulardesignertool_circulardesignertooltab"/>
+
+    <add id="Dcw_CircularDesignerTool::circulardesignertool_circulardesignertoolattribute" title="Circular Designer Tool" module="Dcw_CircularDesignerTool" sortOrder="11" parent="Dcw_CircularDesignerTool::circulardesignertool" action="circulardesignertool/circulardesignertool" resource="Dcw_CircularDesignerTool::circulardesignertool_circulardesignertoolattribute"/>-->
+
+	
+    </menu>
+</config>

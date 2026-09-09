@@ -1,0 +1,31 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\Escaper;
+use Magento\Shipping\Block\Tracking\Link;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\Checkout\ViewModel\Data as CheckoutViewModel;
+
+/** @var Escaper $escaper */
+/** @var Link $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var CheckoutViewModel $checkoutViewModel */
+$checkoutViewModel = $viewModels->require(CheckoutViewModel::class);
+$order = $block->getOrder();
+// Get controller full path
+$getFullControllerName = $checkoutViewModel->getFullControllerName();
+$trackLink = $escaper->escapeUrl($block->getWindowUrl($order));
+
+if ($getFullControllerName == 'sales/order/view') {
+    $trackLink = $this->getUrl('sales/order/shipment/order_id/'.$order->getId());
+}
+?>
+<a href="<?php echo $trackLink;?>" class="text-primary underline"
+   target="_blank" rel="noopener" title="<?= $escaper->escapeHtmlAttr($block->getLabel()) ?>">
+    <?= $escaper->escapeHtml($block->getLabel()) ?>
+</a>

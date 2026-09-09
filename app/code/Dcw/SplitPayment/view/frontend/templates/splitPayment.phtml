@@ -1,0 +1,267 @@
+<?php
+use Hyva\Theme\ViewModel\ProductPage;
+
+/** @var Dcw\DesignerTool\Block\Index  $block */
+/** @var Escaper $escaper */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+$customerFormBlock = $block->getLayout()->createBlock(\ParadoxLabs\TokenBase\Block\Customer\Form::class);
+$code = $block->escapeHtmlAttr($customerFormBlock->getCode());
+
+$customerCardsBlock = $block->getLayout()->createBlock(\ParadoxLabs\TokenBase\Block\Customer\Cards::class);
+$cartItemRendererBlock = $block->getLayout()->createBlock(\Magento\Checkout\Block\Cart\Item\Renderer::class);
+$sampleProductBlock = $block->getLayout()->createBlock(\Dcw\SampleProduct\Block\SampleData::class);
+
+$shippingAddess = $block->getCurrentQuote()->getShippingAddress();
+$billingAddess = $block->getCurrentQuote()->getBillingAddress();
+
+//print_r($block->getRegionsOfCountry($shippingAddess->getCountryId()));
+?>
+<?php if ($customerFormBlock->getMethod()->getConfigData('test')) {?>
+    <script src="https://jstest.authorize.net/v1/Accept.js" charset="utf-8"></script>
+<?php } else {?>
+    <script src="https://js.authorize.net/v1/Accept.js" charset="utf-8"></script>
+<?php }?>
+<div class="split_payment_wrapper" >
+    <div class="split-title">Split Payments</div>
+    <div class="split_payment_des">
+        <?= /* @noEscape */ nl2br($block->getConfigValue('payment/splitpayment/short_description'));?>
+    </div>
+    <div class="split_payment_content">
+    <div class="split_payment_global_message"></div>
+    <form class="form-split-payment" action="<?= /* @noEscape */ $block->getUrl('splitpayment/index/placeorder')?>"
+    method="post" id="form-split-validate">
+        <div class="step-wrapper">
+            <div class="step-panel e-gift-card-frms" style="display:none">
+                <div class="step-panel-heading">Your eGift Cards</div>
+            </div>
+
+            <div class="step-panel credit-debit-card-frms" style="display:none">
+                <?php
+                if (!empty($block->getConfigValue('payment/authnetcim/cctypes'))) {
+                    $ccTypesList = explode(',', $block->getConfigValue('payment/authnetcim/cctypes'));
+                    foreach ($ccTypesList as $ccType) {
+                        $ccTypeImgUrl = $block->getViewFileUrl(
+                            'Magento_Payment::images/cc/'.strtolower((string)$ccType).'.png'
+                        );
+                        ?>
+                        <img class="credit-card-type payment-icon"
+                        alt="<?= /* @noEscape */ $ccType; ?>" title="<?= /* @noEscape */ $ccType; ?>"
+                        src="<?= /* @noEscape */ $ccTypeImgUrl;?>"/>
+                        <?php
+                    }
+                }
+
+                ?>
+
+            </div>
+
+            <div class="flex stepsbtn">
+                <div class="stepone"><span>Step 1 (If Applicable)</span>
+                <button class="add-gc-btn step-control" type="button">+ Add eGift Card</button>
+                </div>
+                <div class="steptwo"><span>Step 2</span>
+                <button class="add-cc-btn step-control" type="button">+ Add Credit or Debit Card</button>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="sbmt-pymnt-btn">Submit Payment</button>
+    </form>
+
+    </div>
+</div>
+
+<aside role="dialog" class="modal-custom opc-sidebar opc-summary-wrapper custom-slide">
+    <div class="modal-inner-wrap" data-role="focusable-scope">
+        <header class="modal-header">
+            <button class="action-close" data-role="closeBtn" type="button">
+                <span>Close</span>
+            </button>
+        </header>
+        <div id="modal-content-7" class="modal-content" data-role="content">
+            <div id="opc-sidebar">
+                <div class="opc-block-summary" data-bind="blockLoader: isLoading">
+                    <span data-bind="i18n: 'Order Summary'" class="title">Summary</span>
+                    <table class="data table table-totals">
+                        <caption class="table-caption" data-bind="i18n: 'Order Summary'">Summary</caption>
+                        <tbody>
+                            <tr class="totals sub">
+                                <th class="mark" scope="row">Cart Subtotal</th>
+                                <td class="amount">
+                                    <span class="price" data-th="Cart Subtotal">
+                                        <?= /* @noEscape */ $productViewModel
+                                        ->format($block->getCurrentQuote()->getSubtotal()) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="totals shipping excl">
+                                <th class="mark" scope="row">
+                                    <span class="label">Shipping</span>
+                                    <span class="value">
+                                        <?= /* @noEscape */ $shippingAddess->getShippingDescription()?>
+                                    </span>
+                                </th>
+                                <td class="amount">
+                                    <span class="price" data-th="Shipping">
+                                        <?= /* @noEscape */ $productViewModel
+                                        ->format($shippingAddess->getShippingAmount()) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php if (!empty($shippingAddess->getTaxAmount()) && $shippingAddess->getTaxAmount()>0) {?>
+                            <tr class="totals-tax">
+                                <th class="mark" scope="row">Tax</th>
+                                <td class="amount" data-th="Tax">
+                                    <span class="price">
+                                        <?= /* @noEscape */ $productViewModel
+                                        ->format($shippingAddess->getTaxAmount()) ?>
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php }?>
+
+                            <tr class="grand totals">
+                                <th class="mark" scope="row">
+                                    <strong>Order Total</strong>
+                                </th>
+                                <td class="amount" data-th="Order Total">
+                                    <strong><span class="price">
+                                        <?= /* @noEscape */ $productViewModel
+                                        ->format($block->getCurrentQuote()->getGrandTotal()) ?>
+                                    </span></strong>
+                                </td>
+                            </tr>
+                            <tr class="remaining-balance">
+                                <th class="mark" scope="row">
+                                    <strong>Remaining Balance</strong>
+                                </th>
+                                <td class="remaining-balance-amount">
+                                    <strong><span class="price"></span></strong>
+                                </td>
+                            </tr>
+
+                        </tbody>
+                    </table>
+
+                    <div class="block items-in-cart active">
+                        <div class="title" data-role="title">
+                            <strong role="heading" aria-level="1">
+                                <span><?= /* @noEscape */ ceil($block->getCurrentQuote()->getItemsQty()) ?></span>
+                                <span>Items in Cart</span>
+                            </strong>
+                        </div>
+                        <?php
+                        $items = $block->getCurrentQuote()->getAllVisibleItems();
+                        ?>
+                        <div class="content minicart-items" data-role="content" style="display: none;">
+                            <div class="minicart-items-wrapper">
+                                <ol class="minicart-items">
+                                    <?php foreach ($items as $item) {?>
+                                    <li class="product-item">
+                                        <div class="product">
+                                            <?= /* @noEscape */ $cartItemRendererBlock
+                                            ->getImage($item->getProduct(), 'product_thumbnail_image')
+                                            ->toHtml();?>
+                                            <div class="product-item-details">
+                                                <div class="product-item-inner">
+                                                    <div class="product-item-name-block">
+                                                        <strong class="product-item-name">
+                                                            <?= /* @noEscape */ $sampleProductBlock->getCartItemName($item)?>
+                                                        </strong>
+                                                        <?php
+                                                        $additionalOptions = $block->jsonDecodeItemOption($item);
+                                                        if (!empty($additionalOptions)) {
+                                                        ?>
+                                                        <div class="product options">
+                                                        <dl class="item-options" style="margin:0">
+                                                            <?php
+                                                            foreach ($additionalOptions as $label => $value) {
+                                                            ?>
+                                                            <dt class="label"><?= /* @noEscape */ $label?></dt>
+                                                            <dd class="values"><?= /* @noEscape */ $value?></dd>
+                                                            <?php
+                                                            }
+                                                            ?>
+                                                        </dl>
+                                                        <?php
+                                                        }
+                                                        ?>
+                                                    </div>
+                                                </div>
+                                                <div class="subtotal">
+                                                    <span class="price-excluding-tax" data-label="Excl. Tax">
+                                                        <span class="cart-price">
+                                                            <span class="price">
+                                                                <?= /* @noEscape */ $productViewModel
+                                                                ->format($item->getRowTotal()) ?>
+                                                            </span>
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                                <div class="details-qty">
+                                                    <span class="label"><span>Qty</span></span>
+                                                    <span class="value">
+                                                        <?= /* @noEscape */ $item->getQty()?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <?php } ?>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="opc-block-shipping-information">
+                    <div class="shipping-information">
+                        <div class="ship-to">
+                            <div class="shipping-information-title">
+                                <span>Ship To:</span>
+                                <button class="action action-edit ship-to-edit-btn">
+                                    <span data-bind="i18n: 'edit'">edit</span>
+                                </button>
+                            </div>
+                            <div class="shipping-information-content">
+                                <?= /* @noEscape */ $block->getFormatAddress($shippingAddess)?>
+                            </div>
+                        </div>
+                        <div class="ship-via">
+                            <div class="shipping-information-title">
+                                <span>Shipping Method:</span>
+                                <button class="action action-edit shipping-method-edit-btn">
+                                    <span>edit</span>
+                                </button>
+                            </div>
+                            <div class="shipping-information-content">
+                                <span class="value">
+                                    <?= /* @noEscape */ $shippingAddess->getShippingDescription()?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div data-role="focusable-end" tabindex="0"></div>
+</aside>
+
+<div id="checkout-loader" data-role="checkout-loader" class="loading-mask" style="display:none">
+    <div class="loader">
+        <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/loader-1.gif'); ?>" alt="Loading...">
+    </div>
+</div>
+<?= /* @noEscape */ $block->getLayout()->createBlock(\Dcw\SplitPayment\Block\Index::class)
+    ->setTemplate("Dcw_SplitPayment::splitPayment_js.phtml")->toHtml();
+?>
+
+<?= /* @noEscape */ $block->getLayout()->createBlock(\Dcw\SplitPayment\Block\Index::class)
+    ->setTemplate("Dcw_SplitPayment::gc_form_dummy.phtml")->toHtml();
+?>
+<?= /* @noEscape */ $block->getLayout()->createBlock(\Dcw\SplitPayment\Block\Index::class)
+    ->setTemplate("Dcw_SplitPayment::cc_form_dummy.phtml")->toHtml();
+?>
+

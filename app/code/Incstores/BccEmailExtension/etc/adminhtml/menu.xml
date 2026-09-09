@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!-- TEST FILE - Created for testing BccEmailExtension - Safe to delete -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Incstores_BccEmailExtension::test_menu" title="BCC Email Test (TEST)" module="Incstores_BccEmailExtension" sortOrder="100" resource="Magento_Backend::admin"/>
+        <add id="Incstores_BccEmailExtension::test_form" title="Email Test Form (TEST)" module="Incstores_BccEmailExtension" sortOrder="10" parent="Incstores_BccEmailExtension::test_menu" action="bccemailtest/test/index" resource="Magento_Backend::admin"/>
+    </menu>
+</config>

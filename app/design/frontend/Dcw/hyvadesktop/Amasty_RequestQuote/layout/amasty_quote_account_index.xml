@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2023 Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */-->
+
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="customer_account"/>
+    <update handle="hyva_modal"/>
+    <body>
+		 <referenceBlock name="page.main.title">
+               <action method="setPageTitle">
+                  <argument translate="true" name="title" xsi:type="string">My saved carts</argument>
+               </action>
+         </referenceBlock>
+		<referenceBlock name="sale.reorder.sidebar" remove="true"/>
+        <referenceContainer name="before.body.end">
+            <block name="dcw.quote.edit.modal" template="Dcw_RequestQuote::account/quote/edit_modal.phtml"/>
+            <block name="dcw.quote.edit.button.js" template="Dcw_RequestQuote::account/quote/edit_button_js.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

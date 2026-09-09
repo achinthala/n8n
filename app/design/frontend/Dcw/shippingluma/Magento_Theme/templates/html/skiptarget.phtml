@@ -1,0 +1,18 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+$target_id = $block->getTargetId();
+?>
+<a id="<?= $block->escapeHtmlAttr($target_id) ?>" tabindex="-1"></a>
+
+<div class="amasty__countdown">
+    <?php
+    echo $this->getLayout()
+    ->createBlock('Magento\Cms\Block\Block')
+    ->setBlockId('amasty_countdown')
+    ->toHtml();
+    ?>    
+</div> 

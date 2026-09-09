@@ -1,0 +1,12 @@
+--- a/vendor/amasty/module-faq-product-questions/Block/View/Question.php
++++ b/vendor/amasty/module-faq-product-questions/Block/View/Question.php
+@@ -143,6 +143,9 @@ class Question extends Template implements IdentityInterface
+                 );
+             }
+ 
++            // Set NOINDEX,NOFOLLOW by default for all FAQ questions
++            $this->pageConfig->setRobots('NOINDEX,NOFOLLOW');
++
+             if ($question->isNoindex() || $question->isNofollow()) {
+                 if ($question->isNoindex() && $question->isNofollow()) {
+                     $this->pageConfig->setRobots('NOINDEX,NOFOLLOW');

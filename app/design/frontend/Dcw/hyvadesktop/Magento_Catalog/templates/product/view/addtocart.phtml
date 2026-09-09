@@ -1,0 +1,69 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+?>
+<?= $block->getChildHtml('', true) ?>
+<script>
+    window.pdpFlooringAddToCart = function () {
+        var btn = document.getElementById('product-addtocart-button-fake');
+        if (!btn) {
+            return;
+        }
+        var handlerName = btn.getAttribute('data-flooring-handler') || 'addToCartClickVerify';
+        var root = btn.closest ? btn.closest('.product-main-content') : null;
+        if (!root || typeof Alpine === 'undefined' || typeof Alpine.$data !== 'function') {
+            return;
+        }
+        var data = Alpine.$data(root);
+        if (data && typeof data[handlerName] === 'function') {
+            data[handlerName]();
+        }
+    };
+</script>
+<button type="button"
+        form="product_addtocart_form"
+        title="<?= $escaper->escapeHtmlAttr(__('Add to Cart')) ?>"
+        class="btn btn-primary pdp-addtocart-btn opacity-50 pointer-events-none"
+        id="product-addtocart-button-fake"
+        data-flooring-handler="addToCartClickVerify"
+        x-on:click="window.pdpFlooringAddToCart()"
+>
+    <?= $heroicons->shoppingCartHtml('border-current'); ?>
+    <span class="hidden sm:block md:hidden lg:block"><?= $block->getData('is_cart_configure') ?
+            $escaper->escapeHtml(__('Update item')) :
+            $escaper->escapeHtml(__('Add to Cart')) ?>
+    </span>
+</button>
+
+<button type="submit"
+        form="product_addtocart_form"
+        title="<?= $escaper->escapeHtmlAttr(__('Add to Cart')) ?>"
+        class="btn btn-primary hidden"
+        id="product-addtocart-button" style="display: none;"
+>
+    <?= $heroicons->shoppingCartHtml('border-current'); ?>
+    <span class="hidden sm:block md:hidden lg:block"><?= $block->getData('is_cart_configure') ?
+            $escaper->escapeHtml(__('Update item')) :
+            $escaper->escapeHtml(__('Add to Cart')) ?>
+    </span>
+</button>
+
+

@@ -1,0 +1,21 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \Magento\Catalog\Block\Category\View */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+?>
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled() && $metaPixelHelper->shouldMetaPixelEventBeTracked(\WeltPixel\GA4\Model\Config\Source\MetaPixel\TrackingEvents::EVENT_VIEW_CATEGORY)) :
+    $category = $block->getCurrentCategory();
+    if ($category):
+?>
+<script>
+    if (window.ga4AllowServices) {
+        fbq('trackCustom', 'ViewCategory', {
+            content_category: "<?= addslashes(str_replace('"', '&quot;', $category->getName())) ?>"
+        });
+    }
+</script>
+    <?php endif; ?>
+<?php endif; ?>
+

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="checkout.cart.container">
+            <block class="Magento\Framework\View\Element\Template" name="dcw.discount.removal.modal" template="Dcw_RequestQuote::cart/discount-removal-modal.phtml" before="checkout.cart.form.before"/>
+        </referenceContainer>
+        <!-- Also add to before.body.end so modal is always on quote cart page -->
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template" name="dcw.discount.removal.modal.quote" template="Dcw_RequestQuote::cart/discount-removal-modal.phtml" after="-"/>
+        </referenceContainer>
+    </body>
+</page>

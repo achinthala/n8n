@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <script src="https://unpkg.com/@alenaksu/json-viewer@2.0.0/dist/json-viewer.bundle.js" src_type="url"></script>
+    </head>
+    <body>
+        <referenceContainer name="before.body.end">
+            <block
+                ifconfig="weltpixel_ga4/general/enable_datalayer_preview"
+                class="Magento\Framework\View\Element\Template"
+                name="weltpixel-ga4-datalayer-preview"
+                template="WeltPixel_GA4::datalayer_preview.phtml"
+            />
+
+        </referenceContainer>
+    </body>
+</page>

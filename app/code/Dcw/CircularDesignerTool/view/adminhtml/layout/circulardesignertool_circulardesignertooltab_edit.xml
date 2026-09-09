@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="admin-2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <title>Manage CircularDesignerTool</title>
+    </head>
+    <body>
+        <referenceBlock name="menu">
+            <action method="setActive">
+                <argument name="itemId" xsi:type="string">Dcw_CircularDesignerTool::circulardesignertooltab</argument>
+            </action>
+        </referenceBlock>
+        <referenceContainer name="page.main.actions">
+            <block class="Magento\Backend\Block\Store\Switcher" name="store_switcher">
+                <action method="setUseConfirm">
+                    <argument name="params" xsi:type="string">1</argument>
+                </action>
+            </block>
+        </referenceContainer>
+        <referenceContainer name="content">
+        <block class="Dcw\CircularDesignerTool\Block\Adminhtml\CircularDesignerToolTab\Edit" name="circulardesignertooltab_edit"/>
+        </referenceContainer>
+        <referenceContainer name="left">
+        <block class="Dcw\CircularDesignerTool\Block\Adminhtml\CircularDesignerToolTab\Edit\Tabs" name="circulardesignertooltab_edit_tabs">
+            <block class="Dcw\CircularDesignerTool\Block\Adminhtml\CircularDesignerToolTab\Edit\Tab\CircularDesignerTool" name="circulardesignertooltab_edit_tab_circulardesignertooltab"/>
+        	<action method="addTab">
+                <argument name="name" xsi:type="string">main_section</argument>
+                <argument name="block" xsi:type="string">circulardesignertooltab_edit_tab_circulardesignertooltab</argument>
+            </action>
+        </block>
+        </referenceContainer>
+    </body>
+</page>

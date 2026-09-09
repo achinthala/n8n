@@ -1,0 +1,42 @@
+
+
+<?php
+if (!empty($block->getCcDetails())) {
+    $ccDetails = $block->getCcDetails();
+    foreach ($ccDetails as $cc) {
+        ?>
+        <table class="data-table admin__table-secondary">
+            <tbody>
+                <tr>
+                    <th>Credit Card Type:</th>
+                    <td><?= /* @noEscape */ $block->getCcTypeName($cc['cc_type'])?></td>
+                </tr>
+                <tr>
+                    <th>Credit Card Number:</th>
+                    <td>XXXX-<?= /* @noEscape */ $cc['cc_last_4']?></td>
+                </tr>
+                <tr>
+                    <th>Transaction ID:</th>
+                    <td><?= /* @noEscape */ $cc['trans_id']?></td>
+                </tr>
+                <tr>
+                    <th>AVS Response:</th>
+                    <td><?= /* @noEscape */ $block->anetHelper->translateAvs($cc['cc_avs_status']);?></td>
+                </tr>
+                <tr>
+                    <th>CCV Response:</th>
+                    <td><?= /* @noEscape */ $block->anetHelper->translateCcv($cc['cc_cid_status']);?></td>
+                </tr>
+                <tr>
+                    <th>CAVV Response:</th>
+                    <td><?= /* @noEscape */ $block->anetHelper->translateCavv($cc['cc_status']);?></td>
+                </tr>
+            </tbody>
+        </table>
+        <br><br>
+        <?php
+    }
+    ?>
+    <?php
+}
+?>

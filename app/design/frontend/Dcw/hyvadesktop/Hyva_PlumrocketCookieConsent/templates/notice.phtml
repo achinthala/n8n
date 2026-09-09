@@ -1,0 +1,41 @@
+<?php
+/**
+ * @package     Hyva_PlumrocketCookieConsent
+ * @copyright   Copyright (c) 2024 Plumrocket Inc. (https://plumrocket.com)
+ * @license     https://plumrocket.com/license   End-user License Agreement
+ */
+
+/** @var \Plumrocket\CookieConsent\Block\CookieNotice $block */
+if (! ($block->canManageCookie() && $block->isAllowedPage())) {
+    return '';
+}
+
+/** @var \Hyva\Theme\Model\ViewModelRegistry $viewModels */
+/** @var \Hyva\PlumrocketCookieConsent\ViewModel\CookieNotice $noticeViewModel */
+$noticeViewModel = $viewModels->require(\Hyva\PlumrocketCookieConsent\ViewModel\CookieNotice::class);
+?>
+
+<div class="pr-cookie-notice-wrap" x-cloak x-transition x-data="{'show': !  prCookieConsentApi.isOptIn()}">
+    <div class="pr-cookie-notice fixed bottom-0 w-full" style="background-color: #15324C; z-index: 99999999999;" x-show="show"  @foo.window="show = false">
+        <div class="pr-cookie-notice-wrap flex items-center justify-center">
+            <div class="pr-cookie-notice-text [&>p>a]:underline [&>p>a:hover]:no-underline text-white text-[13px] max-w-4xl mb-4 lg:mb-0 lg:mr-6"><?= $noticeViewModel->getNoticeText() ?></div>
+            <div class="actions pr-cookie-notice-actions flex flex-wrap items-center justify-center flex-shrink-0 lg:flex-nowrap lg:-mx-3">
+                <?php if ($noticeViewModel->settingsButtonIsEnabled()): ?>
+                    <button type="button" class="text-white underline hover:no-underline my-1 mx-3" x-on:click="window.prCookieSettingBar.show()">
+                        <span><?= $noticeViewModel->getSettingsButtonLabel() ?></span>
+                    </button>
+                <?php endif; ?>
+
+                <button x-focus-first type="button" id="btn-cookie-allow" class="btn btn-primary my-1 mx-3" x-on:click="window.prCookieConsentApi.consent.allowAllCategories;show=false;">
+                    <span><?= $noticeViewModel->getAcceptButtonLabel(); ?></span>
+                </button>
+
+                <?php if ($noticeViewModel->declineButtonIsEnabled()): ?>
+                    <button type="button" id="btn-cookie-decline" class="btn btn-secondary my-1 mx-3" x-on:click="window.prCookieConsentApi.consent.declineAll();show=false;">
+                        <span><?= $noticeViewModel->getDeclineButtonLabel() ?></span>
+                    </button>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>

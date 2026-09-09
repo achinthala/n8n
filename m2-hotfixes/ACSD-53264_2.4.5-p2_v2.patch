@@ -1,0 +1,1216 @@
+diff --git a/vendor/magento/module-eav/Model/Mview/ChangeLogBatchWalker.php b/vendor/magento/module-eav/Model/Mview/ChangeLogBatchWalker.php
+deleted file mode 100644
+index fdc71faa909..00000000000
+--- a/vendor/magento/module-eav/Model/Mview/ChangeLogBatchWalker.php
++++ /dev/null
+@@ -1,120 +0,0 @@
+-<?php
+-/**
+- * Copyright © Magento, Inc. All rights reserved.
+- * See COPYING.txt for license details.
+- */
+-
+-namespace Magento\Eav\Model\Mview;
+-
+-use Magento\Framework\App\ResourceConnection;
+-use Magento\Framework\DB\Sql\Expression;
+-use Magento\Framework\Mview\View\ChangeLogBatchWalkerInterface;
+-use Magento\Framework\Mview\View\ChangelogInterface;
+-
+-/**
+- * Class BatchIterator
+- */
+-class ChangeLogBatchWalker implements ChangeLogBatchWalkerInterface
+-{
+-    private const GROUP_CONCAT_MAX_VARIABLE = 'group_concat_max_len';
+-    /** ID is defined as small int. Default size of it is 5 */
+-    private const DEFAULT_ID_SIZE = 5;
+-
+-    /**
+-     * @var ResourceConnection
+-     */
+-    private $resourceConnection;
+-
+-    /**
+-     * @var array
+-     */
+-    private $entityTypeCodes;
+-
+-    /**
+-     * @param ResourceConnection $resourceConnection
+-     * @param array $entityTypeCodes
+-     */
+-    public function __construct(
+-        ResourceConnection $resourceConnection,
+-        array $entityTypeCodes = []
+-    ) {
+-        $this->resourceConnection = $resourceConnection;
+-        $this->entityTypeCodes = $entityTypeCodes;
+-    }
+-
+-    /**
+-     * Calculate EAV attributes size
+-     *
+-     * @param ChangelogInterface $changelog
+-     * @return int
+-     * @throws \Exception
+-     */
+-    private function calculateEavAttributeSize(ChangelogInterface $changelog): int
+-    {
+-        $connection = $this->resourceConnection->getConnection();
+-
+-        if (!isset($this->entityTypeCodes[$changelog->getViewId()])) {
+-            throw new \Exception('Entity type for view was not defined');
+-        }
+-
+-        $select = $connection->select();
+-        $select->from(
+-            $this->resourceConnection->getTableName('eav_attribute'),
+-            new Expression('COUNT(*)')
+-        )
+-            ->joinInner(
+-              ['type' => $connection->getTableName('eav_entity_type')],
+-                'type.entity_type_id=eav_attribute.entity_type_id'
+-            )
+-            ->where('type.entity_type_code = ?', $this->entityTypeCodes[$changelog->getViewId()]);
+-
+-        return (int) $connection->fetchOne($select);
+-    }
+-
+-    /**
+-     * Prepare group max concat
+-     *
+-     * @param int $numberOfAttributes
+-     * @return void
+-     * @throws \Exception
+-     */
+-    private function setGroupConcatMax(int $numberOfAttributes): void
+-    {
+-        $connection = $this->resourceConnection->getConnection();
+-        $connection->query(sprintf(
+-            'SET SESSION %s=%s',
+-            self::GROUP_CONCAT_MAX_VARIABLE,
+-            $numberOfAttributes * (self::DEFAULT_ID_SIZE + 1)
+-        ));
+-    }
+-
+-    /**
+-     * @inheritdoc
+-     * @throws \Exception
+-     */
+-    public function walk(ChangelogInterface $changelog, int $fromVersionId, int $toVersion, int $batchSize)
+-    {
+-        $connection = $this->resourceConnection->getConnection();
+-        $numberOfAttributes = $this->calculateEavAttributeSize($changelog);
+-        $this->setGroupConcatMax($numberOfAttributes);
+-        $select = $connection->select()->distinct(true)
+-            ->where(
+-                'version_id > ?',
+-                (int) $fromVersionId
+-            )
+-            ->where(
+-                'version_id <= ?',
+-                $toVersion
+-            )
+-            ->group([$changelog->getColumnName(), 'store_id'])
+-            ->limit($batchSize);
+-
+-        $columns = [
+-            $changelog->getColumnName(),
+-            'attribute_ids' => new Expression('GROUP_CONCAT(attribute_id)'),
+-            'store_id'
+-        ];
+-        $select->from($changelog->getName(), $columns);
+-        return $connection->fetchAll($select);
+-    }
+-}
+diff --git a/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsFetcher.php b/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsFetcher.php
+new file mode 100644
+index 00000000000..58986de9801
+--- /dev/null
++++ b/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsFetcher.php
+@@ -0,0 +1,36 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Eav\Model\Mview\ChangelogBatchWalker;
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\DB\Select;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsFetcherInterface;
++
++class IdsFetcher implements IdsFetcherInterface
++{
++    /**
++     * @var \Magento\Framework\App\ResourceConnection
++     */
++    private ResourceConnection $resourceConnection;
++
++    /**
++     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
++     */
++    public function __construct(
++        ResourceConnection $resourceConnection
++    ) {
++        $this->resourceConnection = $resourceConnection;
++    }
++
++    /**
++     * @inheritdoc
++     */
++    public function fetch(Select $select): array
++    {
++        return $this->resourceConnection->getConnection()->fetchAll($select);
++    }
++}
+diff --git a/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsSelectBuilder.php b/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsSelectBuilder.php
+new file mode 100644
+index 00000000000..f2556e5caad
+--- /dev/null
++++ b/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsSelectBuilder.php
+@@ -0,0 +1,109 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Eav\Model\Mview\ChangelogBatchWalker;
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\DB\Select;
++use Magento\Framework\DB\Sql\Expression;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsSelectBuilderInterface;
++use Magento\Framework\Mview\View\ChangelogInterface;
++
++class IdsSelectBuilder implements IdsSelectBuilderInterface
++{
++    private const GROUP_CONCAT_MAX_VARIABLE = 'group_concat_max_len';
++    /** ID is defined as small int. Default size of it is 5 */
++    private const DEFAULT_ID_SIZE = 5;
++    /**
++     * @var \Magento\Framework\App\ResourceConnection
++     */
++    private ResourceConnection $resourceConnection;
++    /**
++     * @var array
++     */
++    private array $entityTypeCodes;
++
++    /**
++     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
++     * @param array $entityTypeCodes
++     */
++    public function __construct(
++        ResourceConnection $resourceConnection,
++        array              $entityTypeCodes = []
++    ) {
++        $this->resourceConnection = $resourceConnection;
++        $this->entityTypeCodes = $entityTypeCodes;
++    }
++
++    /**
++     * @inheritdoc
++     */
++    public function build(ChangelogInterface $changelog): Select
++    {
++        $numberOfAttributes = $this->calculateEavAttributeSize($changelog);
++        $this->setGroupConcatMax($numberOfAttributes);
++
++        $changelogTableName = $this->resourceConnection->getTableName($changelog->getName());
++
++        $connection = $this->resourceConnection->getConnection();
++
++        $columns = [
++            $changelog->getColumnName(),
++            'attribute_ids' => new Expression('GROUP_CONCAT(attribute_id)'),
++            'store_id'
++        ];
++
++        return $connection->select()
++            ->from($changelogTableName, $columns)
++            ->group([$changelog->getColumnName(), 'store_id']);
++    }
++
++    /**
++     * Calculate EAV attributes size
++     *
++     * @param ChangelogInterface $changelog
++     * @return int
++     * @throws \Exception
++     */
++    private function calculateEavAttributeSize(ChangelogInterface $changelog): int
++    {
++        $connection = $this->resourceConnection->getConnection();
++
++        if (!isset($this->entityTypeCodes[$changelog->getViewId()])) {
++            throw new \InvalidArgumentException('Entity type for view was not defined');
++        }
++
++        $select = $connection->select();
++        $select->from(
++            $this->resourceConnection->getTableName('eav_attribute'),
++            new Expression('COUNT(*)')
++        )
++            ->joinInner(
++                ['type' => $connection->getTableName('eav_entity_type')],
++                'type.entity_type_id=eav_attribute.entity_type_id'
++            )
++            ->where('type.entity_type_code = ?', $this->entityTypeCodes[$changelog->getViewId()]);
++
++        return (int)$connection->fetchOne($select);
++    }
++
++    /**
++     * Prepare group max concat
++     *
++     * @param int $numberOfAttributes
++     * @return void
++     * @throws \Exception
++     */
++    private function setGroupConcatMax(int $numberOfAttributes): void
++    {
++        $connection = $this->resourceConnection->getConnection();
++        $connection->query(sprintf(
++            'SET SESSION %s=%s',
++            self::GROUP_CONCAT_MAX_VARIABLE,
++            $numberOfAttributes * (self::DEFAULT_ID_SIZE + 1)
++        ));
++    }
++}
+diff --git a/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsTableBuilder.php b/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsTableBuilder.php
+new file mode 100644
+index 00000000000..6cfacc2328c
+--- /dev/null
++++ b/vendor/magento/module-eav/Model/Mview/ChangelogBatchWalker/IdsTableBuilder.php
+@@ -0,0 +1,50 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Eav\Model\Mview\ChangelogBatchWalker;
++
++use Magento\Framework\DB\Adapter\AdapterInterface;
++use Magento\Framework\DB\Ddl\Table;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsTableBuilder as BaseIdsTableBuilder;
++use Magento\Framework\Mview\View\ChangelogInterface;
++
++class IdsTableBuilder extends BaseIdsTableBuilder
++{
++    /**
++     * @inheritdoc
++     */
++    public function build(ChangelogInterface $changelog): Table
++    {
++        $table = parent::build($changelog);
++        $table->addColumn(
++            'attribute_ids',
++            Table::TYPE_TEXT,
++            null,
++            ['unsigned' => true, 'nullable' => false],
++            'Attribute IDs'
++        );
++        $table->addColumn(
++            'store_id',
++            Table::TYPE_INTEGER,
++            null,
++            ['unsigned' => true, 'nullable' => false],
++            'Store ID'
++        );
++        $table->addIndex(
++            self::INDEX_NAME_UNIQUE,
++            [
++                $changelog->getColumnName(),
++                'attribute_ids',
++                'store_id'
++            ],
++            [
++                'type' => AdapterInterface::INDEX_TYPE_UNIQUE
++            ]
++        );
++
++        return $table;
++    }
++}
+diff --git a/vendor/magento/module-eav/etc/di.xml b/vendor/magento/module-eav/etc/di.xml
+index ed5ff139423..06501d1cf91 100644
+--- a/vendor/magento/module-eav/etc/di.xml
++++ b/vendor/magento/module-eav/etc/di.xml
+@@ -221,4 +221,16 @@
+             <argument name="cache" xsi:type="object">configured_eav_cache</argument>
+         </arguments>
+     </type>
++    <virtualType name="Magento\Eav\Model\Mview\ChangelogBatchWalker" type="Magento\Framework\Mview\View\ChangelogBatchWalker">
++        <arguments>
++            <argument name="idsContext" xsi:type="object">Magento\Eav\Model\Mview\ChangelogBatchWalker\IdsContext</argument>
++        </arguments>
++    </virtualType>
++    <virtualType name="Magento\Eav\Model\Mview\ChangelogBatchWalker\IdsContext" type="Magento\Framework\Mview\View\ChangelogBatchWalker\IdsContext">
++        <arguments>
++            <argument name="tableBuilder" xsi:type="object">Magento\Eav\Model\Mview\ChangelogBatchWalker\IdsTableBuilder</argument>
++            <argument name="selectBuilder" xsi:type="object">Magento\Eav\Model\Mview\ChangelogBatchWalker\IdsSelectBuilder</argument>
++            <argument name="fetcher" xsi:type="object">Magento\Eav\Model\Mview\ChangelogBatchWalker\IdsFetcher</argument>
++        </arguments>
++    </virtualType>
+ </config>
+diff --git a/vendor/magento/framework/Mview/Config/Converter.php b/vendor/magento/framework/Mview/Config/Converter.php
+index 988cffa8b7c..dffe4b248f0 100644
+--- a/vendor/magento/framework/Mview/Config/Converter.php
++++ b/vendor/magento/framework/Mview/Config/Converter.php
+@@ -6,7 +6,7 @@
+ namespace Magento\Framework\Mview\Config;
+ 
+ use Magento\Framework\Mview\View\AdditionalColumnsProcessor\DefaultProcessor;
+-use Magento\Framework\Mview\View\ChangeLogBatchWalker;
++use Magento\Framework\Mview\View\ChangelogBatchWalker;
+ use Magento\Framework\Mview\View\SubscriptionInterface;
+ 
+ class Converter implements \Magento\Framework\Config\ConverterInterface
+@@ -27,7 +27,7 @@ class Converter implements \Magento\Framework\Config\ConverterInterface
+      */
+     public function __construct(
+         string $defaultProcessor = DefaultProcessor::class,
+-        string $defaultIterator = ChangeLogBatchWalker::class
++        string $defaultIterator = ChangelogBatchWalker::class
+     ) {
+         $this->defaultProcessor = $defaultProcessor;
+         $this->defaultIterator = $defaultIterator;
+diff --git a/vendor/magento/framework/Mview/View.php b/vendor/magento/framework/Mview/View.php
+index 420702c4341..45f6b163a0e 100644
+--- a/vendor/magento/framework/Mview/View.php
++++ b/vendor/magento/framework/Mview/View.php
+@@ -11,8 +11,8 @@ namespace Magento\Framework\Mview;
+ use InvalidArgumentException;
+ use Magento\Framework\App\ObjectManager;
+ use Magento\Framework\DataObject;
+-use Magento\Framework\Mview\View\ChangeLogBatchWalkerFactory;
+-use Magento\Framework\Mview\View\ChangeLogBatchWalkerInterface;
++use Magento\Framework\Mview\View\ChangelogBatchWalkerFactory;
++use Magento\Framework\Mview\View\ChangelogBatchWalkerInterface;
+ use Magento\Framework\Mview\View\ChangelogTableNotExistsException;
+ use Magento\Framework\Mview\View\SubscriptionFactory;
+ use Exception;
+@@ -66,9 +66,9 @@ class View extends DataObject implements ViewInterface
+     private $changelogBatchSize;
+ 
+     /**
+-     * @var ChangeLogBatchWalkerFactory
++     * @var ChangelogBatchWalkerFactory
+      */
+-    private $changeLogBatchWalkerFactory;
++    private $changelogBatchWalkerFactory;
+ 
+     /**
+      * @param ConfigInterface $config
+@@ -78,7 +78,7 @@ class View extends DataObject implements ViewInterface
+      * @param SubscriptionFactory $subscriptionFactory
+      * @param array $data
+      * @param array $changelogBatchSize
+-     * @param ChangeLogBatchWalkerFactory $changeLogBatchWalkerFactory
++     * @param ChangelogBatchWalkerFactory $changelogBatchWalkerFactory
+      */
+     public function __construct(
+         ConfigInterface $config,
+@@ -88,7 +88,7 @@ class View extends DataObject implements ViewInterface
+         SubscriptionFactory $subscriptionFactory,
+         array $data = [],
+         array $changelogBatchSize = [],
+-        ChangeLogBatchWalkerFactory $changeLogBatchWalkerFactory = null
++        ChangelogBatchWalkerFactory $changelogBatchWalkerFactory = null
+     ) {
+         $this->config = $config;
+         $this->actionFactory = $actionFactory;
+@@ -97,8 +97,8 @@ class View extends DataObject implements ViewInterface
+         $this->subscriptionFactory = $subscriptionFactory;
+         $this->changelogBatchSize = $changelogBatchSize;
+         parent::__construct($data);
+-        $this->changeLogBatchWalkerFactory = $changeLogBatchWalkerFactory ?:
+-            ObjectManager::getInstance()->get(ChangeLogBatchWalkerFactory::class);
++        $this->changelogBatchWalkerFactory = $changelogBatchWalkerFactory ?:
++            ObjectManager::getInstance()->get(ChangelogBatchWalkerFactory::class);
+     }
+ 
+     /**
+@@ -302,15 +302,9 @@ class View extends DataObject implements ViewInterface
+             ? (int) $this->changelogBatchSize[$this->getChangelog()->getViewId()]
+             : self::DEFAULT_BATCH_SIZE;
+ 
+-        $vsFrom = $lastVersionId;
+-        while ($vsFrom < $currentVersionId) {
+-            $walker = $this->getWalker();
+-            $ids = $walker->walk($this->getChangelog(), $vsFrom, $currentVersionId, $batchSize);
++        $batches = $this->getWalker()->walk($this->getChangelog(), $lastVersionId, $currentVersionId, $batchSize);
+ 
+-            if (empty($ids)) {
+-                break;
+-            }
+-            $vsFrom += $batchSize;
++        foreach ($batches as $ids) {
+             $action->execute($ids);
+         }
+     }
+@@ -318,14 +312,13 @@ class View extends DataObject implements ViewInterface
+     /**
+      * Create and validate walker class for changelog
+      *
+-     * @return ChangeLogBatchWalkerInterface|mixed
+-     * @throws Exception
++     * @return \Magento\Framework\Mview\View\ChangelogBatchWalkerInterface
+      */
+-    private function getWalker(): ChangeLogBatchWalkerInterface
++    private function getWalker(): ChangelogBatchWalkerInterface
+     {
+         $config = $this->config->getView($this->changelog->getViewId());
+         $walkerClass = $config['walker'];
+-        return $this->changeLogBatchWalkerFactory->create($walkerClass);
++        return $this->changelogBatchWalkerFactory->create($walkerClass);
+     }
+ 
+     /**
+diff --git a/vendor/magento/framework/Mview/View/ChangeLogBatchWalker.php b/vendor/magento/framework/Mview/View/ChangeLogBatchWalker.php
+deleted file mode 100644
+index 7a767e656c3..00000000000
+--- a/vendor/magento/framework/Mview/View/ChangeLogBatchWalker.php
++++ /dev/null
+@@ -1,59 +0,0 @@
+-<?php
+-/**
+- * Copyright © Magento, Inc. All rights reserved.
+- * See COPYING.txt for license details.
+- */
+-
+-namespace Magento\Framework\Mview\View;
+-
+-use Magento\Framework\App\ResourceConnection;
+-use Magento\Framework\Phrase;
+-
+-/**
+- * Interface \Magento\Framework\Mview\View\ChangeLogBatchWalkerInterface
+- *
+- */
+-class ChangeLogBatchWalker implements ChangeLogBatchWalkerInterface
+-{
+-    /**
+-     * @var ResourceConnection
+-     */
+-    private $resourceConnection;
+-
+-    /**
+-     * @param ResourceConnection $resourceConnection
+-     */
+-    public function __construct(
+-        ResourceConnection $resourceConnection
+-    ) {
+-        $this->resourceConnection = $resourceConnection;
+-    }
+-
+-    /**
+-     * @inheritdoc
+-     */
+-    public function walk(ChangelogInterface $changelog, int $fromVersionId, int $toVersion, int $batchSize)
+-    {
+-        $connection = $this->resourceConnection->getConnection();
+-        $changelogTableName = $this->resourceConnection->getTableName($changelog->getName());
+-
+-        if (!$connection->isTableExists($changelogTableName)) {
+-            throw new ChangelogTableNotExistsException(new Phrase("Table %1 does not exist", [$changelogTableName]));
+-        }
+-
+-        $select = $connection->select()->distinct(true)
+-            ->where(
+-                'version_id > ?',
+-                $fromVersionId
+-            )
+-            ->where(
+-                'version_id <= ?',
+-                $toVersion
+-            )
+-            ->group([$changelog->getColumnName()])
+-            ->limit($batchSize);
+-
+-        $select->from($changelogTableName, [$changelog->getColumnName()]);
+-        return $connection->fetchCol($select);
+-    }
+-}
+diff --git a/vendor/magento/framework/Mview/View/ChangeLogBatchWalkerFactory.php b/vendor/magento/framework/Mview/View/ChangeLogBatchWalkerFactory.php
+deleted file mode 100644
+index 98d814775f6..00000000000
+--- a/vendor/magento/framework/Mview/View/ChangeLogBatchWalkerFactory.php
++++ /dev/null
+@@ -1,37 +0,0 @@
+-<?php
+-/**
+- * Copyright © Magento, Inc. All rights reserved.
+- * See COPYING.txt for license details.
+- */
+-
+-namespace Magento\Framework\Mview\View;
+-
+-use Magento\Framework\ObjectManagerInterface;
+-
+-class ChangeLogBatchWalkerFactory
+-{
+-    /**
+-     * @var ObjectManagerInterface
+-     */
+-    private $objectManager;
+-
+-    /**
+-     * ChangeLogBatchWalkerFactory constructor.
+-     * @param ObjectManagerInterface $objectManager
+-     */
+-    public function __construct(ObjectManagerInterface $objectManager)
+-    {
+-        $this->objectManager = $objectManager;
+-    }
+-
+-    /**
+-     * Instantiate BatchWalker interface
+-     *
+-     * @param string $batchWalkerClassName
+-     * @return ChangeLogBatchWalkerInterface
+-     */
+-    public function create(string $batchWalkerClassName): ChangeLogBatchWalkerInterface
+-    {
+-        return $this->objectManager->create($batchWalkerClassName);
+-    }
+-}
+diff --git a/vendor/magento/framework/Mview/View/ChangeLogBatchWalkerInterface.php b/vendor/magento/framework/Mview/View/ChangeLogBatchWalkerInterface.php
+deleted file mode 100644
+index d9079c55040..00000000000
+--- a/vendor/magento/framework/Mview/View/ChangeLogBatchWalkerInterface.php
++++ /dev/null
+@@ -1,30 +0,0 @@
+-<?php
+-/**
+- * Copyright © Magento, Inc. All rights reserved.
+- * See COPYING.txt for license details.
+- */
+-
+-namespace Magento\Framework\Mview\View;
+-
+-use Magento\Framework\App\ResourceConnection;
+-use Magento\Framework\DB\Sql\Expression;
+-use Magento\Framework\Mview\Config;
+-use Magento\Framework\Phrase;
+-
+-/**
+- * Interface \Magento\Framework\Mview\View\ChangeLogBatchWalkerInterface
+- *
+- */
+-interface ChangeLogBatchWalkerInterface
+-{
+-    /**
+-     * Walk through batches
+-     *
+-     * @param ChangelogInterface $changelog
+-     * @param int $fromVersionId
+-     * @param int $lastVersionId
+-     * @param int $batchSize
+-     * @return mixed
+-     */
+-    public function walk(ChangelogInterface $changelog, int $fromVersionId, int $lastVersionId, int $batchSize);
+-}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker.php
+new file mode 100644
+index 00000000000..474c687a138
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker.php
+@@ -0,0 +1,155 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View;
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\DB\Adapter\AdapterInterface;
++use Magento\Framework\DB\Ddl\Table;
++use Magento\Framework\DB\Query\Generator;
++use Magento\Framework\DB\Select;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsContext;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsFetcherInterface;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsSelectBuilderInterface;
++use Magento\Framework\Mview\View\ChangelogBatchWalker\IdsTableBuilderInterface;
++use Magento\Framework\Phrase;
++
++/**
++ * Interface \Magento\Framework\Mview\View\ChangelogBatchWalkerInterface
++ *
++ */
++class ChangelogBatchWalker implements ChangelogBatchWalkerInterface
++{
++    /**
++     * @var ResourceConnection
++     */
++    private ResourceConnection $resourceConnection;
++
++    /**
++     * @var Generator
++     */
++    private Generator $generator;
++
++    /**
++     * @var IdsTableBuilderInterface
++     */
++    private IdsTableBuilderInterface $idsTableBuilder;
++
++    /**
++     * @var IdsSelectBuilderInterface
++     */
++    private IdsSelectBuilderInterface $idsSelectBuilder;
++
++    /**
++     * @var IdsFetcherInterface
++     */
++    private IdsFetcherInterface $idsFetcher;
++
++    /**
++     * @param ResourceConnection $resourceConnection
++     * @param Generator $generator
++     * @param IdsContext $idsContext
++     */
++    public function __construct(
++        ResourceConnection $resourceConnection,
++        Generator          $generator,
++        IdsContext         $idsContext
++    ) {
++        $this->resourceConnection = $resourceConnection;
++        $this->generator = $generator;
++        $this->idsTableBuilder = $idsContext->getTableBuilder();
++        $this->idsSelectBuilder = $idsContext->getSelectBuilder();
++        $this->idsFetcher = $idsContext->getFetcher();
++    }
++
++    /**
++     * @inheritdoc
++     */
++    public function walk(
++        ChangelogInterface $changelog,
++        int                $fromVersionId,
++        int                $lastVersionId,
++        int                $batchSize
++    ): iterable {
++        $connection = $this->resourceConnection->getConnection();
++        $changelogTableName = $this->resourceConnection->getTableName($changelog->getName());
++
++        if (!$connection->isTableExists($changelogTableName)) {
++            throw new ChangelogTableNotExistsException(new Phrase("Table %1 does not exist", [$changelogTableName]));
++        }
++
++        $idsTable = $this->idsTableBuilder->build($changelog);
++
++        try {
++            $connection->createTable($idsTable);
++
++            $columns = $this->getIdsColumns($idsTable);
++
++            $select = $this->idsSelectBuilder->build($changelog);
++            $select
++                ->distinct(true)
++                ->where('version_id > ?', $fromVersionId)
++                ->where('version_id <= ?', $lastVersionId);
++
++            $connection->query(
++                $connection->insertFromSelect(
++                    $select,
++                    $idsTable->getName(),
++                    $columns,
++                    AdapterInterface::INSERT_IGNORE
++                )
++            );
++
++            $select = $connection->select()
++                ->from($idsTable->getName());
++
++            $queries = $this->generator->generate(
++                IdsTableBuilderInterface::FIELD_ID,
++                $select,
++                $batchSize
++            );
++
++            foreach ($queries as $query) {
++                $idsQuery = (clone $query)
++                    ->reset(Select::COLUMNS)
++                    ->columns($columns);
++
++                $ids = $this->idsFetcher->fetch($idsQuery);
++
++                if (empty($ids)) {
++                    continue;
++                }
++
++                yield $ids;
++            }
++        } finally {
++            $connection->dropTable($idsTable->getName());
++        }
++    }
++
++    /**
++     * Collect columns used as ID of changed entries
++     *
++     * @param \Magento\Framework\DB\Ddl\Table $table
++     * @return array
++     */
++    private function getIdsColumns(Table $table): array
++    {
++        return array_values(
++            array_map(
++                static function (array $column) {
++                    return $column['COLUMN_NAME'];
++                },
++                array_filter(
++                    $table->getColumns(),
++                    static function (array $column) {
++                        return $column['PRIMARY'] === false;
++                    }
++                )
++            )
++        );
++    }
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsContext.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsContext.php
+new file mode 100644
+index 00000000000..bc8d2e18152
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsContext.php
+@@ -0,0 +1,71 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\App\ObjectManager;
++use Magento\Framework\ObjectManager\ContextInterface;
++
++class IdsContext implements ContextInterface
++{
++    /**
++     * @var \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsTableBuilderInterface
++     */
++    private IdsTableBuilderInterface $tableBuilder;
++    /**
++     * @var \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsSelectBuilderInterface
++     */
++    private IdsSelectBuilderInterface $selectBuilder;
++    /**
++     * @var \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsFetcherInterface
++     */
++    private IdsFetcherInterface $fetcher;
++
++    /**
++     * @param \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsTableBuilderInterface|null $tableBuilder
++     * @param \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsSelectBuilderInterface|null $selectBuilder
++     * @param \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsFetcherInterface|null $fetcher
++     */
++    public function __construct(
++        IdsTableBuilderInterface  $tableBuilder = null,
++        IdsSelectBuilderInterface $selectBuilder = null,
++        IdsFetcherInterface       $fetcher = null
++    ) {
++        $this->tableBuilder = $tableBuilder ?: ObjectManager::getInstance()->get(IdsTableBuilder::class);
++        $this->selectBuilder = $selectBuilder ?: ObjectManager::getInstance()->get(IdsSelectBuilder::class);
++        $this->fetcher = $fetcher ?: ObjectManager::getInstance()->get(IdsFetcher::class);
++    }
++
++    /**
++     * Get table builder
++     *
++     * @return \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsTableBuilderInterface
++     */
++    public function getTableBuilder(): IdsTableBuilderInterface
++    {
++        return $this->tableBuilder;
++    }
++
++    /**
++     * Get select builder
++     *
++     * @return \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsSelectBuilderInterface
++     */
++    public function getSelectBuilder(): IdsSelectBuilderInterface
++    {
++        return $this->selectBuilder;
++    }
++
++    /**
++     * Get Ids fetcher
++     *
++     * @return \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsFetcherInterface
++     */
++    public function getFetcher(): IdsFetcherInterface
++    {
++        return $this->fetcher;
++    }
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsFetcher.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsFetcher.php
+new file mode 100644
+index 00000000000..689e5344746
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsFetcher.php
+@@ -0,0 +1,35 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\DB\Select;
++
++class IdsFetcher implements IdsFetcherInterface
++{
++    /**
++     * @var \Magento\Framework\App\ResourceConnection
++     */
++    private ResourceConnection $resourceConnection;
++
++    /**
++     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
++     */
++    public function __construct(
++        ResourceConnection $resourceConnection
++    ) {
++        $this->resourceConnection = $resourceConnection;
++    }
++
++    /**
++     * @inheritdoc
++     */
++    public function fetch(Select $select): array
++    {
++        return $this->resourceConnection->getConnection()->fetchCol($select);
++    }
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsFetcherInterface.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsFetcherInterface.php
+new file mode 100644
+index 00000000000..1ab65e70a1d
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsFetcherInterface.php
+@@ -0,0 +1,24 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\DB\Select;
++
++/**
++ * Interface \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsFetcherInterface
++ *
++ */
++interface IdsFetcherInterface
++{
++    /**
++     * Fetch ids of changed entities
++     *
++     * @param \Magento\Framework\DB\Select $select
++     * @return array
++     */
++    public function fetch(Select $select): array;
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsSelectBuilder.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsSelectBuilder.php
+new file mode 100644
+index 00000000000..1520500273e
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsSelectBuilder.php
+@@ -0,0 +1,41 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\DB\Select;
++use Magento\Framework\Mview\View\ChangelogInterface;
++
++class IdsSelectBuilder implements IdsSelectBuilderInterface
++{
++    /**
++     * @var \Magento\Framework\App\ResourceConnection
++     */
++    private ResourceConnection $resourceConnection;
++
++    /**
++     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
++     */
++    public function __construct(
++        ResourceConnection $resourceConnection
++    ) {
++        $this->resourceConnection = $resourceConnection;
++    }
++
++    /**
++     * @inheritdoc
++     */
++    public function build(ChangelogInterface $changelog): Select
++    {
++        $changelogTableName = $this->resourceConnection->getTableName($changelog->getName());
++
++        $connection = $this->resourceConnection->getConnection();
++
++        return $connection->select()
++            ->from($changelogTableName, [$changelog->getColumnName()]);
++    }
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsSelectBuilderInterface.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsSelectBuilderInterface.php
+new file mode 100644
+index 00000000000..509b12c2000
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsSelectBuilderInterface.php
+@@ -0,0 +1,25 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\DB\Select;
++use Magento\Framework\Mview\View\ChangelogInterface;
++
++/**
++ * Interface \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsSelectBuilderInterface
++ *
++ */
++interface IdsSelectBuilderInterface
++{
++    /**
++     * Build SQL query to collect unique ids of changed entries from changelog table
++     *
++     * @param \Magento\Framework\Mview\View\ChangelogInterface $changelog
++     * @return \Magento\Framework\DB\Select
++     */
++    public function build(ChangelogInterface $changelog): Select;
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsTableBuilder.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsTableBuilder.php
+new file mode 100644
+index 00000000000..fe0753144dc
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsTableBuilder.php
+@@ -0,0 +1,78 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\App\ResourceConnection;
++use Magento\Framework\DB\Adapter\AdapterInterface;
++use Magento\Framework\DB\Ddl\Table;
++use Magento\Framework\Mview\View\ChangelogInterface;
++
++class IdsTableBuilder implements IdsTableBuilderInterface
++{
++    /**
++     * @var \Magento\Framework\App\ResourceConnection
++     */
++    private ResourceConnection $resourceConnection;
++
++    /**
++     * @param \Magento\Framework\App\ResourceConnection $resourceConnection
++     */
++    public function __construct(
++        ResourceConnection $resourceConnection
++    ) {
++        $this->resourceConnection = $resourceConnection;
++    }
++
++    /**
++     * @inheritdoc
++     */
++    public function build(ChangelogInterface $changelog): Table
++    {
++        $tableName = $this->resourceConnection->getTableName($this->generateTableName($changelog));
++        $connection = $this->resourceConnection->getConnection();
++
++        $table = $connection->newTable($tableName);
++        $table->addColumn(
++            self::FIELD_ID,
++            Table::TYPE_INTEGER,
++            null,
++            ['unsigned' => true, 'nullable' => false, 'primary' => true, 'identity' => true],
++            'ID'
++        );
++        $table->addColumn(
++            $changelog->getColumnName(),
++            Table::TYPE_INTEGER,
++            null,
++            ['unsigned' => true, 'nullable' => false],
++            'Entity ID'
++        );
++        $table->addIndex(
++            self::INDEX_NAME_UNIQUE,
++            [
++                $changelog->getColumnName()
++            ],
++            [
++                'type' => AdapterInterface::INDEX_TYPE_UNIQUE
++            ]
++        );
++
++        return $table;
++    }
++
++    /**
++     * Generate unique name for temporary table used to prepare unique IDs of changes entries
++     *
++     * @param \Magento\Framework\Mview\View\ChangelogInterface $changelog
++     * @return string
++     */
++    private function generateTableName(ChangelogInterface $changelog): string
++    {
++        $suffix = str_replace('.', '_', uniqid(self::TABLE_NAME_SUFFIX, true));
++
++        return "{$changelog->getName()}_$suffix";
++    }
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsTableBuilderInterface.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsTableBuilderInterface.php
+new file mode 100644
+index 00000000000..a0ea9242f57
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalker/IdsTableBuilderInterface.php
+@@ -0,0 +1,29 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View\ChangelogBatchWalker;
++
++use Magento\Framework\DB\Ddl\Table;
++use Magento\Framework\Mview\View\ChangelogInterface;
++
++/**
++ * Interface \Magento\Framework\Mview\View\ChangelogBatchWalker\IdsTableBuilderInterface
++ *
++ */
++interface IdsTableBuilderInterface
++{
++    public const FIELD_ID = 'id';
++    public const TABLE_NAME_SUFFIX = '_tmp';
++    public const INDEX_NAME_UNIQUE = 'unique';
++
++    /**
++     * Build table to storage unique ids of changed entries
++     *
++     * @param \Magento\Framework\Mview\View\ChangelogInterface $changelog
++     * @return \Magento\Framework\DB\Ddl\Table
++     */
++    public function build(ChangelogInterface $changelog): Table;
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalkerFactory.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalkerFactory.php
+new file mode 100644
+index 00000000000..63861393c7c
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalkerFactory.php
+@@ -0,0 +1,37 @@
++<?php
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View;
++
++use Magento\Framework\ObjectManagerInterface;
++
++class ChangelogBatchWalkerFactory
++{
++    /**
++     * @var ObjectManagerInterface
++     */
++    private ObjectManagerInterface $objectManager;
++
++    /**
++     * ChangelogBatchWalkerFactory constructor.
++     * @param ObjectManagerInterface $objectManager
++     */
++    public function __construct(ObjectManagerInterface $objectManager)
++    {
++        $this->objectManager = $objectManager;
++    }
++
++    /**
++     * Instantiate BatchWalker interface
++     *
++     * @param string $batchWalkerClassName
++     * @return ChangelogBatchWalkerInterface
++     */
++    public function create(string $batchWalkerClassName): ChangelogBatchWalkerInterface
++    {
++        return $this->objectManager->create($batchWalkerClassName);
++    }
++}
+diff --git a/vendor/magento/framework/Mview/View/ChangelogBatchWalkerInterface.php b/vendor/magento/framework/Mview/View/ChangelogBatchWalkerInterface.php
+new file mode 100644
+index 00000000000..186609ff8ff
+--- /dev/null
++++ b/vendor/magento/framework/Mview/View/ChangelogBatchWalkerInterface.php
+@@ -0,0 +1,30 @@
++<?php declare(strict_types=1);
++/**
++ * Copyright © Magento, Inc. All rights reserved.
++ * See COPYING.txt for license details.
++ */
++
++namespace Magento\Framework\Mview\View;
++
++/**
++ * Interface \Magento\Framework\Mview\View\ChangelogBatchWalkerInterface
++ *
++ */
++interface ChangelogBatchWalkerInterface
++{
++    /**
++     * Walk through batches
++     *
++     * @param ChangelogInterface $changelog
++     * @param int $fromVersionId
++     * @param int $lastVersionId
++     * @param int $batchSize
++     * @return iterable
++     */
++    public function walk(
++        ChangelogInterface $changelog,
++        int                $fromVersionId,
++        int                $lastVersionId,
++        int                $batchSize
++    ): iterable;
++}
+diff --git a/vendor/magento/framework/Mview/etc/mview.xsd b/vendor/magento/framework/Mview/etc/mview.xsd
+index 04754fa4992..cd7e11fd132 100644
+--- a/vendor/magento/framework/Mview/etc/mview.xsd
++++ b/vendor/magento/framework/Mview/etc/mview.xsd
+@@ -46,7 +46,7 @@
+         <xs:attribute name="id" type="xs:string" use="required" />
+         <xs:attribute name="class" type="classType" use="required" />
+         <xs:attribute name="group" type="xs:string" use="required" />
+-        <xs:attribute name="walker" type="classType" default="Magento\Framework\Mview\View\ChangeLogBatchWalker" />
++        <xs:attribute name="walker" type="classType" default="Magento\Framework\Mview\View\ChangelogBatchWalker" />
+     </xs:complexType>
+ 
+     <xs:simpleType name="classType">

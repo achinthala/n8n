@@ -1,0 +1,24 @@
+{
+    "name": "dcw/module-akeneonewproductposition",
+    "description": "Ensures newly assigned products from Akeneo appear at the end of category product lists",
+    "type": "magento2-module",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Dotcom Weavers",
+            "email": "info@dotcomweavers.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "~8.1.0||~8.2.0||~8.3.0"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Dcw\\AkeneoNewProductPosition\\": ""
+        }
+    }
+}

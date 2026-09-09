@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <script src="Dcw_DesignerTool/js/jquery-3.6.4.min.js"/>
+        <script src="Dcw_CircularDesignerTool/js/jquery.validate.min.js"/>
+        
+        <css src="Dcw_CircularDesignerTool::css/base-global-header-footer.css"/>
+        <css src="Dcw_CircularDesignerTool::css/matdesigner.css"/>
+    </head>
+	<body>
+        <referenceContainer name="content">
+		<block class="Dcw\CircularDesignerTool\Block\Index" name="circulardesignertool" template="Dcw_CircularDesignerTool::circulardesignertool.phtml"></block>
+	</referenceContainer>
+      
+    </body>
+</page>

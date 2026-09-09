@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+use Dcw\Faq\Block\Catalog\Product\QuestionsAnchorLink;
+use Magento\Framework\Escaper;
+
+/** @var QuestionsAnchorLink $block */
+/** @var Escaper $escaper */
+?>
+<?php if ($block->isVisible()): ?>
+    <div class="product-questions-anchor mb-2">
+        <a
+            href="#product-qa"
+            class="text-custom-blue underline text-size16 font-medium"
+        >
+            <?= $escaper->escapeHtml(__('Questions & Answers')) ?>
+        </a>
+    </div>
+<?php endif; ?>

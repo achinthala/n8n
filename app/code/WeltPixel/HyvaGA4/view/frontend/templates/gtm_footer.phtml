@@ -1,0 +1,80 @@
+<?php
+// @codingStandardsIgnoreFile
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+?>
+<?php
+$_helper = $this->helper('WeltPixel\GA4\Helper\Data');
+?>
+<?php if ($_helper->isEnabled()) : ?>
+    <script>
+        const wpGA4ServerSide = {
+            pushClick: function(productId, listId, listName, index, elm) {
+                if (elm && elm.hasAttribute('onclick')) {
+                    var requestUrl = '<?= $escaper->escapeUrl($block->getBaseUrl()) ?>weltpixel_ga4/track/productclick/';
+                    if (productId && listId && listName) {
+                        fetch(requestUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: 'product_id=' + productId + '&list_id=' + listId +'&list_name=' + listName + '&index=' + index
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                        });
+                    }
+                }
+            },
+
+            pushViewItemList: function(hashId) {
+                if (hashId && document.getElementById('wp_ga4_server_side_view_item_list')) {
+                    var requestUrl = '<?= $escaper->escapeUrl($block->getBaseUrl()) ?>weltpixel_ga4/track/viewitemlist/';
+                    fetch(requestUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+
+                        body: 'hash_id='+hashId
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                    });
+                }
+            }
+        };
+
+        window.wpGA4ServerSide = wpGA4ServerSide;
+
+        let allowGa4Services = window.ga4AllowServices ?? true;
+
+        if (allowGa4Services) {
+            const {fetch: originalFetch} = window;
+            window.fetch = async (...args) => {
+                let [resource, config] = args;
+                let response = await originalFetch(resource, config);
+
+                if ((typeof resource == 'string') && resource.search('/customer\/section\/load/') > 0) {
+                    response.clone().json().then(data => {
+                        if (data.wp_ga4.datalayer) {
+                            const dataLayerData = JSON.parse(data.wp_ga4.datalayer);
+                            dataLayerData.forEach((dataLayerItem) => {
+                                window.dataLayer.push({ecommerce: null});
+                                window.dataLayer.push(dataLayerItem);
+                            });
+                        }
+                    });
+                }
+                return response;
+            };
+        }
+
+    </script>
+<?php endif; ?>

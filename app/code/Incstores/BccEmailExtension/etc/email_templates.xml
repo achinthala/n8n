@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<!-- TEST FILE - Created for testing BccEmailExtension - Safe to delete -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="bccemailtest_test_template" label="BCC Email Test Template (TEST)" file="test_template.html" type="html" module="Incstores_BccEmailExtension" area="adminhtml"/>
+</config>

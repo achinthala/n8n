@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="category.products.list" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="search_result_list" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="checkout.cart.crosssell" >
+            <action method="setTemplate" >
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list/items.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="product.info.upsell" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list/items.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="catalog.product.related" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list/items.phtml</argument>
+            </action>
+        </referenceBlock>
+    </body>
+</page>

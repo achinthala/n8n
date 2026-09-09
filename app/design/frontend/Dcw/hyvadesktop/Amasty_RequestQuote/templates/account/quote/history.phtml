@@ -1,0 +1,144 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2022 Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\RequestQuote\ViewModel\Data;
+
+/**
+ * @var \Amasty\RequestQuote\Block\Account\Quote\History $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+
+/** @var Data $requestQuoteViewModel */
+$requestQuoteViewModel = $viewModels->require(Data::class);
+
+$quotes = $block->getQuotes();
+$dcwSavedAmountBlock = $block->getLayout()->createBlock(\Dcw\SaveShippingAmount\Block\Index::class);
+?>
+
+<?= $block->getChildHtml('info') ?>
+<?php if ($quotes && $quotes->getSize()): ?>
+    <div class="table-wrapper quotes-history">
+        <table class="data table table-quote-items history w-full" id="my-quotes-table">
+            <thead>
+                <tr>
+                    <th scope="col" class="col id text-left text-size18 font-semibold text-black">
+                        <?= $escaper->escapeHtml(__('Cart #')) ?>
+                    </th>
+                    <th scope="col" class="col date text-left text-size18 font-semibold text-black">
+                        <?= $escaper->escapeHtml(__('Date')) ?>
+                    </th>
+                    <th scope="col" class="col total text-left text-size18 font-semibold text-black">
+                        <?= $escaper->escapeHtml(__('Cart Total')) ?>
+                    </th>
+                    <th scope="col" class="col status"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                    <?php if ($block->isExpiryColumnShow()): ?>
+                    <th scope="col" class="col expired"><?= $escaper->escapeHtml(__('Expiry Date')) ?></th>
+                    <?php endif; ?>
+                    <th scope="col" class="col actions text-left text-size18 font-semibold text-black">
+                        <?= $escaper->escapeHtml(__('Action')) ?>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($quotes as $quote):
+                    $amastyQuoteData = $dcwSavedAmountBlock->getAmastyQuoteData($quote->getId());
+                    $shippingAmount = 0;
+                    $taxAmount = 0;
+                    // Check if Amasty Quote Data is available
+                    if (!empty($amastyQuoteData)) {
+                        // Assuming the first result contains the data we need
+                        $shippingAmount = (float)$amastyQuoteData[0]['shipping_amount'];
+                        $taxAmount = (float)$amastyQuoteData[0]['tax_amount'];
+                    }
+
+                    // Get the current grand total from the quote
+                    $currentGrandTotal = (float)$quote->getGrandTotal();
+
+                    // Calculate the new total by adding the shipping and tax amounts
+                    $updatedGrandTotal = $currentGrandTotal;
+                    ?>
+                    <tr>
+                        <td data-th="<?= $escaper->escapeHtml(__('Cart #')) ?>" class="col id text-left text-size14 font-normal text-thingray">
+                            <?= $escaper->escapeHtml($quote->getIncrementId()) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtml(__('Date')) ?>" class="col date text-left text-size14 font-normal text-thingray">
+                            <?= $escaper->escapeHtml($block->formatDate($quote->getCreatedAt())) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtml(__('Cart Total')) ?>" class="col total text-left text-size14 font-normal text-thingray">
+                            <?= /* @noEscape */ $quote->formatPrice($updatedGrandTotal) ?>
+                        </td>
+                        <td data-th="<?= $escaper->escapeHtml(__('Status')) ?>" class="col status"><?= $escaper->escapeHtml($quote->getStatusLabel())?></td>
+                        <?php if ($block->isExpiryColumnShow()): ?>
+                        <td data-th="<?= $escaper->escapeHtml(__('Expiry Date')) ?>" class="col expired"><?= $escaper->escapeHtml($block->getExpiredDate($quote)) ?></td>
+                        <?php endif; ?>
+                        <td data-th="<?= $escaper->escapeHtml(__('Actions')) ?>" class="col actions text-left text-size14 font-normal text-thingray">
+                            <a href="<?= $escaper->escapeUrl($block->getViewUrl($quote)) ?>" class="action view text-black underline">
+                                <span><?= $escaper->escapeHtml(__('View')) ?></span>
+                            </a>
+                            <?php
+                            // Check if quote is locked by admin
+                            $isLockedByAdmin = $requestQuoteViewModel->isLockedByAdmin((int)$quote->getId());
+                            
+                            // Check if quote can be edited based on system configuration (allow_quote_edit)
+                            // Only show Edit button if not locked by admin
+                            $canEdit = $requestQuoteViewModel->canEditQuote($quote) && !$isLockedByAdmin;
+                            if ($canEdit):
+                                $editUrl = $block->getUrl('requestquote_edit/cart/loadQuote', ['quote_id' => $quote->getId()]);
+                            ?>
+                                <div x-data="dcwEditQuoteButton">
+                                    <button type="button"
+                                            @click="click"
+                                            data-dcwquote-edit-url="<?= $escaper->escapeUrl($editUrl) ?>"
+                                            class="action quote edit text-black underline ml-2">
+                                        <span><?= $escaper->escapeHtml(__('Edit')) ?></span>
+                                    </button>
+                                </div>
+                            <?php endif; ?>
+                            <?php  
+                            // Only show Move to Cart if not locked by admin
+                            if ($block->isMoveShowed($quote) && !$isLockedByAdmin): 
+                            ?>
+                                <div x-data="">
+                                    <button x-on:click="submitData('<?=$block->getMoveUrl($quote)?>')"><?= $escaper->escapeHtml(__('Move to Cart')) ?></button>
+                                </div>
+                            <?php endif; ?>
+                        </td>
+                    </tr> 
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php if ($block->getPagerHtml()): ?>
+        <div class="quote-products-toolbar toolbar bottom"><?= $block->getPagerHtml() ?></div>
+    <?php endif ?>
+<?php else: ?>
+    <div class="message info empty"><span><?= $escaper->escapeHtml(__('You have placed no quotes.')) ?></span></div>
+<?php endif ?>
+<script>
+function submitData(url) {
+    url = url.replace('amasty_quote', 'dcw_amasty_quote');
+	const formKey = hyva.getFormKey();
+    window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+    fetch(url, {
+        method: 'POST',
+        "headers": {
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body:"uenc=" + formKey+"&form_key=" + formKey,
+    })
+    .then(response => {
+        // Handle the response from the server
+        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+	    location.reload();
+    })
+    .catch(error => {
+	    location.reload();
+    });
+}
+</script>

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!-- impressions -->
+        <referenceBlock name="category.products.list">
+            <action method="setTemplate"
+                    ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="search_result_list">
+            <action method="setTemplate"
+                    ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+<!--         impressions -->
+<!--         product clicks for cross, related, upsell -->
+        <referenceBlock name="crosssell" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/slider/product-slider.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="upsell" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/slider/product-slider.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="related" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/slider/product-slider.phtml</argument>
+            </action>
+        </referenceBlock>
+        <!-- product clicks for cross, related, upsell -->
+    </body>
+</page>
+

@@ -1,0 +1,32 @@
+<?php $klaviyoKey = $this->getPublicApiKey(); ?>
+<?php if ( $this->isKlaviyoEnabled() && $klaviyoKey ): ?>
+<div x-data="initKlaviyoCustomerTracking()"
+     @private-content-loaded.window="sendCustomerDataToKlaviyo(event.detail.data)"></div>
+    <script>
+        function initKlaviyoCustomerTracking() {
+            return {
+                sendCustomerDataToKlaviyo(data) {
+                    window.addEventListener('init-external-scripts', () => {
+                    const _learnq = window._learnq || [];
+                    const customer = data.customer;
+                    var resource = document.createElement('script');
+                    resource.async = "true";
+                    resource.src = "https://static.klaviyo.com/onsite/js/klaviyo.js?company_id=<?= $block->escapeHtml($klaviyoKey); ?>";
+                    var script = document.getElementsByTagName('script')[0];
+                    script.parentNode.insertBefore(resource, script);
+
+                    if (customer && customer.email) {
+                        script.addEventListener('load', function() {
+                            _learnq.push(['identify', {
+                                $email: customer.email,
+                                $first_name: customer.firstname ? customer.firstname : '',
+                                $last_name: customer.lastname ? customer.lastname : ''
+                            }]);
+                        });
+                    }
+                  }, {once: true, passive: true});
+                }
+            }
+        }
+    </script>
+<?php endif; ?>

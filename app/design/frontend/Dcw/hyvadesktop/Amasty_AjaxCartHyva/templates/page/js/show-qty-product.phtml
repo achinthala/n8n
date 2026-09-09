@@ -1,0 +1,96 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2023 Amasty (https://www.amasty.com)
+ * @package Ajax Cart Hyva Compatibility (System)
+ */
+
+use Amasty\AjaxCartHyva\ViewModel\CartSettings;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+
+/** @var ViewModelRegistry $viewModels */
+
+$cartConfig = $viewModels->require(CartSettings::class);
+$heroIcons = $viewModels->require(HeroiconsOutline::class);
+?>
+
+<?php if ($cartConfig->isShowQtyProduct()): ?>
+    <script>
+        'use strict';
+
+        (function () {
+            const selectors = {
+                productForm: '.product_addtocart_form',
+                cardImage: '.product-item-photo'
+            };
+            const taiwindClasses = {
+                qtyContainer: 'amcart-card-info inset-0 w-full h-full overflow-hidden hidden justify-center items-center absolute ease-in duration-300 backdrop-blur-sm bg-white/30',
+                qtyCounter: 'amcart-counter bg-primary right-0 top-0 absolute text-white px-3 rounded-full text-xl inline-block'
+            }
+            const cartIcon = `<?= /* @noEscape */ $heroIcons->shoppingCartHtml('h-14 w-14') ?>`;
+            const productQtyNode = '<p class="${taiwindClasses.qtyContainer}" x-data="initAmcartQtyProduct()" x-init="initQtyOnProduct(%productId%)" @private-content-loaded.window="updateQtyData($event.detail)" x-show="qty"> <template x-if="qty"><span class="relative">${cartIcon}<b class="${taiwindClasses.qtyCounter}" x-text="qty"></b></span></template></p>';
+			const initProductQtyNode = function (productId) {
+                return productQtyNode.replace('%productId%', productId);
+            }
+
+            const productForms = document.querySelectorAll(selectors.productForm);
+			var is = 0;
+            if (productForms.length > 0) { 
+            productForms.forEach((form) => {
+				var formss = productForms[is];
+                const formData = new FormData(formss); 
+                const productId = formData.get('product');
+                const productImage = formss.querySelector(selectors.cardImage);
+                const productQtyNode = initProductQtyNode(productId);
+
+                productImage.insertAdjacentHTML('beforeend', productQtyNode);
+				is++;
+            });
+            }
+        })();
+    </script>
+
+    <script>
+        'use strict';
+
+        function initAmcartQtyProduct() {
+            return {
+                productId: null,
+                qty: 0,
+
+                /**
+                 * @param {number} productId
+                 * @return {void}
+                 */
+                initQtyOnProduct: function (productId) {
+                    this.productId = productId;
+                },
+
+                /**
+                 * @param {Object} privateContent
+                 * @return {void}
+                 */
+                updateQtyData: function (privateContent) {
+                    const cart = privateContent && privateContent.data && privateContent.data.cart;
+                    let sum = 0;
+
+                    if (!cart || !cart.items) {
+                        return;
+                    }
+
+                    this.qty = 0;
+
+                    cart.items.forEach((item) => {
+                        if (parseInt(item.product_id) === this.productId) {
+                            sum += item.qty;
+                        }
+                    });
+
+                    this.qty = sum;
+
+                }
+            };
+        }
+    </script>
+<?php endif; ?>

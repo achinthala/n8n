@@ -1,0 +1,74 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Checkout\Block\Cart;
+use Magento\Framework\Escaper;
+
+/** @var Cart $block */
+/** @var Escaper $escaper */
+?>
+
+<div class="w-full">
+    <div class="w-full lg:w-3/4 float-left lg:order-1 lg:pr-8 cart-products">
+	<div class ="page-title-shopping-cart"><h2 class="text-size18 font-medium"><?= $escaper->escapeHtml(__('Cart')) ?> <span></span></h2>
+        <?= $block->getChildHtml('form_before') ?>
+        <?= $block->getChildHtml('cart-items') ?>
+        <?= $block->getChildHtml('checkout_cart_widget') ?>
+    </div>
+    <div class="weather-advisory">
+    <?php 
+        echo $this->getLayout()
+        ->createBlock('Magento\Cms\Block\Block')
+        ->setBlockId('weather_advisory')
+        ->toHtml();
+    ?>
+</div>
+	<div class="w-full lg:w-1/4 float-left lg:float-right lg:order-2 top-0 lg:sticky summary-cart">
+        <div class="flex pb-3 my-2 border-b-2 border-gray-300 flex-col">
+            <h2 class="w-full text-2xl text-size28 font-medium title-font font-base md:text-left">
+                <?= $escaper->escapeHtml(__('Summary')) ?>
+            </h2>
+        </div>
+        <?= $block->getChildHtml('cart.summary') ?>
+    </div>
+    <div class="w-full lg:w-3/4 lg:pr-8">
+        <?= $block->getChildHtml('cart.discount') ?>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () { 
+        const cartItems = document.querySelectorAll("#shopping-cart-table tbody");
+        let uniqueSkuClasses = new Set();
+        let normalProductCount = 0;
+        cartItems.forEach((tbody) => {
+            let skuClass = null;
+            // Find if tbody has a class that starts with "sku-"
+            tbody.classList.forEach((cls) => {
+                if (cls.startsWith("sku-")) {
+                    skuClass = cls; // Get the exact CBC product class
+                }
+            });
+            if (skuClass) {
+                // Store unique CBC SKU classes (count each only once)
+                uniqueSkuClasses.add(skuClass);
+            } else {
+                // Count normal products separately
+                normalProductCount++;
+            }
+        });
+        // Total count = unique SKU products + normal products
+        const totalCount = uniqueSkuClasses.size + normalProductCount;
+        // Update the count in the cart
+        const countElement = document.querySelector(".checkout-cart-index .page-title-shopping-cart span");
+        if (countElement) {
+            countElement.textContent = `(${totalCount})`;
+        }
+    });
+</script>

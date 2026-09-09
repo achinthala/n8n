@@ -1,0 +1,281 @@
+Subject: [PATCH] 443919-add-multiple-admin-comment-and-add-new-column-and-filter-it
+---
+Index: Ui/DataProvider/Grid/QuoteDataProvider.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/Ui/DataProvider/Grid/QuoteDataProvider.php b/vendor/amasty/module-request-quote/Ui/DataProvider/Grid/QuoteDataProvider.php
+new file mode 100644
+--- /dev/null	(date 1721152693344)
++++ b/vendor/amasty/module-request-quote/Ui/DataProvider/Grid/QuoteDataProvider.php	(date 1721152693344)
+@@ -0,0 +1,45 @@
++<?php
++
++namespace Amasty\RequestQuote\Ui\DataProvider\Grid;
++
++use Amasty\RequestQuote\Model\QuoteRepository;
++use Magento\Framework\Api\FilterBuilder;
++use Magento\Framework\Api\Search\ReportingInterface;
++use Magento\Framework\Api\Search\SearchCriteriaBuilder;
++use Magento\Framework\App\RequestInterface;
++use Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider;
++
++class QuoteDataProvider extends DataProvider
++{
++    /**
++     * @var QuoteRepository
++     */
++    private $repository;
++
++    public function __construct(
++        $name,
++        $primaryFieldName,
++        $requestFieldName,
++        ReportingInterface $reporting,
++        SearchCriteriaBuilder $searchCriteriaBuilder,
++        RequestInterface $request,
++        FilterBuilder $filterBuilder,
++        QuoteRepository $repository,
++        array $meta = [],
++        array $data = []
++    ) {
++        $this->repository = $repository;
++        parent::__construct($name, $primaryFieldName, $requestFieldName, $reporting, $searchCriteriaBuilder, $request, $filterBuilder, $meta, $data);
++    }
++
++    public function getData()
++    {
++        $data = parent::getData();
++        foreach ($data['items'] as $key => $quote) {
++            $quoteData = $this->repository->get($quote['entity_id'])->getData();
++            $data['items'][$key] = $quoteData;
++        }
++
++        return $data;
++    }
++}
+Index: Model/Quote/Backend/Edit.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/Model/Quote/Backend/Edit.php b/vendor/amasty/module-request-quote/Model/Quote/Backend/Edit.php
+--- a/vendor/amasty/module-request-quote/Model/Quote/Backend/Edit.php	(revision 07d397c995a82f1052fd9b9ebe50176075b7442a)
++++ b/vendor/amasty/module-request-quote/Model/Quote/Backend/Edit.php	(date 1721152048177)
+@@ -21,6 +21,7 @@
+ use Magento\Quote\Model\Quote\Address;
+ use Magento\Quote\Model\Quote\AddressFactory;
+ use Magento\Store\Model\StoreManagerInterface;
++use \Magento\Framework\Stdlib\DateTime\TimezoneInterface;
+ 
+ class Edit extends DataObject
+ {
+@@ -144,6 +145,11 @@
+      */
+     private $productManagement;
+ 
++    /**
++     * @var TimezoneInterface
++     */
++    private $timezone;
++
+     public function __construct(
+         \Amasty\RequestQuote\Model\Quote\Backend\Session $quoteSession,
+         \Psr\Log\LoggerInterface $logger,
+@@ -164,6 +170,7 @@
+         DateUtils $dateUtils,
+         JsonSerializer $jsonSerializer,
+         ProductManagement $productManagement,
++        TimezoneInterface $timezone,
+         array $data = []
+     ) {
+         parent::__construct($data);
+@@ -186,6 +193,7 @@
+         $this->dateUtils = $dateUtils;
+         $this->jsonSerializer = $jsonSerializer;
+         $this->productManagement = $productManagement;
++        $this->timezone = $timezone;
+     }
+ 
+     /**
+@@ -289,6 +297,7 @@
+     /**
+      * @param $quote
+      * @return mixed
++     * @throws Exception
+      */
+     protected function updateQuoteData($quote)
+     {
+@@ -317,7 +326,14 @@
+         }
+ 
+         if ($this->getData('note')) {
+-            $remarks['admin_note_remark'] = $this->getData('note');
++            $newRemark = $this->getData('note');
++            $dateTime = new \DateTime('now', new \DateTimeZone($this->timezone->getConfigTimezone()));
++            $currentDateTime = $dateTime->format('Y-m-d H:i:s');
++            $newRemarkWithDateTime = $currentDateTime . ': ' . $newRemark;
++
++            $remarks['admin_note_remark'] = isset($remarks['admin_note_remark'])
++                ? $remarks['admin_note_remark'] . ", " . $newRemarkWithDateTime
++                : $newRemarkWithDateTime;
+         }
+ 
+         if ($this->getData('note_discount')) {
+Index: view/adminhtml/templates/quote/edit/history.phtml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/edit/history.phtml b/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/edit/history.phtml
+--- a/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/edit/history.phtml	(revision 07d397c995a82f1052fd9b9ebe50176075b7442a)
++++ b/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/edit/history.phtml	(date 1721146578618)
+@@ -28,9 +28,14 @@
+                 <div class="note-list-comment"><?= /* @noEscape */ nl2br($escaper->escapeHtml($block->getNotes()->getCustomerNote(), ['b', 'br', 'strong', 'i', 'u', 'a'])) ?></div>            </li>
+         <?php endif; ?>
+         <?php if ($block->getNotes()->getAdminNoteRemark()): ?>
++            <?php
++            $remarks = explode(',', $block->getNotes()->getAdminNoteRemark());
++            $remarks = implode('<br/>', $remarks);
++            ?>
+             <li class="note-list-item">
+                 <strong><?= $escaper->escapeHtml(__('Admin Remarks'))?></strong>
+-                <div class="note-list-comment"><?= /* @noEscape */ nl2br($escaper->escapeHtml($block->getNotes()->getAdminNoteRemark(), ['b', 'br', 'strong', 'i', 'u', 'a'])) ?></div>            </li>
++                <div class="note-list-comment"><?= /* @noEscape */ nl2br($escaper->escapeHtml($remarks, ['b', 'br', 'strong', 'i', 'u', 'a'])) ?></div>
++            </li>
+         <?php endif; ?>
+         <?php if ($block->getNotes()->getAdminNote()): ?>
+             <li class="note-list-item">
+Index: Model/ResourceModel/Quote/Grid/Collection.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/Model/ResourceModel/Quote/Grid/Collection.php b/vendor/amasty/module-request-quote/Model/ResourceModel/Quote/Grid/Collection.php
+--- a/vendor/amasty/module-request-quote/Model/ResourceModel/Quote/Grid/Collection.php	(revision 07d397c995a82f1052fd9b9ebe50176075b7442a)
++++ b/vendor/amasty/module-request-quote/Model/ResourceModel/Quote/Grid/Collection.php	(date 1721152693340)
+@@ -5,7 +5,6 @@
+ use Amasty\RequestQuote\Model\Source\Status;
+ use Magento\Framework\Api\Search\SearchResultInterface;
+ use Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot;
+-use Magento\Framework\Search\AggregationInterface;
+ 
+ class Collection extends \Amasty\RequestQuote\Model\ResourceModel\Quote\Collection implements SearchResultInterface
+ {
+@@ -148,14 +147,23 @@
+     protected function _renderFiltersBefore()
+     {
+         $linkQuoteTable = $this->getResource()->getTable('amasty_quote');
++        $linkQuoteItemTable = $this->getResource()->getTable('quote_item');
+         $this->getSelect()->from(['main_table' => $this->getResource()->getTable('quote')])
+             ->joinInner(
+                 $linkQuoteTable,
+                 "{$linkQuoteTable}.quote_id = main_table.entity_id",
+                 ['status', 'remarks', 'increment_id', 'customer_name', 'expired_date', 'submited_date']
++            )->joinLeft(
++                $linkQuoteItemTable,
++                "{$linkQuoteItemTable}.quote_id = main_table.entity_id",
++                [
++                    'GROUP_CONCAT(' . $linkQuoteItemTable . '.sku) as sku',
++                    'GROUP_CONCAT(' . $linkQuoteItemTable . '.name) as name'
++                ]
+             );
+         $this->getSelect()->where('status NOT IN(?)', [Status::CREATED, Status::ADMIN_NEW]);
+         $this->getSelect()->group("main_table.entity_id");
++
+         return \Magento\Quote\Model\ResourceModel\Quote\Collection::_renderFiltersBefore();
+     }
+ }
+Index: view/adminhtml/ui_component/amasty_quote_grid.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/view/adminhtml/ui_component/amasty_quote_grid.xml b/vendor/amasty/module-request-quote/view/adminhtml/ui_component/amasty_quote_grid.xml
+--- a/vendor/amasty/module-request-quote/view/adminhtml/ui_component/amasty_quote_grid.xml	(revision 07d397c995a82f1052fd9b9ebe50176075b7442a)
++++ b/vendor/amasty/module-request-quote/view/adminhtml/ui_component/amasty_quote_grid.xml	(date 1721152693344)
+@@ -18,7 +18,7 @@
+     </argument>
+     <dataSource name="amasty_quote_grid_data_source">
+         <argument name="dataProvider" xsi:type="configurableObject">
+-            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
++            <argument name="class" xsi:type="string">Amasty\RequestQuote\Ui\DataProvider\Grid\QuoteDataProvider</argument>
+             <argument name="name" xsi:type="string">amasty_quote_grid_data_source</argument>
+             <argument name="primaryFieldName" xsi:type="string">entity_id</argument>
+             <argument name="requestFieldName" xsi:type="string">id</argument>
+@@ -166,6 +166,22 @@
+                     <item name="visible" xsi:type="boolean">false</item>
+                     <item name="dataType" xsi:type="string">select</item>
+                     <item name="label" xsi:type="string" translate="true">Customer Group</item>
++                </item>
++            </argument>
++        </column>
++        <column name="sku">
++            <argument name="data" xsi:type="array">
++                <item name="config" xsi:type="array">
++                    <item name="filter" xsi:type="string">text</item>
++                    <item name="label" xsi:type="string" translate="true">SKU</item>
++                </item>
++            </argument>
++        </column>
++        <column name="name">
++            <argument name="data" xsi:type="array">
++                <item name="config" xsi:type="array">
++                    <item name="filter" xsi:type="string">text</item>
++                    <item name="label" xsi:type="string" translate="true">Name</item>
+                 </item>
+             </argument>
+         </column>
+Index: view/adminhtml/templates/quote/view/history.phtml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/view/history.phtml b/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/view/history.phtml
+--- a/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/view/history.phtml	(revision 07d397c995a82f1052fd9b9ebe50176075b7442a)
++++ b/vendor/amasty/module-request-quote/view/adminhtml/templates/quote/view/history.phtml	(date 1721147517419)
+@@ -9,9 +9,13 @@
+             </li>
+         <?php endif; ?>
+         <?php if ($block->getNotes()->getAdminNoteRemark()): ?>
++            <?php
++            $remarks = explode(',', $block->getNotes()->getAdminNoteRemark());
++            $remarks = implode('<br/>', $remarks);
++            ?>
+             <li class="note-list-item">
+                 <strong><?= $escaper->escapeHtml(__('Admin Remarks'))?></strong>
+-                <div class="note-list-comment"><?= /* @noEscape */ nl2br($escaper->escapeHtml($block->getNotes()->getAdminNoteRemark(), ['b', 'br', 'strong', 'i', 'u', 'a'])) ?></div>
++                <div class="note-list-comment"><?= /* @noEscape */ nl2br($escaper->escapeHtml($remarks, ['b', 'br', 'strong', 'i', 'u', 'a'])) ?></div>
+             </li>
+         <?php endif; ?>
+         <?php if ($block->getNotes()->getAdminNote()): ?>
+Index: Model/ResourceModel/Quote.php
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/vendor/amasty/module-request-quote/Model/ResourceModel/Quote.php b/vendor/amasty/module-request-quote/Model/ResourceModel/Quote.php
+--- a/vendor/amasty/module-request-quote/Model/ResourceModel/Quote.php	(revision 07d397c995a82f1052fd9b9ebe50176075b7442a)
++++ b/vendor/amasty/module-request-quote/Model/ResourceModel/Quote.php	(date 1721152693340)
+@@ -218,11 +218,19 @@
+      */
+     private function joinAmastyQuote($select)
+     {
++        $linkQuoteItemTable = $this->getTable('quote_item');
+         $select->joinInner(
+             ['amquote' => $this->getAmastyQuoteTable()],
+             "amquote.quote_id = " . $this->getMainTable() . ".entity_id",
+             $this->getColumnsToJoin()
+-        )
++        )->joinLeft(
++            $linkQuoteItemTable,
++            "{$linkQuoteItemTable}.quote_id = " . $this->getMainTable() . ".entity_id",
++            [
++                'GROUP_CONCAT(' . $linkQuoteItemTable . '.sku) as sku',
++                'GROUP_CONCAT(' . $linkQuoteItemTable . '.name) as name'
++            ]
++        )->group($this->getMainTable() . ".entity_id")
+             ->order('updated_at ' . \Magento\Framework\DB\Select::SQL_DESC)
+             ->limit(1);
+     }

@@ -1,0 +1,54 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ShareCart\Block\Account\ShareHistory;
+use Magento\Framework\Escaper;
+
+/** @var ShareHistory $block */
+/** @var Escaper $escaper */
+$collection = $block->getShareCollection();
+?>
+<div class="dcw-share-cart-history">
+    <?php if (!$collection->getSize()): ?>
+        <p><?= $escaper->escapeHtml(__('You have not shared any carts yet.')) ?></p>
+    <?php else: ?>
+        <div class="table-wrapper overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                <tr class="border-b">
+                    <th class="p-2"><?= $escaper->escapeHtml(__('ID')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Your Name')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__("Recipient's Name")) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__("Recipient's Email Address")) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__("Recipient's Phone Number")) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Custom Message')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Transactional Messages Consent')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Link Status')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Shared At')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Expires At')) ?></th>
+                    <th class="p-2"><?= $escaper->escapeHtml(__('Used At')) ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($collection as $share): ?>
+                    <tr class="border-b">
+                        <td class="p-2"><?= (int) $share->getId() ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml($block->getYourName($share)) ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml($block->getRecipientName($share)) ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml($block->getRecipientEmail($share)) ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml($block->getRecipientPhone($share)) ?></td>
+                        <td class="p-2 max-w-xs whitespace-pre-wrap"><?= $escaper->escapeHtml((string) $share->getData('custom_message')) ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml($block->getSmsConsentLabel($share->getData('sms_consent'))) ?></td>
+                        <td class="p-2">
+                            <?= $escaper->escapeHtml($block->getLinkStatusLabel((string) $share->getData('link_status'))) ?>
+                        </td>
+                        <td class="p-2"><?= $escaper->escapeHtml((string) $share->getData('created_at')) ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml((string) $share->getData('expires_at')) ?></td>
+                        <td class="p-2"><?= $escaper->escapeHtml((string) $share->getData('used_at')) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>

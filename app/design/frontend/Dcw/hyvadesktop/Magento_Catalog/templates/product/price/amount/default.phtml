@@ -1,0 +1,97 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+use Dcw\AdvanceSearch\ViewModel\Data as AdvanceSearchViewModel;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+/** @var AdvanceSearchViewModel $advanceSearchViewModel */
+$advanceSearchViewModel = $viewModels->require(AdvanceSearchViewModel::class);
+?>
+<?php
+    $_product = $customViewModel->getLoadProduct((int)$block->getSaleableItem()->getId());
+
+    $calculatedPriceFianlPrice = $advanceSearchViewModel->getCalculatedPriceForProduct($_product);
+    $calculatedPriceRegularPrice = $advanceSearchViewModel->getCalculatedPriceForProduct($_product, 'regular');
+
+    if ($_product->getTypeId() == 'configurable') {
+        $basePrice = $_product->getPriceInfo()->getPrice('regular_price');
+        $regularPrice = $basePrice->getMinRegularAmount()->getValue();
+        $specialPrice = $_product->getFinalPrice(1);
+    } else {
+        $regularPrice = $_product->getPriceInfo()->getPrice('regular_price')->getValue();
+        $specialPrice = $_product->getFinalPrice(1);
+    }
+
+    $currencySymbol = $customViewModel->getCurrentCurrencySymbol();
+    $displayFinalPrice = 0;
+    $displayRegularPrice = 0;
+    $calculatorType = 'each';
+?>
+<span class="price-container <?= $block->escapeHtmlAttr($block->getAdjustmentCssClasses()) ?>"
+        <?= $block->getSchema() ? ' itemprop="offers" itemscope itemtype="http://schema.org/Offer"' : '' ?>>
+
+    <span <?php if ($block->getPriceId()) :?> id="<?= $block->escapeHtmlAttr($block->getPriceId()) ?>"<?php endif;?>
+        <?= ($block->getPriceDisplayLabel()) ? 'data-label="' . $block->escapeHtmlAttr($block->getPriceDisplayLabel() . $block->getPriceDisplayInclExclTaxes()) . '"' : '' ?>
+        data-price-amount="<?= $block->escapeHtmlAttr($block->getDisplayValue()) ?>"
+        data-price-type="<?= $block->escapeHtmlAttr($block->getPriceType()) ?>"
+        class="price-wrapper <?= $block->escapeHtmlAttr($block->getPriceWrapperCss()) ?>"
+    ><?php if($block->escapeHtmlAttr($block->getPriceType()) == 'finalPrice' && $_product->getTypeId() == 'configurable'){?><span class="price-start-label">Starting From:</span><?php }?>
+    <?php
+    if (is_array($calculatedPriceFianlPrice) && isset($calculatedPriceFianlPrice['calType'])) {
+        $calculatorType = $calculatedPriceFianlPrice['calType'];
+    }
+    if (is_array($calculatedPriceFianlPrice) && isset($calculatedPriceFianlPrice['price'])) {
+        $displayFinalPrice = $calculatedPriceFianlPrice['price'];
+    }
+
+    if ($displayFinalPrice > 0) {
+        echo '<br/>'.$block->escapeHtml($block->formatCurrency($displayFinalPrice), ['span']);
+        echo ' /'.$calculatorType;
+    } else { ?>
+        <?= $block->escapeHtml($block->formatCurrency($block->getDisplayValue(), (bool)$block->getIncludeContainer()), ['span']) ?>
+        <?php
+        echo ' /each';
+    }
+    ?>
+</span>
+    <?php if($regularPrice > $specialPrice && $_product->getTypeId() == 'configurable'){?>
+        <span class="price-mrp">
+            <?php
+            if (is_array($calculatedPriceRegularPrice) && isset($calculatedPriceRegularPrice['price'])) {
+                $displayRegularPrice = $calculatedPriceRegularPrice['price'];
+            }
+            if ($displayRegularPrice > 0) { ?>
+                <span class="price-mrp-new">was 
+                <?php echo $currencySymbol.number_format((float)$displayRegularPrice, 2, '.', '');?>
+                </span>
+                <?php
+                $savePrice = number_format((float)$displayRegularPrice, 2, '.', '')-number_format((float)$displayFinalPrice, 2, '.', '');
+                $percentageDiscount  = round($savePrice*100/number_format((float)$displayRegularPrice, 2, '.', ''));
+                echo '<span data-info="'.$savePrice.'" class="savePrice">Save '.$percentageDiscount.'%</span>';
+            } else { ?>
+                <span class="price-mrp-new">was 
+                <?php echo $currencySymbol.$regularPrice; ?> </span>
+                <?php $savePrice = $regularPrice-$specialPrice;
+                $percentageDiscount  = round($savePrice*100/$regularPrice);
+                echo '<span class="savePrice">Save '.$percentageDiscount.'%</span>';
+            }
+            ?>
+        </span>
+    <?php } ?>
+    <?php if ($block->hasAdjustmentsHtml()) :?>
+        <?= $block->getAdjustmentsHtml() ?>
+    <?php endif; ?>
+    <?php if ($block->getSchema()) :?>
+        <meta itemprop="price" content="<?= $block->escapeHtmlAttr($block->getDisplayValue()) ?>" />
+        <meta itemprop="priceCurrency" content="<?= $block->escapeHtmlAttr($block->getDisplayCurrencyCode()) ?>" />
+    <?php endif; ?>
+</span>

@@ -1,0 +1,28 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/**  @var $block \Amasty\RequestQuote\Block\Cart */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<div class="cart-empty flex flex-wrap w-full py-8 items-center justify-center">
+    <div class="cart-empty-left mr-8">
+        <img src="<?php echo $this->getViewFileUrl('images/shopping-cart-icon.png'); ?>" alt="shopping-cart-icon" width="150" height="150">
+    </div>
+    <div class="cart-empty-right text-center">
+        <?= $block->getChildHtml('checkout_cart_empty_widget') ?>
+        <h4 class="text-size24 font-medium text-black mb-2"><?= $escaper->escapeHtml(__("Your cart's empty")) ?></h4>
+        <?php if (!$block->getQuote()->getCustomer()->getId()): ?>
+            <!-- Content for guest users -->
+            <p class="text-size16 font-normal text-black mb-2"><?= $escaper->escapeHtml(__('Have an account? Sign in to see your cart.')) ?></p>
+            <p><a class="action" href="/customer/account/login/"><?= $escaper->escapeHtml(__('Sign In')) ?></a></p>
+        <?php else: ?>
+            <!-- Content for logged-in users -->
+            <p class="logged-in-user-message"><a class="action" href="/"><?= $escaper->escapeHtml(__('Back To Home')) ?></a></p>
+        <?php endif; ?>
+        
+        <?= $block->getChildHtml('shopping.cart.table.after') ?>
+    </div>    
+</div>

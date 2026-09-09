@@ -1,0 +1,157 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Magento\LoginAsCustomerFrontendUi\ViewModel\Configuration;
+
+/**
+ * @var Template $block
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+$viewFileUrl = $block->getViewFileUrl('Magento_LoginAsCustomerFrontendUi::images/magento-icon.svg');
+
+/** @var Configuration $configurationViewModel */
+$configurationViewModel = $viewModels->require(Configuration::class);
+if (!$configurationViewModel->isEnabled()) {
+    return;
+}
+?>
+<?php
+$notificationtext='';
+$blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+$glob_notif_3 = $blockObj->getConfigValue('dcw_notifications_config/notification3/notification3_text');
+$resp_arr["glob_notif_3"] = $glob_notif_3;
+$request = $blockObj->getRequest();
+$resp_arr["full_action_name"] = $request->getFullActionName();
+
+if ($resp_arr['full_action_name'] == 'catalog_category_view') {
+    $category = $blockObj->getCurrentCategory();
+
+    $category2 = $blockObj->getCategoryById((int)$category->getId());
+
+    $cat_arr = $category2->getdata();
+    if (isset($cat_arr['category_notification_bar3'])) {
+        $resp_arr["category_notification_bar3"] = $cat_arr['category_notification_bar3'];
+    } else {
+        $resp_arr["category_notification_bar3"] = "";
+    }
+
+}
+
+if ($resp_arr['full_action_name'] == 'catalog_product_view') {
+    $product = $blockObj->getCurrentProduct();//get current product
+    $product2 = $blockObj->getLoadProduct((int)$product->getId());
+    $resp_arr["incstores_pim_banner_msg_int"] = $product2->getData('incstores_pim_banner_msg_int');
+}
+
+if ($resp_arr['full_action_name'] == 'catalog_product_view' || $resp_arr['full_action_name'] == 'catalog_category_view') {
+    if ($resp_arr['full_action_name'] == 'catalog_category_view') {
+        $notificationtext= $resp_arr['category_notification_bar3'];
+    }
+
+    if ($resp_arr['full_action_name'] == 'catalog_product_view') {
+        $notificationtext= $resp_arr['incstores_pim_banner_msg_int'];
+    }
+} else {
+    $notificationtext= $resp_arr['glob_notif_3'];
+}
+?>
+
+<div class="bg-gray-900 login_as__customer"
+     x-data="initLoginAsCustomer()"
+     @private-content-loaded.window="receiveCustomerData(event.detail.data)"
+>
+    <div class="container mx-auto py-1 px-1 sm:px-6 lg:px-8 login_as__customer_in" x-show="isVisible">
+        <div class="flex items-center justify-between flex-wrap">
+            <div class="w-0 flex-1 flex items-center">
+                <span class="flex p-2">
+                   <img class="logo-img" src="<?= $escaper->escapeUrl($viewFileUrl) ?>" alt="Magento" />
+                </span>
+                <p class="ml-3 font-medium text-white truncate">
+                    <span x-text="notificationText"></span>
+                </p>
+            </div>
+            <div class="order-2 shrink-0 sm:order-3 sm:ml-3">
+                <?= $block->getChildHtml('login-as-customer-notice-links') ?>
+            </div>
+        </div>
+    </div>
+    <?php if ($notificationtext!=''): ?>
+<div x-cloak class="notification3 bg-orange text-center pt-2 pb-2 text-center text-size13 font-medium text-thickblack w-full order-2"
+     @private-content-loaded.window="receiveCustomerData(event.detail.data)"
+>
+    <div x-show="isVisible">
+        <div>
+    <?=$block->escapeHtml(__($notificationtext));?>
+        </div>
+    </div>
+</div>
+<?php endif;?>
+</div>
+
+<script>
+    "use strict";
+
+    function initLoginAsCustomer() {
+        return {
+            isVisible: false,
+            adminUserId: null,
+            websiteName: null,
+            fullname: null,
+            notificationText: '',
+            receiveCustomerData: function receiveCustomerData(data) {
+                if (data.customer) {
+                    this.fullname = data.customer.fullname;
+                }
+
+                if (data.loggedAsCustomer) {
+                    this.adminUserId = data.loggedAsCustomer.adminUserId;
+                    this.websiteName = data.loggedAsCustomer.websiteName;
+                }
+
+                this.updateBanner();
+            },
+
+            updateBanner: function updateBanner() {
+                this.isVisible = !!this.adminUserId;
+
+                if (this.fullname !== undefined && this.websiteName !== undefined) {
+                    this.notificationText = '<?=
+                        $escaper->escapeHtml(__('You are connected as <strong>%1</strong> on %2'), ['<strong>']) ?>'
+                        .replace('%1', this.fullname)
+                        .replace('%2', this.websiteName);
+                }
+            }
+        }
+    }
+</script>
+<script>
+    function logOutClass() {
+        if (document.querySelector('.login_as__customer_in')) {
+            document.body.classList.add('customer-logged-in');
+        } else {
+            document.body.classList.remove('customer-logged-in');
+        }
+    }
+    logOutClass();
+    // Use a unique variable name to avoid conflicts with other scripts
+    if (typeof window.loginAsCustomerObserver === 'undefined') {
+        window.loginAsCustomerObserver = new MutationObserver(logOutClass);
+        window.loginAsCustomerObserver.observe(document.body, { childList: true, subtree: true });
+    }
+</script>
+<style>
+    .product_lebel_container.margin_percentage_div {
+        display: block !important;
+    }
+</style>

@@ -1,0 +1,86 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\Escaper;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+?>
+
+<?php
+echo $this->getLayout()
+->createBlock('Magento\Cms\Block\Block')
+->setBlockId('footer_main')
+->toHtml();
+?>
+
+<script>
+    window.addEventListener('init-external-scripts', () => {
+        const klaviyoScript = document.createElement('script');
+        klaviyoScript.src = '//static.klaviyo.com/onsite/js/klaviyo.js?company_id=WAwVDg';
+        klaviyoScript.type = 'text/javascript';
+        klaviyoScript.async = true;
+        document.head.append(klaviyoScript);
+    }, {once: true, passive: true});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.cms-home .order_btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', function() {
+                const modal = this.closest('.orderSampleContent').querySelector('.order-free-sample-popup');
+                if (modal) {
+                    modal.style.display = 'block';
+                }
+            });
+        });
+
+        // Handle closing the modal
+        document.querySelectorAll('.cms-home .order-free-sample-popup .closemodal').forEach(closeBtn => {
+            closeBtn.addEventListener('click', function() {
+                const modal = this.closest('.order-free-sample-popup');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function updateRatingsClass(ratingEl) {
+            const hasReviews = ratingEl.querySelector('.bv_numReviews_component_container');
+            ratingEl.classList.toggle('no-reviews', !hasReviews);
+        }
+        document.querySelectorAll('.ratings').forEach(ratingEl => {        
+            updateRatingsClass(ratingEl);        
+            const observer = new MutationObserver(() => {
+                updateRatingsClass(ratingEl);
+            });
+            observer.observe(ratingEl, {
+                childList: true,
+                subtree: true
+            });
+        });
+    });
+</script>
+
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('css/poppins.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('css/print.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('css/admin.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Bss_SocialLogin::css/jquery.fancybox.min.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Hyva_MirasvitLayeredNavigation::css/lib/nouislider.min.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Astound_Affirm::affirm-promo.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Dcw_CircularDesignerTool::css/base-global-header-footer.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Dcw_CircularDesignerTool::css/matdesigner.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Magefan_Blog::css/comments.css') ?>" media="print" onload="this.media='all'"/>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('Plumrocket_GlobalPrivacyControl::css/gpc.css') ?>" media="print" onload="this.media='all'"/>

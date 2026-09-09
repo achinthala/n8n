@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <preference for="Dcw\LineItemUpdateESD\Api\UpdateItemInterface"
+                type="Dcw\LineItemUpdateESD\Model\UpdateItem"/>
+                
+    <preference for="Dcw\LineItemUpdateESD\Api\Data\UpdateItemResponseInterface"
+                type="Dcw\LineItemUpdateESD\Model\Data\UpdateItemResponse"/>
+</config>

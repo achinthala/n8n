@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Incstores. All rights reserved.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="loginascustomer_confirmation_popup"/>
+    <body>
+        <!-- Add Weight column header to quote items table -->
+        <referenceBlock name="quote_items">
+            <arguments>
+                <argument name="columns" xsi:type="array">
+                    <item name="row-weight" xsi:type="string" translate="true">Weight</item>
+                </argument>
+            </arguments>
+        </referenceBlock>
+
+        <!-- Add Weight column CSS class to default renderer -->
+        <referenceBlock name="default_order_items_renderer">
+            <arguments>
+                <argument name="columns" xsi:type="array">
+                    <item name="row-weight" xsi:type="string">col-row-weight</item>
+                </argument>
+            </arguments>
+        </referenceBlock>
+
+        <!-- Override column_name template to add variant and color display names -->
+        <referenceBlock name="column_name" template="Incstores_QuoteExtensions::items/column/name.phtml"/>
+    </body>
+</page>

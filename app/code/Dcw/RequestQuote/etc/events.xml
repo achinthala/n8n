@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="amasty_request_quote_submit_after">
+        <observer name="admin_assistance_save_after_request_quote_submit" instance="Dcw\RequestQuote\Observer\RequestQuoteAfterObserver" />
+        <observer name="dcw_set_active_cart_icon_on_quote_submit" instance="Dcw\RequestQuote\Observer\SetActiveCartIconOnQuoteSuccess" />
+        <!-- Disabled: We now update existing quotes instead of creating new ones and canceling old ones -->
+        <!-- <observer name="set_relation_and_cancel_parent_quote" instance="Dcw\RequestQuote\Observer\SetRelationAndCancelParentQuote" /> -->
+    </event>
+     <event name="sales_order_place_after">
+        <observer name="add_admin_user_to_order" instance="Dcw\RequestQuote\Observer\AddAdminUserToOrder"/>
+    </event>
+    <event name="sales_quote_item_save_before">
+        <observer name="vendor_module_save_custom_quote_item_data" instance="Dcw\RequestQuote\Observer\SaveCustomQuoteItemData" />
+    </event>
+    <event name="sales_quote_item_save_after">
+        <observer name="log_quote_item_changes" instance="Dcw\RequestQuote\Observer\LogQuoteItemChanges" />
+    </event>
+    <event name="sales_quote_remove_item">
+        <observer name="log_quote_item_changes" instance="Dcw\RequestQuote\Observer\LogQuoteItemChanges" />
+    </event>
+    <event name="checkout_cart_product_add_after">
+        <observer name="dcw_set_active_cart_icon_on_add_to_cart" instance="Dcw\RequestQuote\Observer\SetActiveCartIconOnAddToCart" />
+    </event>
+</config>

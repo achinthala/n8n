@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Intercept *every* customer‑address save -->
+    <type name="Magento\Customer\Api\AddressRepositoryInterface">
+        <plugin name="dcw_no_duplicate_in_repository"
+            type="Dcw\NoDuplicateAddress\Plugin\AddressRepositoryPlugin"
+            sortOrder="10" />
+    </type>
+</config>

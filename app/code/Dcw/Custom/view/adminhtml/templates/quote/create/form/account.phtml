@@ -1,0 +1,43 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/** @var \Amasty\RequestQuote\Block\Adminhtml\Quote\Create\Form\Account $block */
+$customhelper = $this->helper('Dcw\Custom\Helper\Data');
+$getCartLabelOptions = $customhelper->getCartLabelOptions();
+?>
+<div class="admin__page-section-content">
+<div class="admin__page-section-item order-information">
+<div class="admin__page-section-item-content">
+<table class="amquote-order-table admin__table-secondary order-information-table">
+	<tr>
+		<th><?= $escaper->escapeHtml(__('Cart Label')) ?></th>
+		<td>
+            <select id="cart_label" name="cart_label">
+                <option value="">---Select Cart Label---</option>
+                <?php foreach($getCartLabelOptions as $option) { ?>
+                <option value="<?php echo $option['value'];?>"><?php echo $option['label'];?></option>
+                <?php } ?>
+            </select>
+        </td>
+	</tr>
+	
+</table>
+ </div>
+</div> 
+</div> 
+<div class="admin__page-section-title <?= $escaper->escapeHtml($block->getHeaderCssClass()) ?>">
+    <span class="title"><?= $escaper->escapeHtml($block->getHeaderText()) ?></span>
+    <div class="actions"></div>
+</div>
+<div id="customer_account_fieds" class="admin__page-section-content customer-account-fields">
+    <?= $block->getForm()->getHtml() ?>
+</div>
+
+<script>
+    require(["prototype", "Amasty_RequestQuote/quote/create/form"], function(){
+        quote.accountFieldsBind($('customer_account_fieds'));
+    });
+</script>

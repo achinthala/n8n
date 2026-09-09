@@ -1,0 +1,49 @@
+<?php
+// @codingStandardsIgnoreFile
+?>
+<?php
+$_helper = $this->helper('WeltPixel\GA4\Helper\Data');
+$_metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+$scriptAdditionalTag = '';
+if ($_helper->isDevMoveJsBottomEnabled()) {
+    $scriptAdditionalTag = ' exclude-this-tag="text/x-magento-template"';
+}
+$cspNonceProvider = $_helper->getCspNonceProvider();
+if ($cspNonceProvider) {
+    $scriptAdditionalTag .= ' nonce="'. $cspNonceProvider->generateNonce() .'"';
+}
+?>
+
+<?php
+if ($_helper->isEnabled() || $_metaPixelHelper->isMetaPixelTrackingEnabled()) :
+    $isCookieRestrictionModeEnabled = $_helper->isCookieRestrictionModeEnabled();
+    $currentWebsiteId = $_helper->getCurrentWebsiteId();
+    $cookieName = \Magento\Cookie\Helper\Cookie::IS_USER_ALLOWED_SAVE_COOKIE;
+?>
+<script<?=$scriptAdditionalTag?>>
+    window.getWpGA4Cookie = function(name) {
+        match = document.cookie.match(new RegExp(name + '=([^;]+)'));
+        if (match) return decodeURIComponent(match[1].replace(/\+/g, ' ')) ;
+    };
+
+    window.ga4AllowServices = false;
+
+    var isCookieRestrictionModeEnabled = <?= $isCookieRestrictionModeEnabled ?>,
+        currentWebsiteId = <?= $currentWebsiteId ?>,
+        cookieRestrictionName = '<?= $cookieName ?>';
+
+    if (isCookieRestrictionModeEnabled) {
+        allowedCookies = window.getWpGA4Cookie(cookieRestrictionName);
+
+        if (allowedCookies !== undefined) {
+            allowedWebsites = JSON.parse(allowedCookies);
+
+            if (allowedWebsites[currentWebsiteId] === 1) {
+                window.ga4AllowServices = true;
+            }
+        }
+    } else {
+        window.ga4AllowServices = true;
+    }
+</script>
+<?php endif; ?>

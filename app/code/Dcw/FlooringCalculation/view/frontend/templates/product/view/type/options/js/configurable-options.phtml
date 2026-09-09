@@ -1,0 +1,1071 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/**
+ * @var Template $block
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+$blockObj = $viewModels->require(Data::class);
+
+$request = $blockObj->getRequest();
+$exactLength = "";
+$min_color_value = 0;
+$min_variant_value = 0;
+$actionName = $request->getFullActionName();
+$spotlightsku=$this->getRequest()->getParam('option');
+$selectedPid='';
+
+$isShowAllColorImagesEnabled='';
+if ($request->getFullActionName() == "catalog_product_view") {
+	if (!empty($spotlightsku)) {
+		$productLoad = $blockObj->getLoadProductBySku($spotlightsku);
+		if ($productLoad && $productLoad->getId()) {
+		$selectedPid = (int)$productLoad->getId();
+		}
+	}
+	if (isset($_GET['product']) && $_GET['product'] != "") {
+		$pID = (int)$_GET['product'];
+	} else {
+		$product = $blockObj->getCurrentProduct();
+		$pID = (int)$product->getId();
+	}
+
+	$product =  $blockObj->getLoadProduct($pID);
+	$isShowAllColorImagesEnabled = (int) $product->getData('show_all_color_images') === 1;
+    if($product->getTypeId()=='configurable'){
+        $exactLength = $blockObj->getChildLength($product);
+
+        /** @start - Added by Ram - 30th Aug */
+        $minSimpleId =0;
+        $calculatorType = $product->getData('incstores_pim_calculator_type');
+        if($calculatorType == 'case')
+        {
+            $exactHeight = $product->getData('incstores_pim_exact_height_inches');
+            if ($exactHeight) {
+                $exactHeightArr = explode('_', (string) $exactHeight);
+                $minSimpleId = (int) ($exactHeightArr[0] ?? 0);
+            }
+            if (!$minSimpleId) {
+                $minCoverage = $product->getData('incstores_pim_coverage');
+                if ($minCoverage) {
+                    $minCoverageArr = explode('_', (string) $minCoverage);
+                    $candidateId = (int) ($minCoverageArr[0] ?? 0);
+                    if ($candidateId > 0) {
+                        $minSimpleId = $candidateId;
+                    }
+                }
+            }
+        }
+        else
+        {
+            $configExact_IdWidth = $product->getData('incstores_pim_exact_width_inches');
+            $configExact_IdLength = $product->getData('incstores_pim_exact_length_inches');
+            if($configExact_IdWidth != null)
+            {
+                $configExactWidth = explode('_', $configExact_IdWidth);
+                $minSimpleId = $configExactWidth[0];
+            }
+            if($configExact_IdLength != null)
+            {
+                $configExactLength = explode('_', $configExact_IdLength);
+                $minSimpleId = $configExactLength[0];
+            }
+        }
+
+        if($selectedPid){
+            $minProduct = $blockObj->getLoadProduct((int)$selectedPid);
+            $min_color_value = $minProduct->getData('incstores_pim_color_axis');
+            $min_variant_value = $minProduct->getData('incstores_pim_variant_axis');
+        }else{
+			if($minSimpleId > 0)
+        {
+            $minProduct = $blockObj->getLoadProduct((int)$minSimpleId);
+            $min_color_value = $minProduct->getData('incstores_pim_color_axis');
+            $min_variant_value = $minProduct->getData('incstores_pim_variant_axis');
+        }
+		}
+        /** @end - Added by Ram - 30th Aug */
+    }
+}
+
+$initialGalleryChildId = 0;
+if ($selectedPid) {
+    $initialGalleryChildId = (int) $selectedPid;
+} elseif ($isShowAllColorImagesEnabled && !empty($minSimpleId)) {
+    $initialGalleryChildId = (int) $minSimpleId;
+}
+?>
+
+<script>
+    function initConfigurableOptions(productId, optionConfig) {
+
+        function findPathParam(key) {
+            <?php /* get all path pairs after BASE_URL/front_name/action_path/action */ ?>
+            const baseUrl = (BASE_URL.substr(0, 2) === '//' ? 'http:' : '') + BASE_URL;
+            const baseUrlParts = (new URL(baseUrl)).pathname.replace(/\/$/, '').split('/');
+            const pathParts = window.location.pathname.split('/').slice(baseUrlParts.length + 3);
+            for (let i = 0; i < pathParts.length; i += 2) {
+                if (pathParts[i] === key && pathParts.length > i) {
+                    return pathParts[i + 1];
+                }
+            }
+        }
+
+        return {
+            optionConfig,
+            productId,
+            attributeCode:'',
+            itemId: (new URLSearchParams(window.location.search)).get('id') || findPathParam('id'),
+            ssrGalleryChildId: <?= (int) $initialGalleryChildId ?>,
+            allowedAttributeOptions: [],
+            selectedValues: [],
+            init() {
+                this.checkIsFirst();
+                this.findAllowedAttributeOptions();
+                this.$nextTick(() => {
+                    if (typeof this.optionConfig.defaultValues === 'object') {
+                        for (const [optionId, value] of Object.entries(this.optionConfig.defaultValues)) {
+                            this.changeOption(optionId, value + '');
+                        }
+                    }
+                });
+            },
+            checkIsFirst() {
+                this.isLoadedFirst = true;
+                setTimeout(() => {
+                    this.isLoadedFirst = false;
+                }, "3000");
+            },
+            findSimpleIndex() {
+                <?php /* a better method name would be `updateSelectedSimpleIndex` but keeping for bc */ ?>
+                this.productIndex = this.calculateSimpleIndexForPartialSelection(this.selectedValues);
+            },
+            calculateSimpleIndexForPartialSelection(selectedValues) {
+                if (selectedValues.length === 0) return 0;
+                let productIndexIds = Object.keys(this.optionConfig.index);
+                Object.keys(this.optionConfig.attributes).forEach((attribute) => {
+                    <?php
+                    // for each attribute, check if a value is selected for the attribute
+                    // if it is, filter all products to only include those that match the selected attribute value
+                    ?>
+                    const productsWithAttributeMatch = selectedValues[attribute]
+                        ? productIndexIds.filter((productIndex) => {
+                            return this.optionConfig.index[productIndex][attribute] === this.selectedValues[attribute]
+                        })
+                        : [];
+
+                    <?php /* if we found matches, only keep the ones that match, otherwise, keep all products */ ?>
+                    productIndexIds = productsWithAttributeMatch.length ? productsWithAttributeMatch : productIndexIds
+                })
+                return productIndexIds[0];
+            },
+            calculateSimpleIndexForFullSelection(selectedValues) {
+                const productIndexes = this.optionConfig.index;
+                return Object.keys(productIndexes).find(productIndex => {
+                    const productCandidateOptions = productIndexes[productIndex];
+
+                    for (const productOption in productCandidateOptions) {
+                        if (
+                            ! selectedValues[productOption] ||
+                            selectedValues[productOption] !== productCandidateOptions[productOption]
+                        ) {
+                            return false;
+                        }
+                    }
+                    return productIndex;
+                });
+            },
+            productIndex: 0,
+            findAllowedAttributeOptions() {
+                <?php /* a better method name would be `updateAllowedAttributeOptions` but keeping for bc */ ?>
+                this.allowedAttributeOptions = this.calculateAllowedAttributeOptions(this.selectedValues);
+            },
+            calculateAllowedAttributeOptions(selectedValues) {
+                const allAttributes = this.optionConfig.attributes;
+                const allAttributesSorted = Object.values(allAttributes).sort((a,b) => {
+                    return a.position - b.position
+                });
+
+                const selectionWithoutAttr = attrId => {
+                    <?php /* return the current selection without the given attribute */ ?>
+                    return Object.keys(selectedValues).reduce((acc, id) => {
+                        if (id !== attrId) acc[id] = selectedValues[id];
+                        return acc;
+                    }, {})
+                }
+
+                const newAllowedAttributeOptions = [];
+
+                allAttributesSorted.forEach(attribute => {
+                    const availableIndexes = this.calculateAvailableProductIndexes(selectionWithoutAttr(attribute.id));
+					if (attribute?.code === 'incstores_pim_color_axis') {
+					    newAllowedAttributeOptions[attribute.id] =
+						    allAttributes[attribute.id].options
+							    .filter(option => {
+                                    return !!option.products.find(product => availableIndexes.includes(product));
+                                })
+							    .sort((a, b) => {
+								    const cheapestA = this.findCheapestProductForPartialSelectionForSort({
+									    ...selectedValues,
+									    [attribute.id]: a.id
+								    });
+
+								    const cheapestB = this.findCheapestProductForPartialSelectionForSort({
+									    ...selectedValues,
+									    [attribute.id]: b.id
+								    });
+
+								    if (!cheapestA && !cheapestB) return 0;
+								    if (!cheapestA) return 1;
+								    if (!cheapestB) return -1;
+
+								    const priceA = this.optionConfig.optionPrices[cheapestA].customPrice.amount;
+                                    const priceB = this.optionConfig.optionPrices[cheapestB].customPrice.amount;
+
+								    return priceA - priceB;
+							    });
+					} else {
+                    newAllowedAttributeOptions[attribute.id] = allAttributes[attribute.id].options.filter(option => {
+                        return !!option.products.find(product => {
+                            //====== For Custom Design link - fetch child product id on page load  START ======
+                            if(document.querySelector('input[name="selected_option_child_id"]')){
+                                if(document.querySelector('input[name="selected_option_child_id"]').value == ''){
+                                    document.querySelector('input[name="selected_option_child_id"]').value = product;
+                                }
+                            }
+                            //====== For Custom Design link - fetch child product id on page load END ======
+                            return availableIndexes.includes(product);
+                        })
+                    });
+                    }
+                });
+                return newAllowedAttributeOptions;
+            },
+            calculateAvailableProductIndexes(selectedOptions) {
+                if (Object.keys(selectedOptions).length === 0) {
+                    <?php /* no selected options mean all products are available for selection */ ?>
+                    return Object.keys(this.optionConfig.index);
+                }
+
+                <?php
+                // when cataloginventory/options/show_out_of_stock is set, this.optionConfig.index contains
+                // out of stock products. Since 2.4.4 this.optionConfig.salable was introduced, which reflects
+                // Actual salable state of a product, but only if the option is set, otherwise it is an empty object.
+                // So if this.optionConfig.salable is available, it should be used.
+                // Otherwise, the code checks which products match the given current selection as it was for older
+                // Magento versions, but then options of out of stock products are shown if the config option is set.
+                ?>
+                const selectedIds = Object.keys(selectedOptions);
+                if (Object.values(this.optionConfig.salable || {}).length) {
+                    <?php /* for Magento >= 2.4.4 when out-of-stock products are shown: */ ?>
+                    const selectedOptionIndexes = selectedIds.map(attrId => {
+                        const optionValue = selectedOptions[attrId];
+                        return this.optionConfig.salable[attrId] && this.optionConfig.salable[attrId][optionValue] || []
+                    })
+                    <?php /* intersection of optionIndexes */ ?>
+                    return selectedOptionIndexes.reduce((acc, optionIndexes) => {
+                        return acc.filter(index => optionIndexes.includes(index));
+                    });
+                } else {
+                    <?php /* for Magento < 2.4.4 or when not out-of-stock-products are hidden: */ ?>
+                    const productIndexes = this.optionConfig.index;
+                    return Object.keys(productIndexes).filter(index => {
+                        return selectedIds.find(
+                                                attrId => productIndexes[index][attrId] === `${selectedOptions[attrId]}`
+                                                )
+                    });
+                }
+            },
+            findAttributeByOptionId(optionId) {
+                for (const attributeId in this.optionConfig.attributes) {
+                    const attributeOptions = this.optionConfig.attributes[attributeId].options || [];
+                    if (attributeOptions.find(option => option.id === optionId)) {
+                        return attributeId;
+                    }
+                }
+            },
+            getAllowedAttributeOptions(attributeId) {
+                return this.allowedAttributeOptions[attributeId] || []
+            },
+            getProductIdsForOption(option) {
+                const attributeId = this.findAttributeByOptionId(option.id);
+                const allOptions = this.optionConfig.attributes[attributeId];
+                const opt = (allOptions && allOptions.options || []).find(o => o.id === option.id);
+                return opt && opt.products
+                    ? opt.products
+                    : [];
+            },
+            findProductIdsForPartialSelection(optionSelection) {
+                const candidateProducts = Object.values(optionSelection).reduce((candidates, optionId) => {
+                    const newCandidates = this.getProductIdsForOption({id: optionId});
+                    return candidates === null
+                        ? newCandidates
+                        : candidates.filter(productId => newCandidates.includes(productId));
+                }, null);
+                return candidateProducts || [];
+            },
+            findCheapestProductForPartialSelection(optionSelection) {
+                const candidateProducts = this.findProductIdsForPartialSelection(optionSelection);
+                return candidateProducts.reduce((cheapest, simpleIdx) => {
+                    // in the first iteration we start with simpleIdx as the currently cheapest product
+                    if (! this.optionConfig.optionPrices[cheapest]) return simpleIdx;
+                    const knownCheapestPrice = this.optionConfig.optionPrices[cheapest].finalPrice.amount;
+                    return knownCheapestPrice > this.optionConfig.optionPrices[simpleIdx].finalPrice.amount
+                        ? simpleIdx
+                        : cheapest;
+                }, 0)
+            },
+			findCheapestProductForPartialSelectionForSort(optionSelection) {
+                const candidateProducts = this.findProductIdsForPartialSelection(optionSelection);
+                return candidateProducts.reduce((cheapest, simpleIdx) => {
+                    // in the first iteration we start with simpleIdx as the currently cheapest product
+                    if (! this.optionConfig.optionPrices[cheapest]) return simpleIdx;
+                    const knownCheapestPrice = this.optionConfig.optionPrices[cheapest].customPrice.amount;
+                    return knownCheapestPrice > this.optionConfig.optionPrices[simpleIdx].customPrice.amount
+                        ? simpleIdx
+                        : cheapest;
+                }, 0)
+            },
+            findProductIdToUseForOptionPrice(option) {
+                // try to find a product for a complete selection
+                const attributeId = this.findAttributeByOptionId(option.id);
+                const optionSelection = Object.assign({}, this.selectedValues, {[attributeId]: option.id});
+                const matchingSimpleIndex = this.calculateSimpleIndexForFullSelection(optionSelection);
+                // if there is no complete selection, use the cheapest product for the option
+                return matchingSimpleIndex || this.findCheapestProductForPartialSelection(optionSelection);
+            },
+            getAttributeOptionLabel(option) {
+                const optionProduct = this.findProductIdToUseForOptionPrice(option);
+                if ((! optionProduct) || (optionProduct === this.productIndex)) {
+                    return option.label;
+                }
+
+                const currentPrice = this.getOptionPriceAdjustmentBasePrice();
+
+                if (this.optionConfig.optionPrices[optionProduct]) {
+                    const optionPrice = this.optionConfig.optionPrices[optionProduct].finalPrice.amount;
+                    if (optionPrice !== currentPrice){
+                        return option.label + ' ' + hyva.formatPrice(optionPrice - currentPrice, true);
+                    }
+                }
+                return option.label;
+            },
+            getOptionPriceAdjustmentBasePrice() {
+                if (this.optionConfig.optionPrices[this.productIndex]) {
+                    return this.optionConfig.optionPrices[this.productIndex].finalPrice.amount
+                }
+                const cheapestForSelection = this.findCheapestProductForPartialSelection(this.selectedValues);
+                return this.optionConfig.optionPrices[cheapestForSelection]
+                    ? this.optionConfig.optionPrices[cheapestForSelection].finalPrice.amount
+                    : this.optionConfig.prices.finalPrice.amount; // default price if no option selection
+            },
+            changeOption(optionId, value) {
+                if (value !== ''
+                    && typeof this.optionIsEnabled === 'function'
+                    && !this.optionIsEnabled(optionId, value)) {
+                    return;
+                }
+                var checkbox = document.getElementById('overage_percent');
+                if(checkbox){
+                    checkbox.checked = true; // Check the checkbox
+                }
+                var galleryImgOpacity = document.querySelector('#gallery .prod_slider img.first-image');
+                if (galleryImgOpacity) {
+                    galleryImgOpacity.classList.add('opacity-0');
+                }
+                if (value === '') {
+                    // create new array so the length property is reset if no option is selected (avoiding delete)
+                    this.selectedValues = this.selectedValues.reduce((newSelection, val, opt) => {
+                        if (opt !== optionId) {
+                            newSelection[opt] = val;
+                        }
+                        return newSelection;
+                    }, []);
+                } else {
+                    const currentUrl = window.location.href;
+                    // Create a URL object
+                    const url = new URL(currentUrl);
+                    // Use searchParams to get the color option
+                    const colorOption = url.searchParams.get('color-option');
+                    const variantOption = url.searchParams.get('variant-option');
+                    if(colorOption!==null && variantOption!==null){
+                        if(this.optionConfig.attributes[optionId]['code'] == 'incstores_pim_color_axis')
+                        {
+                            this.selectedValues[optionId] = colorOption;
+                        }
+                        if(this.optionConfig.attributes[optionId]['code'] == 'incstores_pim_variant_axis')
+                        {
+                            this.selectedValues[optionId] = variantOption;
+                        }
+                    }
+                    else if(colorOption!==null){
+                        if(this.optionConfig.attributes[optionId]['code'] == 'incstores_pim_color_axis')
+                        {
+                            this.selectedValues[optionId] = colorOption;
+                        }
+
+                    }
+                    else if(this.isLoadedFirst == true && (<?=$min_color_value?> > 0 || <?=$min_variant_value?> > 0))
+                    {
+                        if(this.optionConfig.attributes[optionId]['code'] == 'incstores_pim_color_axis')
+                        {
+                            this.selectedValues[optionId] = '<?=$min_color_value?>';
+                        }
+                        if(this.optionConfig.attributes[optionId]['code'] == 'incstores_pim_variant_axis')
+                        {
+                            this.selectedValues[optionId] = '<?=$min_variant_value?>';
+                        }
+                    }
+                    else
+                    {
+                        this.selectedValues[optionId] = value;
+                    }
+
+                    var addToCartButton = document.querySelector('.pdp-addtocart-btn');
+                    if (addToCartButton) {
+                        if (!addToCartButton.classList.contains('pointer-events-none')) {
+                            addToCartButton.classList.add('pointer-events-none');
+                            addToCartButton.classList.add('opacity-50');
+                        }
+                    }
+
+                    var productId = this.findProductIdsForPartialSelection(this.selectedValues)[0];
+                    var baseUrl = "<?php echo $block->getBaseUrl();?>";
+					
+					if (typeof productId === 'undefined') {
+					   let attributeCode = this.optionConfig.attributes[optionId]['code'];
+					   setTimeout(() => {
+						   if (attributeCode == 'incstores_pim_color_axis') {
+							if (typeof this.autoSelectCompatibleOtherOption === 'function') {
+								this.autoSelectCompatibleOtherOption(optionId);
+							}
+						} else if (attributeCode == 'incstores_pim_variant_axis'
+                            || attributeCode == 'product_option') {
+							if (typeof this.autoSelectCompatibleColorOption === 'function') {
+								this.autoSelectCompatibleColorOption(optionId);
+							}
+						}
+                    }, 300);
+					} else {
+                    var fetchUrl = baseUrl+'customattribute/index/index/productId/'+productId;
+
+                    fetch(fetchUrl)
+                    .then(response => response.json())
+                    .then(data => {
+
+                        if (document.getElementById('dimensions-attributes')) {
+                            document.getElementById('dimensions-attributes').innerHTML= data.detailsHtml.dimensionsHtml;
+                        }
+
+                        if (document.getElementById('details-attributes')) {
+                            document.getElementById('details-attributes').innerHTML= data.detailsHtml.productDetails;
+                        }
+
+                        if (document.getElementById('ship-to-text')) {
+                            document.getElementById('ship-to-text').value= data.shipToText;
+                        }
+
+                        var addToCartButton = document.querySelector('.pdp-addtocart-btn');
+                        if (addToCartButton) {
+                            addToCartButton.classList.remove('pointer-events-none');
+                            addToCartButton.classList.remove('opacity-50');
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+					}
+
+                }
+                this.findSimpleIndex();
+                this.findAllowedAttributeOptions();
+                this.updateCalculatorType();// custom coding
+                this.updateMinRollcut();// custom coding
+                this.updateMaxRollLengthRestriction();// custom coding
+                this.updateTileSizeArea(); // custom coding
+                this.updateExactWidth(); // custom coding
+                this.updateExactLength(); // custom coding
+                this.updateExactHeight(); // custom coding
+                this.updateCoveragePerCase(); // custom coding
+                this.updateTileMinQty(); // custom coding
+                this.updateShippingDetails(); // custom coding
+                this.updatePrices();
+                this.updateSquareFootage();
+
+                //If the page loads first time it will stop the gallery change, so configurable product image will display
+                if (!this.isLoadedFirst) {
+                    this.updateGallery();
+                }
+
+                //====== For Custom Design link - fetch child product id when option clicked  START ======
+                if(document.querySelector('input[name="selected_option_child_id"]')){
+                    document.querySelector('input[name="selected_option_child_id"]').value = this.productIndex;
+                }
+                if(document.querySelector('input[name="custom_length"]') && document.getElementById('roll_length')){
+                    document.querySelector('input[name="custom_length"]').value = document.getElementById('roll_length').value;
+                }
+                //====== For Custom Design link - fetch child product id when option clicked END ======
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'configurable-selection-changed',
+                        {
+                            detail: {
+                                productId: this.productId,
+                                optionId: optionId,
+                                value: value,
+                                productIndex: this.productIndex,
+                                selectedValues: this.selectedValues,
+                                attributeCode: this.optionConfig.attributes[optionId]['code'],
+                                candidates: this.findProductIdsForPartialSelection(this.selectedValues),
+                            }
+                        }
+                    )
+                );
+
+                /* =============================== disabled product option checking & remove  START =============== */
+                if (!this.optionConfig?.ship_region_enabled
+                    && document.querySelector('.swatch-attribute .selectOptionColor')
+                ) {
+                    var quickship_lebel_should_show;
+                    var quickship_active_color_option_exist = 0;
+                    setTimeout(() => {
+                        document.querySelectorAll('.swatch-attribute .selectOptionColor').forEach(function(option_box) {
+                            if (!option_box.querySelector('div, label')) {
+                                option_box.remove();
+                            }
+                        });
+
+                    }, 300);
+                }
+                /* ===============================  disabled product option checking & remove END =============== */
+				
+				/* ========== remove validation when click on available color start =============== */
+                if(document.querySelector('.normal_color_swatch_option .selectOptionColor') ){
+                    setTimeout(() => {
+                        const colorBoxes = document.querySelectorAll(
+							'.normal_color_swatch_option .selectOptionColor'
+						);
+						var colorNotAvailable = 0;
+						const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+						colorBoxes.forEach((colorBox) => {
+							if (colorBox.querySelector('.select_none label.checked')) {
+								colorNotAvailable = 1;
+							}
+						});
+						if (!colorNotAvailable){
+							colorerrorDiv.textContent = '';
+							colorerrorDiv.style.display = 'none';
+						}
+
+                    }, 300);
+                }
+                /* ========== remove validation when click on available color end =============== */
+
+                /* =============================== color label show / hide if color option not showing  END =============== */
+
+                /* =============================== other label show / hide if the option not showing  START =============== */
+                if (typeof this.syncOtherSwatchOptionVisibility === 'function') {
+                    this.syncOtherSwatchOptionVisibility();
+                } else {
+                    const swatchAttribute = document.querySelector('.swatch-attribute.other_swatch_option');
+                    if (swatchAttribute) {
+                        setTimeout(() => {
+                            const selectOptionColors = swatchAttribute.querySelectorAll('.selectOptionColor');
+                            if (selectOptionColors.length > 1) {
+                                swatchAttribute.style.display = 'block';
+                            } else {
+                                swatchAttribute.style.display = 'none';
+                            }
+                        }, 300);
+                    }
+                }
+                /* =============================== other label show / hide if the option not showing  END =============== */
+
+            },
+            calculateIsMinimalPrice() {
+                return (
+                    this.selectedValues.filter(value => !!value).length <
+                        Object.keys(this.optionConfig.attributes).length
+                );
+            },
+            updatePrices() {
+                const value = this.productIndex ?
+                    this.optionConfig.optionPrices[this.productIndex] :
+                    this.optionConfig.prices;
+
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-prices-" + this.productId,
+                        {
+                            detail: Object.assign(
+                                value,
+                                {
+                                    isMinimalPrice: this.calculateIsMinimalPrice(),
+                                    calculatorType: this.optionConfig?.calculator_type?.[this.productIndex] ?? '',
+                                    getIncstoresPimCoverage: this.optionConfig?.coverage_per_case?.[this.productIndex] ?? '',
+                                    unitOfMeasure: this.optionConfig?.unit_of_measure?.[this.productIndex] ?? '',
+                                    altUnitOfMeasure: this.optionConfig?.alt_unit_of_measure?.[this.productIndex] ?? 'sqft',
+                                    availableQuantity: this.optionConfig?.available_quantity?.[this.productIndex] ?? '',
+                                }
+                            )
+                        }
+                    )
+                );
+                setTimeout(() => {
+                    var calculatorType = this.optionConfig.calculator_type[this.productIndex];
+                    var priceElement = document.querySelector('div.items-baseline .final-price .price');
+                    
+                    if (priceElement && calculatorType != 'none' && calculatorType != 'pre_cut_roll') {
+                        var customOptionPrice = priceElement.childNodes[0].nodeValue.trim();
+                        let priceLabelElement = document.querySelector('.final-price .price-label');
+                        var priceLabel = "";
+
+                        if (priceLabelElement) {
+                            priceLabel = priceLabelElement.textContent.trim();
+                        }
+
+                        document.querySelectorAll('.display-option-price').forEach(el => {
+                            el.textContent = "("+customOptionPrice+priceLabel+")";
+                        });
+                    } else if (calculatorType == 'none') {
+                        //None type
+                        var priceElement = document.querySelector('.none .final-price .price');
+                        var customOptionPrice = "";
+
+                        if (priceElement) {
+                            customOptionPrice = priceElement.childNodes[0].nodeValue.trim();
+                        }
+                        document.querySelectorAll('.display-option-price').forEach(el => {
+                            el.textContent = "("+customOptionPrice+")";
+                        });
+                    } else if (calculatorType == 'pre_cut_roll') {
+						let priceLabelElement = document.querySelector('.final-price .price-label');
+                        var priceLabel = "";
+
+                        if (priceLabelElement) {
+                            priceLabel = priceLabelElement.textContent.trim();
+                        }
+                        var priceElement = document.querySelector('.pre_cut_roll .final-price .price');
+                        var customOptionPrice = "";
+
+                        if (priceElement) {
+                            customOptionPrice = priceElement.childNodes[0].nodeValue.trim();
+                        }
+                        document.querySelectorAll('.display-option-price').forEach(el => {
+                            el.textContent = "("+customOptionPrice+priceLabel+")";
+                        });
+                    }
+                }, "500");
+            },
+            updateTileSizeArea() {
+                const overage_percent = this.optionConfig.overage_percent[this.productIndex];
+                const coverage_per_case = this.optionConfig.coverage_per_case[this.productIndex];
+                const exact_width = this.optionConfig.exact_width[this.productIndex];
+                const exact_length = this.optionConfig.exact_length[this.productIndex];
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-tile-size-area-" + this.productId,
+                        {
+                            detail: {
+                            overage_percent: overage_percent,
+                            coverage_per_case: coverage_per_case,
+                            exact_width: exact_width,
+                            exact_length: exact_length,
+                            calculator_type: this.optionConfig.calculator_type[this.productIndex],
+                            }
+                        }
+                    )
+                );
+            },
+            updateExactWidth() {
+                const exact_width = this.optionConfig.exact_width[this.productIndex];
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-exact-width-" + this.productId,
+                        {detail: exact_width}
+                    )
+                );
+            },
+            updateExactLength() {
+                const exact_length = this.optionConfig.exact_length[this.productIndex];
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-exact-length-" + this.productId,
+                        {detail: exact_length}
+                    )
+                );
+            },
+            updateExactHeight() {
+                const exact_height = this.optionConfig.exact_height[this.productIndex];
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-exact-height-" + this.productId,
+                        {detail: exact_height}
+                    )
+                );
+            },
+            updateCoveragePerCase() {
+                const coverage_per_case = this.optionConfig.coverage_per_case[this.productIndex];
+                //const tile_size_area = "";
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-coverage-per-case-" + this.productId,
+                        {detail: coverage_per_case}
+                    )
+                );
+            },
+            updateTileMinQty() {
+                const min_tile_quantity = this.optionConfig.min_tile_quantity[this.productIndex];
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-min-tile-quantity-" + this.productId,
+                        {detail: min_tile_quantity}
+                    )
+                );
+            },
+			getAttributeIdByCode(attributeCode) {
+                let attributes = this.optionConfig.attributes;
+
+				for (let id in attributes) {
+					if (attributes[id].code === attributeCode) {
+						return id;
+					}
+				}
+
+				return null;
+            },
+            updateCalculatorType() {
+                const has_corner_border_center = this.optionConfig.has_corner_border_center[this.productIndex];
+                const calculator_type = this.optionConfig.calculator_type[this.productIndex];
+                if(calculator_type == 'sqft' && has_corner_border_center !=1){
+                    var cbcelements = document.querySelectorAll('.cbc');
+                    cbcelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var noneelements = document.querySelectorAll('.none');
+                    noneelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var rollelements = document.querySelectorAll('.roll');
+                    rollelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var cbcelements = document.querySelectorAll('.case');
+                    cbcelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.sqft');
+                    elements.forEach(function(element) {
+                    element.style.display = 'block';
+                    });
+
+                    var elements = document.querySelectorAll('.pre_cut_roll');
+                    elements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    const button = document.getElementById("product-addtocart-button-fake");
+                    if (button && button.getAttribute("data-flooring-handler") !== "addToCartClickVerify") {
+                        button.setAttribute("data-flooring-handler", "addToCartClickVerify");
+                    }
+                } else if(calculator_type == 'sqft' && has_corner_border_center ==1){
+                    var sqftelements = document.querySelectorAll('.sqft');
+                    sqftelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var caseelements = document.querySelectorAll('.case');
+                    caseelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var rollelements = document.querySelectorAll('.roll');
+                    rollelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var noneelements = document.querySelectorAll('.none');
+                    noneelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.cbc');
+                    elements.forEach(function(element) {
+                    element.style.display = 'block';
+                    });
+                    var elements = document.querySelectorAll('.price-details .sqft');
+                    elements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+
+                    var elements = document.querySelectorAll('.pre_cut_roll');
+                    elements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    const button = document.getElementById("product-addtocart-button-fake");
+                    if (button && button.getAttribute("data-flooring-handler") !== "addToCartClickVerify") {
+                        button.setAttribute("data-flooring-handler", "addToCartClickVerify");
+                    }
+                }else if(calculator_type == 'case'){
+                    var sqftelements = document.querySelectorAll('.sqft');
+                    sqftelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var cbcelements = document.querySelectorAll('.cbc');
+                    cbcelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var noneelements = document.querySelectorAll('.none');
+                    noneelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var rollelements = document.querySelectorAll('.roll');
+                    rollelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.case');
+                    elements.forEach(function(element) {
+                    element.style.display = 'block';
+                    });
+
+                    var elements = document.querySelectorAll('.pre_cut_roll');
+                    elements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    const button = document.getElementById("product-addtocart-button-fake");
+                    if (button && button.getAttribute("data-flooring-handler") !== "addToCartClickVerify") {
+                        button.setAttribute("data-flooring-handler", "addToCartClickVerify");
+                    }
+                } else if(calculator_type == 'roll'){
+                    var sqftelements = document.querySelectorAll('.sqft');
+                    sqftelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var cbcelements = document.querySelectorAll('.cbc');
+                    cbcelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var caseelements = document.querySelectorAll('.case');
+                    caseelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var noneelements = document.querySelectorAll('.none');
+                    noneelements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.roll');
+                    elements.forEach(function(element) {
+                    element.style.display = 'block';
+                    });
+                    const button = document.getElementById("product-addtocart-button-fake");
+                    if (button && button.getAttribute("data-flooring-handler") !== "addToCartClickVerify") {
+                        button.setAttribute("data-flooring-handler", "addToCartClickVerify");
+                    }
+
+                    var elements = document.querySelectorAll('.pre_cut_roll');
+                    elements.forEach(function(element) {
+                    element.style.display = 'none';
+                    });
+                } else if(calculator_type == 'pre_cut_roll'){
+                    var sqftelements = document.querySelectorAll('.sqft');
+                    sqftelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var cbcelements = document.querySelectorAll('.cbc');
+                    cbcelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var caseelements = document.querySelectorAll('.case');
+                    caseelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var noneelements = document.querySelectorAll('.none');
+                    noneelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.roll');
+                    elements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.pre_cut_roll');
+                    elements.forEach(function(element) {
+                        element.style.display = 'block';
+                    });
+                    const button = document.getElementById("product-addtocart-button-fake");
+                    if (button && button.getAttribute("data-flooring-handler") !== "addToCartClickforPreCutRoll") {
+                        button.setAttribute("data-flooring-handler", "addToCartClickforPreCutRoll");
+                    }
+                } else {
+                    var sqftelements = document.querySelectorAll('.sqft');
+                    sqftelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var cbcelements = document.querySelectorAll('.cbc');
+                    cbcelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var caseelements = document.querySelectorAll('.case');
+                    caseelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var rollelements = document.querySelectorAll('.roll');
+                    rollelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var cbcelements = document.querySelectorAll('.case');
+                    cbcelements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                    var elements = document.querySelectorAll('.none');
+                    elements.forEach(function(element) {
+                        element.style.display = 'block';
+                    });
+                    const noneButton = document.getElementById("product-addtocart-button-fake");
+                    if (noneButton && noneButton.getAttribute("data-flooring-handler") !== "addToCartClickforNone") {
+                        noneButton.setAttribute("data-flooring-handler", "addToCartClickforNone");
+                    }
+
+                    var elements = document.querySelectorAll('.pre_cut_roll');
+                    elements.forEach(function(element) {
+                        element.style.display = 'none';
+                    });
+                }
+            },
+           updateMinRollcut() {
+                const min_rollcut = this.optionConfig.min_rollcut[this.productIndex];
+				var exactlength = '<?= /** @noEscape */ $exactLength ?>';
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-min-rollcut-" + this.productId,
+                        {detail: min_rollcut}
+                    )
+                );
+            },
+
+            updateMaxRollLengthRestriction() {
+                const max_roll_length_restriction = this.optionConfig.max_roll_length_restriction[this.productIndex];
+                const exact_width = this.optionConfig.exact_width[this.productIndex];
+                const exact_length = this.optionConfig.exact_length[this.productIndex];
+                const min_rollcut = this.optionConfig.min_rollcut[this.productIndex];
+
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-max-roll-length-restriction-" + this.productId,
+                        {
+                            detail: {
+                            max_roll_length_restriction: max_roll_length_restriction,
+                            min_rollcut: min_rollcut,
+                            exact_width: exact_width,
+                            exact_length: exact_length,
+                            }
+                        }
+                    )
+                );
+            },
+            updateShippingDetails() {
+                const pdp_shipping_text = this.optionConfig.pdp_shipping_text[this.productIndex];
+                const expected_days_ship = this.optionConfig.expected_days_ship[this.productIndex];
+                window.dispatchEvent(
+                    new CustomEvent(
+                        "update-shipping-details-" + this.productId,
+                        {
+                            detail: {
+                            pdp_shipping_text: pdp_shipping_text,
+                            expected_days_ship: expected_days_ship,
+                            }
+                        }
+                    )
+                );
+            },
+            updateGallery () {
+                if (this.isLoadedFirst && this.ssrGalleryChildId > 0) {
+                    return;
+                }
+
+                if (this.productIndex) {
+                    const images = this.optionConfig.images[this.productIndex];
+                    images && window.dispatchEvent(new CustomEvent(
+                        "update-gallery",
+                        { detail: this.sortImagesByPosition(images) }
+                    ));
+                } else {
+                    window.dispatchEvent(new Event("reset-gallery"));
+                }
+            },
+            updateSquareFootage () {
+                let squareFootageElement = document.getElementsByName('square_footage');
+                
+                if (squareFootageElement.length > 0) {
+                    var squareFootage = squareFootageElement[0].value;
+
+                    if (squareFootage) {
+                        // Trigger the 'keyup' event
+                        var event = new KeyboardEvent('keyup', {
+                            'key': 'Enter', // You can set this to any key, like 'Enter'
+                            'bubbles': true,
+                            'cancelable': true
+                        });
+
+                        squareFootageElement[0].dispatchEvent(event);
+                    }
+                }
+            },
+            sortImagesByPosition(images) {
+                return images.sort((x, y) => {
+                    return x.position === y.position ? 0 : (parseInt(x.position) > parseInt(y.position) ? 1 : -1)
+                });
+            },
+            onGetCartData(data) {
+                this.preselectCartItems(data);
+                this.preselectQuerystringItems();
+                this.preselectLocationHashItems();
+            },
+            preselectCartItems(data) {
+                // pre-select options based on cart data for current (quote) itemId
+                const cart = data && data.cart;
+                if (cart && cart.items) {
+                    const cartItem = cart.items.find((item) => {
+                        return (
+                            item.item_id === this.itemId
+                            && item.product_id === this.productId
+                        )
+                    });
+                    if (cartItem && cartItem.options && cartItem.options.length) {
+                        cartItem.options.map(option => {
+                            this.changeOption(option.option_id, option.option_value);
+                        })
+                    }
+                }
+            },
+            preselectQuerystringItems() {
+                // pre-select option like ?size=167
+                const urlQueryParams = new URLSearchParams(window.location.search.replace('?',''));
+                Object.values(this.optionConfig.attributes).map(attribute => {
+                    urlQueryParams.get(attribute.code) &&
+                    this.changeOption(attribute.id, urlQueryParams.get(attribute.code));
+                });
+            },
+            preselectLocationHashItems() {
+                // pre-select option like #144=167
+                const urlHashParams = new URLSearchParams(window.location.hash.replace('#',''));
+                Object.values(this.optionConfig.attributes).map(attribute => {
+                    urlHashParams.get(attribute.id) &&
+                    this.changeOption(attribute.id, urlHashParams.get(attribute.id));
+                });
+            }
+        }
+    }
+
+    function isOptionVisible(element) {
+        const computedStyle = window.getComputedStyle(element);
+        return computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden';
+    }
+</script>

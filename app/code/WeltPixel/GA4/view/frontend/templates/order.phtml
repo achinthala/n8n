@@ -1,0 +1,97 @@
+<?php
+// @codingStandardsIgnoreFile
+$ga4ServerSideHelper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking');
+
+/** @var $block \WeltPixel\GA4\Block\Order */
+?>
+<?php if($this->isEnabled()) : ?>
+    <?php
+
+    $helper = $this->helper('WeltPixel\GA4\Helper\Data');
+    $order = $this->getOrder();
+
+    $checkoutPaymentData = $helper->getGA4CheckoutPaymentData();
+    $multipleCheckoutPaymentData = $helper->popG4MultipleCheckoutPaymentData();
+    $isAdwordsSeparateDatalayerEvent = $helper->isAdwordsSeparateDatalayerEvent();
+    $adsPurchaseData = [
+        'event' => 'ads_purchase'
+    ];
+
+    if ($checkoutPaymentData && is_array($checkoutPaymentData)) {
+        $this->setCustomDataLayerData($checkoutPaymentData[0]);
+        $helper->invalidateGA4CheckoutPaymentData();
+    }
+
+    if ($multipleCheckoutPaymentData && is_array($multipleCheckoutPaymentData) && !empty($multipleCheckoutPaymentData)) {
+        $this->setCustomDataLayerData($multipleCheckoutPaymentData);
+    }
+
+    if ($this->isOrderTrackingAllowedBasedOnOrderStatus($order) && $this->isFreeOrderTrackingAllowedForGoogleAnalytics() && !($ga4ServerSideHelper->isServerSideTrakingEnabled() && $ga4ServerSideHelper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_PURCHASE)
+        && $ga4ServerSideHelper->isDataLayerEventDisabled())) :
+        $products = $this->getProducts();
+
+        $this->setDataLayerOption('event', 'purchase');
+        $this->setEcommerceData('transaction_id', $order->getIncrementId());
+        $this->setEcommerceData('value', floatval(number_format($this->getOrderTotal(), 2, '.', '')));
+        $this->setEcommerceData('coupon', (string)$order->getCouponCode());
+        $this->setEcommerceData('tax', floatval(number_format($order->getTaxAmount(), 2, '.', '')));
+        $this->setEcommerceData('shipping', floatval(number_format($order->getShippingAmount(), 2, '.', '')));
+        $this->setEcommerceData('currency', $this->getCurrencyCode());
+        $this->setEcommerceData('total_order_count', $this->getTotalOrderCount());
+        $this->setEcommerceData('total_lifetime_value', floatval(number_format($this->getTotalLifetimeValue(), 2, '.', '')));
+        $this->setEcommerceData('items', $products);
+    endif;
+
+    if ($helper->isAdWordConversionTrackingEnabled() && $this->isFreeOrderAllowedForAdwordsConversionTracking()) :
+        $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CONVERSION_VALUE] = $this->getOrderTotal();
+        $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_ORDER_ID] = $order->getIncrementId();
+    endif;
+
+    if ($helper->isAdWordConversionTrackingEnabled() && $helper->isEnhancedConversionsEnabled() ) :
+        $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_EMAIL] = $order->getCustomerEmail();
+        $billingAddress = $order->getBillingAddress();
+        if ($billingAddress) {
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_PHONE] = $billingAddress->getTelephone() ?? '';
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_FIRSTNAME] = $billingAddress->getFirstname() ?? '';
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_LASTNAME] = $billingAddress->getLastname() ?? '';
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_STREET] = implode(",", $billingAddress->getStreet() ?? []);
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_CITY] = $billingAddress->getCity() ?? '';
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_REGION] = $billingAddress->getRegion() ?? '';
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_COUNTRY] = $block->getCountryNameByCode($billingAddress->getCountryId());
+            $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_POSTALCODE] = $billingAddress->getPostcode() ?? '';
+        }
+    endif;
+
+    if ($helper->isAdWordConversionTrackingEnabled() && $helper->isAdWordNewCustomerAcquisitionEnabled()) {
+        $conversionTrackingNewCustomer = $this->getAdwordNewCustomer();
+        $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_NEW_CUSTOMER] = $conversionTrackingNewCustomer;
+        $adsPurchaseData[\WeltPixel\GA4\Model\Api\ConversionTracking::FIELD_CONVERSION_TRACKING_CUSTOMER_LIFETIME_VALUE] = $this->getAdwordCustomerLifetimeValue($conversionTrackingNewCustomer);
+    }
+
+    if ($helper->isAdWordConversionTrackingEnabled() && $helper->isConversionWithCartDataEnabled()) {
+        $adsPurchaseData['discount'] = floatval(number_format(abs($block->getOrderDiscountedAmount(true)), 2, '.', ''));
+        $adsPurchaseData['items'] = $block->getConversionCartDataItems();
+    }
+
+    if ($helper->isAdWordsRemarketingEnabled() && $this->isFreeOrderAllowedForAdwordsRemarketing()):
+        $remarketingData = [];
+        $remarketingData['ecomm_pagetype'] = \WeltPixel\GA4\Model\Api\Remarketing::ECOMM_PAGETYPE_PURCHASE;
+        $remarketingData['ecomm_prodid'] = $this->getProductIds();
+        $remarketingData['ecomm_totalvalue'] = floatval(number_format($this->getOrderTotal(), 2, '.', ''));
+        $this->setDataLayerOption('google_tag_params', $remarketingData);
+    endif;
+
+    if (count($adsPurchaseData) > 1) :
+        if ($isAdwordsSeparateDatalayerEvent) :
+            $this->setAdditionalDataLayerData($adsPurchaseData);
+        else:
+            foreach ($adsPurchaseData as $key => $value) {
+                if ($key  != 'event') {
+                    $this->setDataLayerOption($key, $value);
+                }
+            }
+        endif;
+    endif;
+
+    ?>
+<?php endif; ?>

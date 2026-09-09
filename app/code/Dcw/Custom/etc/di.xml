@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!--<preference for="Klaviyo\Reclaim\Block\Catalog\Product\ViewedProduct" type="Dcw\Custom\Block\Catalog\Product\ViewedProduct" />-->
+    <type name="Magento\Newsletter\Model\Subscriber">
+        <plugin name="disable_newsletter" type="Dcw\Custom\Newsletter\Model\Subscriber" sortOrder="1" disabled="false"/>
+    </type>
+    <preference for="Magento\Framework\Stdlib\Cookie\PhpCookieManager" type="Dcw\Custom\Stdlib\Cookie\CustomPhpCookieManager"/>
+    <preference for="Magento\Company\Model\Company\Save" type="Dcw\Custom\Model\Company\Save" />
+    <type name="Dcw\Custom\Controller\Adminhtml\Customer\ForceApprove">
+        <arguments>
+            <argument name="customerRepository" xsi:type="object">Magento\Customer\Api\CustomerRepositoryInterface</argument>
+            <argument name="resultJsonFactory" xsi:type="object">Magento\Framework\Controller\Result\JsonFactory</argument>
+        </arguments>
+    </type>
+    <type name="Magento\Catalog\Helper\Product">
+        <plugin name="dcw_register_breadcrumb_category"
+                type="Dcw\Custom\Plugin\Catalog\Helper\Product\RegisterBreadcrumbCategoryPlugin"
+                sortOrder="20"/>
+    </type>
+</config>

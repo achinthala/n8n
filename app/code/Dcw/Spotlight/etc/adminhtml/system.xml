@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw" translate="label" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Spotlight JSON-LD Schema</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_Spotlight::config</resource>
+            <group id="schema_variants" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Product Variants Configuration</label>
+                <field id="enable_variants" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable hasVariant for Configurable Products</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Include ALL enabled child product variants in JSON-LD schema for better AI and search engine understanding. Uses cache and cron for performance.</comment>
+                </field>
+                <field id="enable_cache" translate="label comment" type="select" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Cache for JSON-LD Data</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Cache pre-generated JSON-LD data for better performance. Recommended for products with many variants.</comment>
+                    <depends>
+                        <field id="enable_variants">1</field>
+                    </depends>
+                </field>
+                <field id="cache_lifetime" translate="label comment" type="text" sortOrder="16" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Cache Lifetime (seconds)</label>
+                    <comment>How long to cache JSON-LD data (default: 86400 = 24 hours). Set to 0 for indefinite cache (cleared on product save).</comment>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                    <depends>
+                        <field id="enable_variants">1</field>
+                        <field id="enable_cache">1</field>
+                    </depends>
+                </field>
+                <field id="include_only_enabled" translate="label comment" type="select" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include Only Enabled Variants</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>If enabled, only enabled (status=1) child products will be included in the schema</comment>
+                    <depends>
+                        <field id="enable_variants">1</field>
+                    </depends>
+                </field>
+                <field id="include_only_in_stock" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include Only In-Stock Variants</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>If enabled, only in-stock child products will be included in the schema</comment>
+                    <depends>
+                        <field id="enable_variants">1</field>
+                    </depends>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

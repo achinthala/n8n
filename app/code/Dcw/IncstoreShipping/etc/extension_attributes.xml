@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Api/etc/extension_attributes.xsd">
+    <extension_attributes for="Magento\Sales\Api\Data\OrderInterface">
+        <attribute code="split_payment" type="Dcw\IncstoreShipping\Api\Data\SplitPaymentAttributeInterface[]"/>
+    </extension_attributes>
+     <extension_attributes for="Magento\Sales\Api\Data\OrderItemInterface">
+        <attribute code="transactionId" type="string" />
+        <attribute code="isValid" type="string" />
+        <attribute code="message" type="string" />
+        <attribute code="lineItemId" type="string" />
+        <attribute code="cost" type="string" />
+        <attribute code="charge" type="string" />
+        <attribute code="name" type="string" />
+        <attribute code="street" type="string" />
+        <attribute code="street2" type="string" />
+        <attribute code="city" type="string" />
+        <attribute code="state" type="string" />
+        <attribute code="zipCode" type="string" />
+        <attribute code="country" type="string" />
+        <attribute code="carrierName" type="string" />
+        <attribute code="pricePerSqft" type="string" />
+        <attribute code="LineItemUnitQuantity" type="string" />
+        <attribute code="UnitPrice" type="string" />
+        <attribute code="LineItemPrice" type="string" />
+        <attribute code="TileSize" type="string" />
+        <attribute code="Covers" type="string" />
+        <attribute code="SquareFootage" type="string" />
+        <attribute code="Length" type="string" />
+        <attribute code="Width" type="string" />
+        <attribute code="PricePerLinearFoot" type="string" />
+        <attribute code="RollWidth" type="string" />
+        <attribute code="RollLength" type="string" />
+        <attribute code="RollType" type="string" />
+        <attribute code="QuantityRange" type="string" />
+        <attribute code="RollSize" type="string" />
+        <attribute code="TrailerRollType" type="string" />
+        <attribute code="CustomLength" type="string" />
+        <attribute code="CbcShopBy" type="string" />
+        <attribute code="CbcTileSize" type="string" />
+        <attribute code="BorderTileQty" type="string" />
+        <attribute code="CenterTileQty" type="string" />
+        <attribute code="CornerTileQty" type="string" />
+        <attribute code="esd_min" type="string" />
+        <attribute code="esd_max" type="string" />
+        <attribute code="promiseDate" type="string" />
+
+        <attribute code="configurable_product_name" type="string" />
+        <attribute code="configurable_product_sku" type="string" />
+        <attribute code="configurable_product_category" type="string" />
+        <attribute code="configurable_product_url" type="string" />
+        <attribute code="configurable_product_image" type="string" />
+		<attribute code="color_display_name" type="string" />
+    </extension_attributes>
+</config>

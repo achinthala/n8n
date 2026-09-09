@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Amasty\RequestQuote\Plugin\Checkout\Controller\Cart\Configure"
+                type="Dcw\RequestQuote\Plugin\Checkout\Controller\Cart\Configure"/>
+    
+    <type name="Dcw\ShoppingCart\Controller\Cart\UpdatePost">
+        <plugin name="dcw_requestquote_release_lock_on_submit" 
+                type="Dcw\RequestQuote\Plugin\Cart\UpdatePostReleaseLock" 
+                sortOrder="100"/>
+    </type>
+</config>

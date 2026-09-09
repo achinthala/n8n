@@ -1,0 +1,107 @@
+<?php
+/**
+ * Quote Lock Status Template (Admin View Page)
+ * @var \Dcw\RequestQuote\Block\Adminhtml\Quote\View\LockStatus $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$lockStatus = $block->getLockStatus();
+$quoteId = $block->getQuoteId();
+?>
+<?php if ($quoteId): ?>
+<div id="quote-lock-status-view" 
+     data-quote-id="<?= $escaper->escapeHtmlAttr($quoteId) ?>"
+     data-status-url="<?= $escaper->escapeUrl($block->getLockStatusUrl()) ?>"
+     data-force-unlock-url="<?= $escaper->escapeUrl($block->getForceUnlockUrl()) ?>"
+     style="display: none;">
+    <div class="message message-warning warning" id="quote-lock-warning-view" style="display: none; margin-bottom: 20px;">
+        <div data-ui-id="messages-message-warning">
+            <span id="quote-lock-message-view"></span>
+            <button type="button" 
+                    id="force-unlock-btn-view" 
+                    class="action-secondary"
+                    style="margin-left: 10px;"
+                    onclick="forceUnlockQuoteFromView()">
+                <?= $escaper->escapeHtml(__('Force Unlock')) ?>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+require(['jquery'], function($) {
+    var quoteId = <?= (int) $quoteId ?>;
+    var statusUrl = '<?= $escaper->escapeJs($block->getLockStatusUrl()) ?>';
+    var forceUnlockUrl = '<?= $escaper->escapeJs($block->getForceUnlockUrl()) ?>';
+    var lockWarning = $('#quote-lock-warning-view');
+    var lockMessage = $('#quote-lock-message-view');
+    
+    // Check lock status periodically
+    function checkLockStatus() {
+        $.ajax({
+            url: statusUrl,
+            type: 'GET',
+            dataType: 'json',
+            data: {quote_id: quoteId},
+            success: function(response) {
+                if (response.success && response.lock_status) {
+                    if (response.lock_status.is_locked) {
+                        showLockWarning(response.lock_status);
+                    } else {
+                        hideLockWarning();
+                    }
+                }
+            }
+        });
+    }
+    
+    function showLockWarning(lockStatus) {
+        // Show warning if locked by customer
+        if (lockStatus.locked_by_type === 'customer') {
+            var message = '<?= $escaper->escapeJs(__('Warning: This quote is currently being edited by customer %1.')) ?>';
+            message = message.replace('%1', lockStatus.locked_by_name || 'Customer');
+            lockMessage.text(message);
+            lockWarning.show();
+        } else {
+            hideLockWarning();
+        }
+    }
+    
+    function hideLockWarning() {
+        lockWarning.hide();
+    }
+    
+    function forceUnlockQuoteFromView() {
+        if (!confirm('<?= $escaper->escapeJs(__('Are you sure you want to force unlock this quote? This will remove all locks on this quote.')) ?>')) {
+            return;
+        }
+        
+        $.ajax({
+            url: forceUnlockUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {quote_id: quoteId},
+            success: function(response) {
+                if (response.success) {
+                    lockWarning.hide();
+                    // Refresh the page to update lock status
+                    location.reload();
+                } else {
+                    alert(response.message || '<?= $escaper->escapeJs(__('Failed to unlock quote.')) ?>');
+                }
+            },
+            error: function() {
+                alert('<?= $escaper->escapeJs(__('An error occurred while unlocking the quote.')) ?>');
+            }
+        });
+    }
+    
+    // Initialize on page load
+    $(document).ready(function() {
+        // Check initial lock status
+        checkLockStatus();
+    });
+});
+</script>
+<?php endif; ?>
+

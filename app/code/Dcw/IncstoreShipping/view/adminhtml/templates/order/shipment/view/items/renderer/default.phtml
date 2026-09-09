@@ -1,0 +1,18 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php $_item = $block->getItem() ?>
+<?php
+    $priceHelper = $this->helper('Magento\Framework\Pricing\Helper\Data');
+	$blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+	$itemcoll = $blockObj->getOrderItem($_item->getOrderItemId())->getData();
+    
+?>
+<tr class="border">
+    <td class="col-product"><?= $block->getColumnHtml($_item, 'name') ?></td>
+    <td class="col-qty"><?= /* @noEscape */ $_item->getQty()*1 ?></td>
+    <td class="col-total"><?php if (!empty($itemcoll) && $itemcoll['incstore_item_shipping']!="") { echo $priceHelper->currency($itemcoll['incstore_item_shipping'], true, false);} ?></td>
+</tr>

@@ -1,0 +1,104 @@
+<?php
+/**
+ * Copyright © Dotcom Weavers. All rights reserved.
+ *
+ * Example of how to integrate the RevenueRanking block with product list templates
+ * This can be added to your product list template to show dynamic product counts
+ */
+
+/** @var \Dcw\RevenueRanking\Block\Product\RevenueRankingBlock $revenueBlock */
+$revenueBlock = $block->getLayout()->createBlock(\Dcw\RevenueRanking\Block\Product\RevenueRankingBlock::class);
+?>
+
+<!-- Example 1: Simple product count display -->
+<div class="product-count-display">
+    <span class="product-count-label">Products:</span>
+    <span class="product-count-total"><?= $revenueBlock->getTotalProductCount() ?></span>
+    <span class="product-count-filtered" style="display: none;">
+        (<span class="filtered-count"><?= $revenueBlock->getFilteredProductCount() ?></span> filtered)
+    </span>
+</div>
+
+<!-- Example 2: Integration with existing product list -->
+<div class="product-list-header">
+    <h2>Products 
+        <span class="product-count-total"><?= $revenueBlock->getTotalProductCount() ?></span>
+        <span class="filtered-info" style="display: none;">
+            (showing <span class="product-count-filtered"><?= $revenueBlock->getFilteredProductCount() ?></span> of <span class="product-count-total"><?= $revenueBlock->getTotalProductCount() ?></span>)
+        </span>
+    </h2>
+</div>
+
+<!-- Example 3: Filter status display -->
+<div class="filter-status" style="display: none;">
+    <span class="filter-status-text">Filters applied</span>
+    <span class="product-count-filtered"><?= $revenueBlock->getFilteredProductCount() ?></span> products match your criteria
+</div>
+
+<script type="text/javascript">
+require(['jquery'], function($) {
+    $(document).ready(function() {
+        // Listen for product count updates from the RevenueRanking block
+        $(document).on('revenueRanking:productCountUpdated', function(event, data) {
+            console.log('Product count updated:', data);
+            
+            // Update the product count displays
+            $('.product-count-total').text(data.total_products);
+            $('.product-count-filtered').text(data.filtered_products);
+            $('.filtered-count').text(data.filtered_products);
+            
+            // Show/hide filtered info based on whether filters are applied
+            if (data.filters_applied && data.filtered_products !== data.total_products) {
+                $('.filtered-info').show();
+                $('.filter-status').show();
+            } else {
+                $('.filtered-info').hide();
+                $('.filter-status').hide();
+            }
+        });
+        
+        // Listen for filter changes to show loading state
+        $(document).on('click', '.mst-nav__label-item a, .filter-option a', function() {
+            $('.product-count-display, .product-list-header').addClass('loading');
+        });
+        
+        // Remove loading state when update completes
+        $(document).on('revenueRanking:productCountUpdated', function() {
+            $('.product-count-display, .product-list-header').removeClass('loading');
+        });
+    });
+});
+</script>
+
+<style>
+.product-count-display {
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.product-count-display.loading {
+    opacity: 0.6;
+}
+
+.product-count-total,
+.product-count-filtered {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.filter-status {
+    background: #e3f2fd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.product-list-header.loading h2 {
+    opacity: 0.6;
+}
+
+.product-list-header h2 {
+    transition: opacity 0.3s ease;
+}
+</style>

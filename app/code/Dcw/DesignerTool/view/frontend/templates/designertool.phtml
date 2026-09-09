@@ -1,0 +1,950 @@
+<?php
+use Magento\Framework\Escaper;
+use Hyva\Theme\ViewModel\ProductPage;
+
+/** @var Dcw\DesignerTool\Block\Index  $block */ 
+/** @var Escaper $escaper */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+$designer_tool_id = $block->getCookieValue('design_tool_id');
+$designer_tool_idArr = explode("_", $designer_tool_id);
+$productId = $designer_tool_idArr[0];
+$product = $block->getProductById($productId);
+
+$childId = $designer_tool_idArr[1];
+$_child = $block->getProductById($childId);
+
+$designerToolHelper = $block->designerToolHelper();
+
+$final_price = $product->getPriceInfo()->getPrice('final_price')->getValue();
+$msrp = $product->getPriceInfo()->getPrice('regular_price')->getValue();
+$save_price = $msrp - $final_price;
+
+$child_final_price = $_child->getFinalPrice();
+$child_msrp = $_child->getPrice();
+$child_save_price = $child_msrp - $child_final_price;
+
+$_imagehelper = $block->imageHelper();
+$productImageUrl = $_imagehelper->init($product, 'small_image', ['type'=>'image'])
+->keepAspectRatio(true) ->keepFrame(true)->resize('202', '133')->getUrl();
+
+$categoryIds = $product->getCategoryIds();
+
+$custom_width =  $block->getConfigValue('dcw_designer_tool/custom_size/width');
+$custom_width_inch =  $custom_width * 12;
+$custom_length = $block->getConfigValue('dcw_designer_tool/custom_size/length');
+$custom_length_inch =  $custom_length * 12;
+
+if (!empty($_child->getIncstoresPimExactWidthInches())) {
+    $exact_width_ft = (float)$_child->getIncstoresPimExactWidthInches()/12;
+    $exact_width_ft = round($exact_width_ft, 2);
+    $exact_width_inch = (float)$_child->getIncstoresPimExactWidthInches();
+}
+if (!empty($_child->getIncstoresPimExactLengthInches())) {
+    $exact_length_ft = $_child->getIncstoresPimExactLengthInches()/12;
+    $exact_length_ft = round($exact_length_ft, 2);
+    $exact_length_inch = (float)$_child->getIncstoresPimExactLengthInches();
+}
+
+
+$gcfRtio = $designerToolHelper->getRatio($exact_width_inch, $exact_length_inch);
+$gcfRtioArr = explode(':', $gcfRtio);
+$width_ratio = $gcfRtioArr[0];
+$length_ratio =  $gcfRtioArr[1];
+
+$imageCustomAttributes = $product->getData('image_custom_attributes')
+    ?? $block->getData('image_custom_attributes')
+    ?? [];
+?>
+
+<div class="designer_header_banner">
+    <?= /* @noEscape */ $block->getLayout()->createBlock(\Magento\Cms\Block\Block::class)
+    ->setBlockId('designer_header_banner')->toHtml();?>
+</div>
+<div class="designer_product_info flex w-full">
+    <div class="designer_product_img">
+        <a href="<?= /* @noEscape */ $product->getProductUrl() ?>">
+        <?= $productViewModel->getImage($product, 'category_page_grid')
+            ->setTemplate('Magento_Catalog::product/list/image.phtml')
+            ->setData('custom_attributes', $imageCustomAttributes)
+            ->setProductId($productId)
+            ->toHtml(); ?>
+        </a>
+    </div>
+    <div class="designer_product_img_right">
+        <p class="text-size32 font-semibold text-black mb-1 sm:text-size24">
+            <a href="<?= /* @noEscape */ $product->getProductUrl() ?>">
+                <strong class="text-size32 font-semibold text-black">
+                    <?= $escaper->escapeHtml($product->getName()) ?>
+                </strong>
+            </a>
+        </p>
+        
+        <div class="designer_product_tile_size_area text-size16 font-normal text-black sm:font-medium">
+            Size: <?= /* @noEscape */ $_child->getIncstoresPimExactWidthInches();?>" x <?= /* @noEscape */ $_child->getIncstoresPimExactLengthInches();?>"
+        </div>
+        
+        <ul>
+            <?php if (!empty($product->getpdp_feature1())) {?>
+                <li class="text-size14 font-normal text-black sm:text-size12">
+                    <?= /* @noEscape */ $product->getpdp_feature1();?>
+                </li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeaturebullet2())) {?>
+                <li class="text-size14 font-normal text-black sm:text-size12">
+                    <?= /* @noEscape */ $product->getIncstoresPimFeaturebullet2();?>
+                </li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeaturebullet3())) {?>
+                <li class="text-size14 font-normal text-black sm:text-size12">
+                    <?= /* @noEscape */ $product->getIncstoresPimFeaturebullet3();?>
+                </li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeaturebullet4())) {?>
+                <li class="text-size14 font-normal text-black sm:text-size12">
+                    <?= /* @noEscape */ $product->getIncstoresPimFeaturebullet4();?>
+                </li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeaturebullet5())) {?>
+                <li class="text-size14 font-normal text-black sm:text-size12">
+                    <?= /* @noEscape */ $product->getIncstoresPimFeaturebullet5();?>
+                </li>
+            <?php }?>
+            
+        </ul>
+        <div class="designer_product_price_container">
+            <h6 class="text-size14 font-medium text-black">Our Sale Price</h6>
+            <div class="flex items-baseline">
+                <div class="stickey_product_finalprice flex items-baseline">
+                    <span class="price text-size21 font-bold text-black">
+                        <?= /* @noEscape */ $productViewModel->format($final_price) ?>
+                    </span>
+                    <span class="price-label text-size14 font-normal text-black"> /sqft</span>
+                </div>
+                <?php
+                if ($child_save_price > 0) {
+                    ?>
+                    <div class="stickey_product_msrpprice text-size14 font-normal text-black">
+                        <?= /* @noEscape */ $productViewModel->format($child_msrp) ?>
+                    </div>
+                    <?php
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+</div>
+<form class="designer_tool_frm" id="designer_tool_frm">
+<input type="hidden" id="design_car_garrage" name="design_car_garrage" value=""/>
+<input type="hidden" id="design_car_garrage_size" name="design_car_garrage_size" value=""/>
+<input type="hidden" id="design_pattern" name="design_pattern" 
+value="<?= /* @noEscape */ $block->getConfigValue('dcw_designer_tool/pattern/floor_pattern_1');?>"/>
+
+<input type="hidden" id="design_primary_color_title" name="design_primary_color_title" value=""/>
+<input type="hidden" id="design_primary_color_type" name="design_primary_color_type" value=""/>
+<input type="hidden" id="design_primary_tiles_color" name="design_primary_tiles_color" value=""/>
+<input type="hidden" id="design_primary_color_value" name="design_primary_color_value" value=""/>
+
+<input type="hidden" id="design_secondary_color_title" name="design_secondary_color_title" value=""/>
+<input type="hidden" id="design_secondary_color_type" name="design_secondary_color_type" value=""/>
+<input type="hidden" id="design_secondary_tiles_color" name="design_secondary_tiles_color" value=""/>
+<input type="hidden" id="design_secondary_color_value" name="design_secondary_color_value" value=""/>
+
+<input type="hidden" id="design_all_pattern_color_title" name="design_all_pattern_color_title" value=""/>
+<input type="hidden" id="design_all_pattern_color_type" name="design_all_pattern_color_type" value=""/>
+<input type="hidden" id="design_all_pattern_tiles_color" name="design_all_pattern_tiles_color" value=""/>
+<input type="hidden" id="design_all_pattern_tiles_qty" name="design_all_pattern_tiles_qty" value=""/>
+
+<input type="hidden" id="design_border_pattern_color_title" name="design_border_pattern_color_title" value=""/>
+<input type="hidden" id="design_border_pattern_color_type" name="design_border_pattern_color_type" value=""/>
+<input type="hidden" id="design_border_pattern_tiles_color" name="design_border_pattern_tiles_color" value=""/>
+<input type="hidden" id="design_border_pattern_tiles_qty" name="design_border_pattern_tiles_qty" value=""/>
+
+<input type="hidden" id="design_primary_checkered_pattern_color_title" 
+name="design_primary_checkered_pattern_color_title" value=""/>
+<input type="hidden" id="design_primary_checkered_pattern_color_type" 
+name="design_primary_checkered_pattern_color_type" value=""/>
+<input type="hidden" id="design_primary_checkered_pattern_tiles_color" 
+name="design_primary_checkered_pattern_tiles_color" value=""/>
+<input type="hidden" id="design_primary_checkered_pattern_tiles_qty" 
+name="design_primary_checkered_pattern_tiles_qty" value=""/>
+
+<input type="hidden" id="design_secondary_checkered_pattern_color_title" 
+name="design_secondary_checkered_pattern_color_title" value=""/>
+<input type="hidden" id="design_secondary_checkered_pattern_color_type" 
+name="design_secondary_checkered_pattern_color_type" value=""/>
+<input type="hidden" id="design_secondary_checkered_pattern_tiles_color" 
+name="design_secondary_checkered_pattern_tiles_color" value=""/>
+<input type="hidden" id="design_secondary_checkered_pattern_tiles_qty" 
+name="design_secondary_checkered_pattern_tiles_qty" value=""/>
+
+<input type="hidden" id="design_edge_color_title" name="design_edge_color_title" value=""/>
+<input type="hidden" id="design_edge_color_type" name="design_edge_color_type" value=""/>
+<input type="hidden" id="design_edge_tiles_color" name="design_edge_tiles_color" value=""/>
+<input type="hidden" id="design_edge_color_value" name="design_edge_color_value" value=""/>
+
+<input type="hidden" id="design_edge_female_left" name="design_edge_female_left" value="0"/>
+<input type="hidden" id="design_edge_male_right" name="design_edge_male_right" value="0"/>
+<input type="hidden" id="design_edge_male_top" name="design_edge_male_top" value="0"/>
+<input type="hidden" id="design_edge_female_bottom" name="design_edge_female_bottom" value="0"/>
+
+<input type="hidden" id="design_corner_color_title" name="design_corner_color_title" value=""/>
+<input type="hidden" id="design_corner_color_type" name="design_corner_color_type" value=""/>
+<input type="hidden" id="design_corner_tiles_color" name="design_corner_tiles_color" value=""/>
+<input type="hidden" id="design_corner_color_value" name="design_corner_color_value" value=""/>
+
+<input type="hidden" id="design_corner_top_left" name="design_corner_top_left" value="0"/>
+<input type="hidden" id="design_corner_top_right" name="design_corner_top_right" value="0"/>
+<input type="hidden" id="design_corner_bottom_left" name="design_corner_bottom_left" value="0"/>
+<input type="hidden" id="design_corner_bottom_right" name="design_corner_bottom_right" value="0"/>
+
+<div class="designer_product_customize_container flex justify-between">
+    <div class="designer_product_customize_left">
+        <div class="custom_size_container">
+            <h2 class="text-size18 font-semibold text-black">Enter Custom Size</h2>
+            <div class="fields flex items-center">
+                <div class="field width required flex items-center m-0">
+                    <label class="label text-size16 font-normal text-black" for="width"><span>Width (ft)</span></label>
+                    <input name="width" id="width" title="Width (ft)" type="text"
+                    value="<?= /* @noEscape */ $custom_width;?>" class="mt-2 input input-light w-full"/>
+                </div>
+                <div class="field length flex items-center">
+                    <label class="label  text-size16 font-normal text-black" for="length">
+                        <span>Length (ft)</span>
+                    </label>
+                    <input name="length" id="length" title="Length (ft)" type="text"
+                    value="<?= /* @noEscape */ $custom_length;?>" class="mt-2 input input-light w-full"/>
+                </div>
+            </div>
+        </div>
+
+        <?php 
+        if ($block->isGarageShow($productId) == 1) {?>
+            <div class="common_size_container" style="clear: both">
+                <h2 class="text-size18 font-semibold text-black">
+                Common Sizes: <span class="text-size16 font-normal text-lightgray1 
+                sm:text-size14">(optional - select a size)</span>
+                </h2>
+                <div class="common_size_items">
+                    <ul>
+                        <li style="float:left">
+                            <input type="radio" name="common_size_car_garage" 
+                            id="common_size_car_garage_1" class="hidden"
+                            data-car_garage="<?= /* @noEscape */ $block
+                             ->getConfigValue('dcw_designer_tool/common_size/car_garage_1');?>" 
+                            value="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_1');?>"/>
+                            <label class="cursor-pointer" for="common_size_car_garage_1">
+                                <img title="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_1');?>"
+                                alt="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_1');?>"
+                                src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_image_1');?>"/>
+                                <span class="text-size14 font-semibold text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_1');?></span>
+                                <span class="text-size14 font-normal text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_1');?></span>
+                            </label>
+                        </li>
+                        <li style="float:left">
+                            <input type="radio" name="common_size_car_garage" 
+                            id="common_size_car_garage_2" class="hidden" 
+                            data-car_garage="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_2');?>" 
+                            value="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_2');?>"/>
+                            <label class="cursor-pointer" for="common_size_car_garage_2">
+                                <img title="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_2');?>"
+                                alt="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_2');?>"
+                                src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_image_2');?>"/>
+                                <span class="text-size14 font-semibold text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_2');?></span>
+                                <span class="text-size14 font-normal text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_2');?></span>
+                            </label>
+                        </li>
+                        <li style="float:left">
+                            <input type="radio" name="common_size_car_garage" 
+                            id="common_size_car_garage_3" class="hidden" 
+                            data-car_garage="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_3');?>" 
+                            value="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_3');?>"/>
+                            <label class="cursor-pointer" for="common_size_car_garage_3">
+                                <img title="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_3');?>"
+                                alt="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_3');?>"
+                                src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_image_3');?>"/>
+                                <span class="text-size14 font-semibold text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_3');?></span>
+                                <span class="text-size14 font-normal text-black text-center block 
+                                sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_3');?></span>
+                            </label>
+                        </li>
+                        <li style="float:left">
+                            <input type="radio" name="common_size_car_garage" 
+                            id="common_size_car_garage_4" class="hidden" 
+                            data-car_garage="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_4');?>" 
+                            value="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_4');?>"/>
+                            <label class="cursor-pointer" for="common_size_car_garage_4">
+                                <img title="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_4');?>"
+                                alt="<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_4');?>"
+                                src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_image_4');?>"/>
+                                <span class="text-size14 font-semibold text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_4');?></span>
+                                <span class="text-size14 font-normal text-black text-center 
+                                block sm:text-size12"><?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/common_size/car_garage_size_4');?></span>
+                            </label>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        <?php }?>
+
+        <div class="start_designing_container" style="clear: both">
+            <?php
+            /*$feet_width = (int)$custom_width;
+            $fraction_width = $custom_width - $feet_width;
+            $inches_width = (int)(12.0 * $fraction_width);*/
+            
+            $custom_width_display_ft_inch = $designerToolHelper->decimalFeetToFeetInches($custom_width);
+
+            $custom_length_display_ft_inch = $designerToolHelper->decimalFeetToFeetInches($custom_length);
+            ?>
+            <h2 class="text-size18 font-semibold text-black">Start Designing</h2>
+            <div class="flex text-size16 font-normal text-black enter-sizes">
+                <label class="label text-size16 font-normal text-black" for="width">
+                    <span>Entered Size:&nbsp;</span>
+                </label>
+                <span class="feet_width text-size16 font-normal text-black">
+                    <?= /* @noEscape */ $custom_width_display_ft_inch['feet'];?></span>'&nbsp; 
+                <span class="inches_width text-size16 font-normal text-black">
+                    <?= /* @noEscape */ $custom_width_display_ft_inch['inches'];?></span>"
+                <span class="text-size16 font-normal text-black">&nbsp;x&nbsp;</span>
+                <span class="feet_length text-size16 font-normal text-black">
+                    <?= /* @noEscape */ $custom_length_display_ft_inch['feet'];?></span>'&nbsp; 
+                <span class="inches_length text-size16 font-normal text-black">
+                    <?= /* @noEscape */ $custom_length_display_ft_inch['inches'];?></span>"
+            </div>
+        </div>
+
+        <div class="choose_pattern_container" style="clear: both">
+            <h2 class="text-size14 font-medium text-black">Choose Pattern:</h2>
+            <div class="choose_pattern_items">
+                <ul>
+                    <li style="float:left">
+                        <input type="radio" name="choose_pattern" 
+                        id="choose_pattern_1" class="hidden" value="<?= /* @noEscape */ $block
+                        ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_1');?>" checked/>
+                        <label class="cursor-pointer" for="choose_pattern_1">
+                            <img title="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_1');?>"
+                            alt="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_1');?>"
+                             src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                                ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_image_1');?>"/>
+                            <span class="text-size14 font-medium text-black"><?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_1');?></span>
+                        </label>
+                    </li>
+                    <li style="float:left">
+                        <input type="radio" name="choose_pattern" 
+                        id="choose_pattern_2" class="hidden" value="<?= /* @noEscape */ $block
+                        ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_2');?>"/>
+                        <label class="cursor-pointer" for="choose_pattern_2">
+                            <img title="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_2');?>"
+                            alt="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_2');?>"
+                            src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_image_2');?>"/>
+                            <span class="text-size14 font-medium text-black"><?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_2');?></span>
+                        </label>
+                    </li>
+                    <li style="float:left">
+                        <input type="radio" name="choose_pattern" 
+                        id="choose_pattern_3" class="hidden" value="<?= /* @noEscape */ $block
+                        ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_3');?>"/>
+                        <label class="cursor-pointer" for="choose_pattern_3">
+                            <img title="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_3');?>"
+                            alt="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_3');?>"
+                            src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_image_3');?>"/>
+                            <span class="text-size14 font-medium text-black"><?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_3');?></span>
+                        </label>
+                    </li>
+                    <li style="float:left">
+                        <input type="radio" name="choose_pattern" 
+                        id="choose_pattern_4" class="hidden" value="<?= /* @noEscape */ $block
+                        ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_4');?>"/>
+                        <label class="cursor-pointer" for="choose_pattern_4">
+                            <img title="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_4');?>"
+                            alt="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_4');?>"
+                            src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_image_4');?>"/>
+                            <span class="text-size14 font-medium text-black"><?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_4');?></span>
+                        </label>
+                    </li>
+                    <li style="float:left">
+                        <input type="radio" name="choose_pattern" 
+                        id="choose_pattern_5" class="hidden"
+                        value="<?= /* @noEscape */ $block
+                        ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_5');?>"/>
+                        <label class="cursor-pointer" for="choose_pattern_5">
+                            <img title="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_5');?>"
+                            alt="<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_5');?>"
+                            src="<?= /* @noEscape */ $block->getMediaUrl();?>upload/<?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_image_5');?>"/>
+                            <span class="text-size14 font-medium text-black"><?= /* @noEscape */ $block
+                            ->getConfigValue('dcw_designer_tool/pattern/floor_pattern_5');?></span>
+                        </label>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="choose_variant_container" style="clear: both">
+            <h2 class="text-size18 font-semibold text-black">Choose Variant:</h2>
+            <div class="color_items flex w-full flex-wrap justify-between">
+                <?php if ($product->getTypeId() == 'configurable') {
+                    $variantItemOptionsArr = $block->getVariantItems($productId, $childId);
+
+                    $selectHtml = "";
+
+                    if (count($variantItemOptionsArr) > 0) {
+                        $selectHtml.= "<select class='choose_variant' id='choose_variant'>";
+                    }
+
+                    foreach ($variantItemOptionsArr as $variantItemOption) {
+                        $selectHtml.="<option value='".$variantItemOption['option_id']."'>".$variantItemOption['variant_title']."</option>";
+                    }
+
+                    if (count($variantItemOptionsArr) > 0) {
+                        $selectHtml.= "</select>";
+                    }
+                }
+
+                if ($selectHtml) {
+                    echo $selectHtml;
+                }
+                ?>
+            </div>
+        </div>
+        
+        <div class="choose_color_container" style="clear: both">
+            <h2 class="text-size18 font-semibold text-black">Choose Color:</h2>
+            <div class="color_items flex w-full flex-wrap justify-between">
+                <?php if ($product->getTypeId() == 'configurable') {
+                    $variantItemOptionsArr = $block->getVariantItems($productId, $childId);
+                    //echo '<pre>';print_r($variantItemOptionsArr);echo '</pre>';
+                    
+                    foreach ($variantItemOptionsArr as $colorItemOption) {
+                        $color_type = 'swatch_color_url';
+                        $design_tiles_color = $colorItemOption['swatch_image_label'];
+                        $colorItemOptionId = $colorItemOption['option_id'];
+                        $i= 1;
+
+                        foreach ($design_tiles_color as $swatch) {
+                            $explodeSwatch =  explode(",", $swatch);
+                            $swatchImage = $explodeSwatch[0];
+                            $swatchLabel = $explodeSwatch[1];
+                            $swatchOptionId = $explodeSwatch[2];
+                            $childProductId = $explodeSwatch[3];
+                            $color_position = 'secondary';
+                            $hiddenClass = "hidden";
+
+                            if ($i == 1) {
+                                $color_position = 'primary';
+                            }
+                            ?>
+                            <label class="<?= /* @noEscape */ $color_position?>_container cursor-pointer color_group color_group_<?php echo $colorItemOptionId;?> <?php echo $hiddenClass;?>" 
+                            for="<?= /* @noEscape */ $color_position?>_color">
+                            
+                                <h3 class="text-size12 font-medium text-black">
+                                    <?= /* @noEscape */ ucfirst($color_position)?>:
+                                </h3>
+
+                                <div class="color_position_inner_img relative">
+                                    <input type="radio" name="color_position" class="color_position hidden color_position_<?php echo $colorItemOptionId;?>" 
+                                    id="<?= /* @noEscape */ $color_position?>_color"
+                                    data-swatch_image="<?= /* @noEscape */ $swatchImage?>" 
+                                    data-color_type="<?= /* @noEscape */ $color_type;?>" 
+                                    data-color_position="<?= /* @noEscape */ $color_position;?>"
+                                    data-child_product_id="<?= /* @noEscape */ $childProductId;?>"
+                                    data-color_option_id="<?= /* @noEscape */ $swatchOptionId;?>"
+                                    data-color_title="<?= /* @noEscape */ $swatchLabel;?>"
+                                    <?= /* @noEscape */ ($i == 1)?'checked':''?>/>
+                                    
+                                    <div class="color_img_box color_img_box_<?php echo $colorItemOptionId;?>">
+                                        <img class src="<?= /* @noEscape */ $swatchImage;?>"/>
+                                    </div>
+                                    <div class="color_title color_title_<?php echo $colorItemOptionId;?> text-size14 font-medium text-black">
+                                    <?= /* @noEscape */ $swatchLabel;?>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <?php if ($i == 1 && count($variantItemOptionsArr) > 1) { ?>
+                                <div class="swap_button text-size14 font-normal text-black flex flex-wrap  
+                                items-center text-center justify-center content-center cursor-pointer color_group color_group_<?php echo $colorItemOptionId;?> <?php echo $hiddenClass;?>">
+                                    <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/swap.png'); ?>" 
+                                    title="swap"
+                                    alt="swap"
+                                    data-product_id="<?php echo $colorItemOptionId;?>"/> 
+                                    <span class="w-full">Swap</span>
+                                </div>
+                            <?php } ?>
+                        
+                            <?php
+                            if ($i == 2) {
+                                break;
+                            }
+                            $i++;
+                        }
+                    }
+                    ?>
+                    <ul class="w-full">
+                    <?php
+                    $k = 1;
+                    foreach ($variantItemOptionsArr as $colorItemOption) {
+                        $color_type = 'swatch_color_url';
+                        $design_tiles_color = $colorItemOption['swatch_image_label'];
+                        $product_final_price = $colorItemOption['product_final_price'];
+                        $product_regular_price = $colorItemOption['product_regular_price'];
+                        $colorItemOptionId = $colorItemOption['option_id'];
+                        $variantTitle = $colorItemOption['variant_title'];
+                        $count = 0;
+                        foreach ($design_tiles_color as $swatch) {
+                            $explodeSwatch =  explode(",", $swatch);
+                            $swatchImage = $explodeSwatch[0];
+                            $swatchLabel = $explodeSwatch[1];
+                            $swatchOptionId = $explodeSwatch[2];
+                            $childProductId = $explodeSwatch[3];
+                            $childProductFinalPrice = $product_final_price[$count];
+                            $childProductRegularPrice = $product_regular_price[$count];
+
+                            $colorClass = "hidden";
+                            $colorClassTmp = "none";
+
+                            if ($k == 1) {
+                                $colorClass = "show";
+                            }
+
+                            $variantColorOptionId = $colorItemOptionId.'_'.$swatchOptionId;
+                        ?>
+                        <li class="color_group color_group_<?php echo $colorItemOptionId;?> <?php echo $colorClass;?>" style="display:<?php echo $colorClassTmp;?>">
+                            <div class="choose_color choose_color_<?php echo $colorItemOptionId;?> choose_color_<?php echo $variantColorOptionId;?> child_id_<?php echo $childProductId;?> cursor-pointer <?= /* @noEscape */ ($k == 1)?'primary_active':''?>
+                                <?= /* @noEscape */ ($k == 2)?'secondary_active':''?>"
+                                data-swatch_image="<?= /* @noEscape */ $swatchImage;?>"
+                                data-color_type="<?= /* @noEscape */ $color_type;?>"
+                                data-variant_option_id="<?= /* @noEscape */ $colorItemOptionId;?>"
+                                data-color_option_id="<?= /* @noEscape */ $swatchOptionId;?>"
+                                data-child_product_id="<?= /* @noEscape */ $childProductId;?>"
+                                data-variant_title="<?= /* @noEscape */ $variantTitle;?>"
+                                data-color_title="<?= /* @noEscape */ $swatchLabel;?>"
+                                data-product_final_price="<?= /* @noEscape */ $childProductFinalPrice;?>"
+                                data-product_regular_price="<?= /* @noEscape */ $childProductRegularPrice;?>"
+                                >
+                                
+                                <img src="<?= /* @noEscape */ $swatchImage;?>" 
+                                title="<?= /* @noEscape */ $swatchLabel;?>"
+                                alt="<?= /* @noEscape */ $swatchLabel;?>"/>
+                                
+                            <div>
+                        </li>
+
+                        <?php
+                        $count++;
+                        }
+                        $k++;
+                    }
+                    ?>
+                    </ul>
+                    <?php
+                }
+                ?>
+            </div>
+        </div>
+        
+        <?php
+        $activeEdgingTab = 0;
+        if (empty($product->getDisplayEdging()) && !empty($product->getDisplayCorner())) {
+            $activeEdgingTab = 1;
+        }
+        ?>
+        <div class="edging_corner_container" style="clear: both"  
+        x-data="{ activeEdgingTab:  <?= /* @noEscape */ $activeEdgingTab;?> }">
+            <div class="flex w-full edge-tools-tab">
+              <?php if (!empty($product->getDisplayEdging())) {?>
+              <label @click="activeEdgingTab = 0" class="tab-control text-size16 font-medium text-black" 
+              :class="{ 'active': activeEdgingTab === 0 }">Edging : Optional</label>
+              <?php }?>
+              <?php if (!empty($product->getDisplayCorner())) {?>
+              <label @click="activeEdgingTab = 1" class="tab-control text-size16 font-medium text-black" 
+              :class="{ 'active': activeEdgingTab === 1 }">Corner : Optional</label>
+              <?php }?>
+            </div>
+            <?php if (!empty($product->getDisplayEdging())) {?>
+            <div class="edge-tools tab-panel" :class="{ 'active': activeEdgingTab === 0 }" 
+            x-show.transition.in.opacity.duration.600="activeEdgingTab === 0">
+                <p class="text-size12 font-medium text-custom-white edge_color_title">Primary:</p>
+                <ul class="flex w-full flex-wrap" id="load_simple_product_edges">
+                    <?php
+                    $getAllEdgingOptions = $block->getAllEdgingOptions($productId);
+                    
+                    foreach ($getAllEdgingOptions as $getAllEdgingOptionsItem) {
+                        echo $getAllEdgingOptionsItem;
+                    }
+                    ?>
+                </ul>
+                <div class="male-female-edge-wrapper">
+                    <label class="edge-pattern-item cursor-pointer">
+                        <input type="checkbox" name="edge-pattern" value="Left" class="hidden" />
+                        <span class="inline-block w-full text-size14 font-normal text-black text-center">
+                            <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon1.png'); ?>" 
+                            alt="edge-icon1.png" width="20" height="20" class="chk-normal"><img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon1-white.png'); ?>" 
+                            alt="edge-icon1-white.png" width="20" height="20" class="chk-selected">
+                            &nbsp; Left
+                        </span>
+                    </label>
+                    <label class="edge-pattern-item cursor-pointer">
+                        <input type="checkbox" name="edge-pattern" value="Right" class="hidden" />
+                        <span class="inline-block w-full text-size14 font-normal text-black text-center">
+                            Right &nbsp;
+                            <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon2.png'); ?>" 
+                            alt="edge-icon2.png" width="20" height="20" class="chk-normal"><img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon2-white.png'); ?>" 
+                            alt="edge-icon2-white.png" width="20" height="20" class="chk-selected">
+                        </span>
+                    </label>
+                    <label class="edge-pattern-item cursor-pointer">
+                        <input type="checkbox" name="edge-pattern" value="Top" class="hidden" />
+                        <span class="inline-block w-full text-size14 font-normal text-black text-center">
+                            <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon3.png'); ?>" 
+                            alt="edge-icon3.png" width="20" height="20" class="chk-normal"><img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon3-white.png'); ?>" 
+                            alt="edge-icon3-white.png" width="20" height="20" class="chk-selected">
+                            &nbsp; Top
+                        </span>
+                    </label>
+                    <label class="edge-pattern-item cursor-pointer">
+                        <input type="checkbox" name="edge-pattern" value="Bottom" class="hidden" />
+                        <span class="inline-block w-full text-size14 font-normal text-black text-center">
+                            Bottom &nbsp;
+                            <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon4.png'); ?>" 
+                            alt="edge-icon4.png" width="20" height="20" class="chk-normal"><img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon4-white.png'); ?>" 
+                            alt="edge-icon4-white.png" width="20" height="20" class="chk-selected">
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <?php }?>
+            <?php if (!empty($product->getDisplayCorner())) {?>
+            <div class="corner-tools tab-panel" :class="{ 'active': activeEdgingTab === 1 }" 
+            x-show.transition.in.opacity.duration.600="activeEdgingTab === 1">
+                <p class="text-size12 font-medium text-custom-white">Primary:</p>
+                <ul class="flex w-full flex-wrap">
+                <?php
+                $getAllCornerOptions = $block->getAllCornerOptions($productId);
+                
+                foreach ($getAllCornerOptions as $getAllCornerOptionsItem) {
+                    echo $getAllCornerOptionsItem;
+                }
+                ?>
+                </ul>
+                <div class="corner-pattern-wrapper">
+                    <label class="corner-pattern-item cursor-pointer">
+                        <input type="checkbox" name="corner-pattern" value="All" class="hidden" />
+                        <span class="inline-block w-full text-size14 font-normal text-black text-center">
+                            <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon5.png'); ?>" 
+                            alt="edge-icon5.png" width="20" height="20"  class="chk-normal"><img src="<?= /* @noEscape */ $block->getViewFileUrl('images/edge-icon5-white.png'); ?>" 
+                            alt="edge-icon5-white.png" width="20" height="20"  class="chk-selected">&nbsp; All
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <?php }?>
+        </div>
+        <div class="reset_print_btns">
+            <button onclick="resetDesigner()" type="button" class="cursor-pointer">Reset designer</button>
+            <button type="button" class="cursor-pointer" onclick="window.print();">Print</button>
+            <button onclick="undoEvent()" type="button" class="undoredo cursor-pointer" id="undo_btn" disabled>Undo</button>
+            <button onclick="redoEvent()" type="button" class="undoredo cursor-pointer" id="redo_btn" disabled>Redo</button>
+        </div>
+    </div>
+    
+    <div class="designer_product_customize_right relative">
+        <?php
+        $grid_size_width_inch =  $custom_width_inch;
+        $grid_width_tiles = $grid_size_width_inch / $exact_width_inch;
+        $grid_width_tiles = ceil($grid_width_tiles);
+        
+        $layout_size_width_inch = $grid_width_tiles * $exact_width_inch;
+        $layout_width_ft = $layout_size_width_inch/12;
+        $layout_width_display_ft_inch = $designerToolHelper->decimalFeetToFeetInches($layout_width_ft);
+        
+        
+        $grid_size_length_inch =  $custom_length_inch;
+        $grid_length_tiles = $grid_size_length_inch / $exact_length_inch;
+        $grid_length_tiles = ceil($grid_length_tiles);
+        
+        $layout_size_length_inch = $grid_length_tiles * $exact_length_inch;
+        $layout_length_ft = $layout_size_length_inch/12;
+        $layout_length_display_ft_inch = $designerToolHelper->decimalFeetToFeetInches($layout_length_ft);
+        ?>
+        <div class="layout_size_container text-size24 font-semibold text-black">
+            Layout Size:
+            <span class="layout_size_width_feet">
+                <?= /* @noEscape */ $layout_width_display_ft_inch['feet'];?></span>' 
+            <span class="layout_size_width_inches">
+                <?= /* @noEscape */ $layout_width_display_ft_inch['inches'];?></span>"
+            x
+            <span class="layout_size_length_feet">
+                <?= /* @noEscape */ $layout_length_display_ft_inch['feet'];?></span>' 
+            <span class="layout_size_length_inches">
+                <?= /* @noEscape */ $layout_length_display_ft_inch['inches'];?></span>"
+        </div>
+        <div class="grid_size_container text-size16 font-normal text-black">
+            Grid Size: <span class="grid_width_tiles"><?= /* @noEscape */ $grid_width_tiles?></span> tiles x 
+            <span class="grid_length_tiles"><?= /* @noEscape */ $grid_length_tiles?></span> tiles
+        </div>
+
+        <div class="redo_btns absolute right-0 ts">
+            <!--<button onclick="undoEvent()" type="button" class="undoredo cursor-pointer" id="undo_btn" disabled>
+                Undo
+            </button>-->
+            <button onclick="redoEvent()" type="button" class="undoredo cursor-pointer" id="redo_btn" disabled>
+                Redo
+            </button>
+        </div>
+        <div class="floor_area_canvas_container relative text-center">
+        <?php
+        if ($designerToolHelper->detectMobile() == 1) {
+            $canvas_calc_area = 250;
+        } else {
+            $canvas_calc_area = 500;
+        }
+            //$floor_area_width_unit = $grid_width_tiles * $width_ratio;
+            //$floor_area_length_unit = $grid_length_tiles*$length_ratio;
+            //$larger_unit = max($floor_area_width_unit, $floor_area_length_unit);
+
+        $width_inch = $custom_width*12;
+        $length_inch = $custom_length*12;
+
+        if ($width_inch == $length_inch) {
+            $px_per_width = (int)($canvas_calc_area/$width_inch);
+            $px_per_length = $px_per_width;
+        } elseif ($width_inch > $length_inch) {
+            $px_per_width = ceil($canvas_calc_area/$grid_width_tiles);
+
+            $length_calc_area = ($canvas_calc_area / $width_inch) * $length_inch;
+            $px_per_length = (int)($length_calc_area/$grid_length_tiles);
+
+        } elseif ($width_inch < $length_inch) {
+            $px_per_length = ceil($canvas_calc_area/$grid_length_tiles);
+
+            $width_calc_area = ($canvas_calc_area / $length_inch) * $width_inch;
+            $px_per_width = (int)($width_calc_area/$grid_width_tiles);
+        }
+            
+            $floor_area_width_total_px = ($grid_width_tiles * $px_per_width) + $grid_width_tiles;
+            $floor_area_length_total_px = ($grid_length_tiles * $px_per_length) + $grid_length_tiles;
+            //$floor_area_canvas_style='style="width:'.
+            //$floor_area_width_total_px.'px; height:'.$floor_area_length_total_px.'px"';
+        ?>
+            <div id="floor_area_canvas_inn_content">
+                <div class="relative inline-block" id="floor_area_canvas_inn">
+                    <canvas id="floor_area_canvas" class="floor_area_canvas" 
+                    width="<?= /* @noEscape */ $floor_area_width_total_px+100;?>" 
+                    height="<?= /* @noEscape */ $floor_area_length_total_px+100;?>"></canvas>
+                </div>
+                <p class="m_edge m_top text-size14 font-medium text-custom-blue absolute left-0 right-0 top-0 text-center">
+                    Male Edging
+                </p>
+                <p class="f_edge m_bottom text-size14 font-medium text-custom-blue text-center">Female Edging</p>
+                <p class="m_doors text-size14 font-medium text-black text-center">Door side</p>
+            </div>
+        </div>
+        <!-- <div class="reset_print_btns absolute right-0">
+            <button onclick="resetDesigner()" type="button" class="cursor-pointer">Reset designer</button>
+            <button type="button" class="cursor-pointer" onclick="window.print();">Print</button>
+        </div> -->
+    </div>
+</div>
+<div class="designer_cart_items_summary_container">
+    <div class="design-cart-items-err-msg message error hidden">
+    </div>
+    <h2 class="text-size24 font-semibold text-black">Add to cart</h2>
+    <table class="w-full">
+        <thead>
+        <tr>
+            <th class="text-size18 font-semibold text-black text-left">Qty</th>
+            <th class="text-size18 font-semibold text-black text-left">Color</th>
+            <th class="text-size18 font-semibold text-black text-left">Price</th>
+        </tr>
+        </thead>
+        <tbody class="designer_cart_items">
+        </tbody>
+    </table>
+    <div class="inline-block w-full" style="clear:both;">
+        <div class="designer_total_summary_container">
+            <div class="flex items-baseline">
+                <div class="total_label text-size24 font-normal text-black sm:text-size16">Total:</div>&nbsp;
+                <div class="all_total_price text-size36 font-semibold text-custom-blue sm:text-size24"></div>&nbsp;
+                <div class="all_total_regular_price text-size24 font-normal text-black line-through sm:text-size16">
+                </div>
+            </div>
+            <div class="total_tiles_edge_qty block text-size18 font-normal text-black text-right sm:text-size14">
+                <span class="total_tiles_qty text-size18 font-normal text-black sm:text-size14"></span> 
+                <span>tiles &&nbsp;</span>
+                <span class="total_edges_qty text-size18 font-normal text-black sm:text-size14">0</span>
+                <span>&nbsp;edges</span>
+            </div>
+        </div>
+    </div>
+    <div class="inline-block w-full" style="clear:both;">
+        <button type="button" title="Add to Cart" class="btn btn-primary design-addtocart-btn">
+            <span>Add to Cart </span>
+        </button>
+    </div>
+
+</div>
+
+</form>
+
+<?= /* @noEscape */ $block->getLayout()->createBlock(\Dcw\DesignerTool\Block\Index::class)
+->setCustomWidth($custom_width)
+->setCustomLength($custom_length)
+->setExactWidthInch($exact_width_inch)
+->setExactLengthInch($exact_length_inch)
+->setWidthRatio($width_ratio)
+->setLengthRatio($length_ratio)
+->setPxPerWidth($px_per_width)
+->setPxPerLength($px_per_length)
+->setProductId($productId)
+->setChildId($childId)
+->setIsDisplayEdging($product->getDisplayEdging())
+->setIsDisplayCorner($product->getDisplayCorner())
+->setTemplate("Dcw_DesignerTool::designertool_js.phtml")->toHtml();
+//require_once($block->moduleViewPath().'/frontend/templates/designertool_js.phtml');
+?>
+
+
+<script> 
+    var middleSection = jQuery("#floor_area_canvas_inn_content");
+    var middleSectionHeight = jQuery("#floor_area_canvas_inn_content").outerHeight();
+    var middleSectionTop = middleSection.offset().top; // Top position of middle-section
+    var bodyTop = jQuery("body").offset().top; // Top position of body
+    var header1 = $("#header");
+    var headerHeight = header1.outerHeight();
+
+    var middleSectionHeightFromTop = middleSectionTop - bodyTop - headerHeight;
+
+    var resetPrintBtns = jQuery(".reset_print_btns");
+    var resetPrintBtnsTop = resetPrintBtns.offset().top;
+    var resetPrintBtnsHeight = resetPrintBtns.outerHeight();
+
+    var designer_product_customize_left = jQuery('.designer_product_customize_container').outerHeight();
+    console.log('designer_product_customize_left===='+designer_product_customize_left);
+    var designer_product_customize_left_hgt1 = designer_product_customize_left - 140;
+
+    jQuery(window).scroll(function() {
+        var scrollTop = jQuery(window).scrollTop();
+        if (scrollTop >= middleSectionHeightFromTop) {
+          jQuery('body').addClass("floor-sticky");
+        } else {
+          jQuery('body').removeClass("floor-sticky");
+        }
+        
+        var floorSticky = jQuery('.floor-sticky');
+        if(floorSticky){
+            if (scrollTop >= designer_product_customize_left_hgt1 ) {
+                jQuery("#floor_area_canvas_inn_content").addClass("floor-sticky");
+            }
+            else{
+                jQuery("#floor_area_canvas_inn_content").removeClass("floor-sticky");
+            }
+        }
+
+        if ($(window).width() < 1100) {
+            if(floorSticky){
+                if (scrollTop >= (designer_product_customize_left_hgt1 + 350) ) {
+                    jQuery("#floor_area_canvas_inn_content").addClass("floor-sticky");
+                }
+                else{
+                    jQuery("#floor_area_canvas_inn_content").removeClass("floor-sticky");
+                }
+            }
+        }
+    });
+</script>
+<style>
+@media print {
+    .footer {
+        display: none;
+    }
+}
+.edge_color_radio {
+    position: absolute;
+    left: -20px;
+    top: -20px;
+    width: 150%;
+    height: 130%;
+    opacity: 0;
+}
+.edging_corner_container .tab-panel ul li {
+    position: relative;
+    overflow: hidden;
+}
+
+.corner_color_radio {
+    position: absolute;
+    left: -20px;
+    top: -20px;
+    width: 150%;
+    height: 130%;
+    opacity: 0;
+}
+
+.color_position_inner_img .color_position {
+    position: absolute;
+    display: block;
+    left: -10px;
+    top: -16px;
+    width: 120%;
+    height: 120%;
+    opacity: 0;
+    z-index:999;
+}
+.color_position_inner_img {
+    overflow: hidden;
+    z-index:999;
+}
+</style>

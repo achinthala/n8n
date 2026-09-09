@@ -1,0 +1,113 @@
+<?php
+/**
+ * Copyright © Incstores. All rights reserved.
+ */
+/**
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Amasty\RequestQuote\Block\Adminhtml\Items\Column\Name $block
+ */
+
+// phpcs:ignoreFile
+?>
+<?php if ($item = $block->getItem()): ?>
+    <?php
+    // Get product URL for linking
+    $productUrl = null;
+    $product = $item->getProduct();
+    if ($product && $product->getId()) {
+        $productUrl = $product->getProductUrl();
+    }
+    ?>
+
+    <div id="order_item_<?= /* @noEscape */ $item->getId() ?>_title"
+         class="product-title">
+        <?php if ($productUrl): ?>
+            <a href="<?= $escaper->escapeUrl($productUrl) ?>" target="_blank">
+                <?= $escaper->escapeHtml($item->getName()) ?>
+            </a>
+        <?php else: ?>
+            <?= $escaper->escapeHtml($item->getName()) ?>
+        <?php endif; ?>
+    </div>
+
+    <?php
+    /* Get variant and color display names from the child product (for configurables) */
+    $variantDisplayName = null;
+    $colorDisplayName = null;
+
+    // For configurable products, get attributes from the child/simple product
+    $children = $item->getChildren();
+    if ($children && count($children) > 0) {
+        foreach ($children as $child) {
+            $childProduct = $child->getProduct();
+            if ($childProduct && $childProduct->getId()) {
+                try {
+                    // Explicitly load these attributes as they're not auto-loaded
+                    $variantDisplayName = $childProduct->getResource()->getAttributeRawValue(
+                        $childProduct->getId(),
+                        'incstores_pim_variant_display_name',
+                        $childProduct->getStoreId()
+                    );
+                    $colorDisplayName = $childProduct->getResource()->getAttributeRawValue(
+                        $childProduct->getId(),
+                        'incstores_pim_color_display_name',
+                        $childProduct->getStoreId()
+                    );
+                } catch (\Exception $e) {
+                    // Silently fail if attributes don't exist
+                }
+                break; // Only need first child for configurable products
+            }
+        }
+    }
+    ?>
+
+    <?php /* Display Variant Display Name */ ?>
+    <?php if ($variantDisplayName): ?>
+        <div class="product-variant" class="product-title">
+            <?= $escaper->escapeHtml($variantDisplayName) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php /* Display Color Display Name */ ?>
+    <?php if ($colorDisplayName): ?>
+        <div class="product-color" class="product-title">
+            <?= $escaper->escapeHtml($colorDisplayName) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php
+        $skus = $this->helper(\Magento\Catalog\Helper\Data::class)->splitSku($escaper->escapeHtml($block->getSku()));
+    ?>
+    <div class="product-sku-block">
+        <span><?= /* @noEscape */ __('SKU') ?>:</span>
+        <?= /* @noEscape */ implode('<br />', $skus) ?>
+    </div>
+
+    <?php if ($block->getOrderOptions()): ?>
+        <dl class="item-options">
+            <?php foreach ($block->getOrderOptions() as $option): ?>
+                <dt><?= $escaper->escapeHtml($option['label']) ?>:</dt>
+                <dd>
+                    <?php if (isset($option['custom_view']) && $option['custom_view']): ?>
+                        <?= /* @noEscape */ $block->getCustomizedOptionValue($option) ?>
+                    <?php else: ?>
+                        <?php $option = $block->getFormattedOption($option['value']); ?>
+                        <?= /* @noEscape */ $option['value'] ?><?php if (isset($option['remainder']) && $option['remainder']): ?><span id="<?= /* @noEscape */ $_dots = 'dots' . uniqid() ?>"> ...</span><span id="<?= /* @noEscape */ $_id = 'id' . uniqid() ?>"><?= /* @noEscape */ $option['remainder'] ?></span>
+                            <script>
+                                require(['prototype'], function() {
+                                    $('<?= /* @noEscape */ $_id ?>').hide();
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseover', function(){$('<?= /* @noEscape */ $_id ?>').show();});
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseover', function(){$('<?= /* @noEscape */ $_dots ?>').hide();});
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseout',  function(){$('<?= /* @noEscape */ $_id ?>').hide();});
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseout',  function(){$('<?= /* @noEscape */ $_dots ?>').show();});
+                                });
+                            </script>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </dd>
+            <?php endforeach; ?>
+        </dl>
+    <?php endif; ?>
+    <?= $escaper->escapeHtml($item->getDescription()) ?>
+<?php endif; ?>

@@ -1,0 +1,116 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\Sales\Block\Order\Items;
+use Magento\Shipping\Helper\Data as ShippingHelper;
+use Dcw\Checkout\ViewModel\Data as CheckoutViewModel;
+
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundHelper
+
+/** @var Items $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var CheckoutViewModel $checkoutViewModel */
+$checkoutViewModel = $viewModels->require(CheckoutViewModel::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+$order = $block->getOrder();
+$shippingHelper = $this->helper(ShippingHelper::class);
+
+// Get the textarea data from Magento system config
+$trackingData = $checkoutViewModel->getTrackingLinks();
+
+// Process each line and generate links
+$trackingLinks = [];
+if (isset($trackingData) && !empty($trackingData)) {
+    // Explode data by new lines
+    $lines = explode("\n", trim($trackingData));
+    foreach ($lines as $line) {
+        $parts = explode(":", $line, 2);
+        
+        if (count($parts) === 2) {
+            $carrierName = trim($parts[0]);
+            $trackingLinks[$carrierName] = trim($parts[1]);
+        }
+    }
+}
+?>
+<?php foreach ($order->getShipmentsCollection() as $shipment): ?>
+    <?php $tracks = $shipment->getTracksCollection(); ?>
+    <div class="order-title text-center md:text-left font-semibold">
+        <?= $escaper->escapeHtml(__('Shipment #')) ?><?= $escaper->escapeHtml($shipment->getIncrementId()) ?>
+        <a href="<?= $escaper->escapeUrl($block->getUrl('*/*/printShipment', ['shipment_id' => $shipment->getId()])) ?>"
+           class="text-primary inline-block ml-2 pl-2 border-l text-sm font-normal"
+           target="_blank"
+           rel="noopener">
+            <?= $heroicons->printerHtml('inline-block', 20, 20); ?>
+            <span class="inline-block ml-1 underline"><?= $escaper->escapeHtml(__('Print Shipment')) ?></span>
+        </a>
+        <?php if ($tracks->count()): ?>
+            <!-- <a href="<?= $escaper->escapeUrl($shippingHelper->getTrackingPopupUrlBySalesModel($shipment)); ?>"
+               target="_blank" rel="noopener" title="<?= $escaper->escapeHtml(__('Track Shipment')) ?>"
+               class="text-primary inline-block ml-2 pl-2 border-l text-sm font-normal">
+                <?= $heroicons->searchHtml('inline-block', 20, 20); ?>
+                <span class="inline-block ml-1 underline"><?= $escaper->escapeHtml(__('Track Shipment')) ?></span>
+            </a> -->
+        <?php endif; ?>
+    </div>
+    <?php if ($tracks->count()): ?>
+        <div class="my-2">
+            <p><?= $escaper->escapeHtml(__('Tracking Number(s):')) ?></p>
+            <div class="tracking-content">
+                <?php
+                $i    = 1;
+                $size = $tracks->count();
+                foreach ($tracks as $track): ?>
+                    <?php
+                    $shipmentLink = $escaper->escapeUrl($shippingHelper->getTrackingPopupUrlBySalesModel($track));
+
+                    if (!empty($trackingLinks) && isset($trackingLinks[$track->getTitle()]) && $track->getTrackNumber()) {
+                        $shipmentLink = str_replace("{{TRACKNUM}}", $track->getTrackNumber(), $trackingLinks[$track->getTitle()]);
+                    }
+                    ?>
+                    <a href="<?= $shipmentLink ?>"
+                    target="_blank" rel="noopener" title="<?= $escaper->escapeHtml(__('Track Shipment')) ?>"
+                    class="text-primary inline-block ml-2 pl-2 border-l text-sm font-normal">
+                        <?= $heroicons->searchHtml('inline-block', 20, 20); ?>
+                        <span class="inline-block ml-1 underline"><?= $escaper->escapeHtml($track->getNumber()) ?></span>
+                    </a>
+                    <!-- <a href="<?= $shipmentLink ?>"
+                        target="_blank" rel="noopener"
+                        class="inline-block underline"><?= $escaper->escapeHtml(__('Track Shipment')) ?> <span><?= $escaper->escapeHtml($track->getNumber()) ?></span>
+                    </a> -->
+                    <?php if ($i != $size): ?>, <?php endif; ?>
+                    <?php $i++;
+                endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="order-items shipment">
+    <div class="hidden parent-headings lg:grid grid-cols-5 text-sm text-secondary mt-2">
+        <div class="p-2 text-size14 font-medium"><?= $escaper->escapeHtml(__('Product Name')) ?></div>
+		<div class="p-2  text-size14 font-medium hidden"><?= $escaper->escapeHtml(__('SKU')) ?></div>
+        <div class="p-2 text-size14 font-medium"><?= $escaper->escapeHtml(__('Qty')) ?></div>
+		<div class="p-2  text-size14 font-medium"><?= $escaper->escapeHtml(__('Size')) ?></div>
+		<div class="p-2  text-size14 font-medium"><?= $escaper->escapeHtml(__('Color')) ?></div>
+		<div class="p-2  text-size14 font-medium"><?= $escaper->escapeHtml(__('Discount Amount')) ?></div>
+    </div>
+        <?php $items = $shipment->getAllItems(); ?>
+        <?php foreach ($items as $item): ?>
+            <?php if (!$item->getOrderItem()->getParentItem()): ?>
+                <?= $block->getItemHtml($item) ?>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    </div>
+<?php endforeach; ?>

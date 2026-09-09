@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="dcw_spotlight_cron_group">
+        <!--insert product data into tmp table-->
+        <job name="dcw_spotlight_product_insert_cronjob" instance="Dcw\Spotlight\Cron\SpotlightUrl" method="insertProductIds">
+            <schedule>0 0 * * *</schedule>
+        </job>
+
+        <!--generate spotlight urls & insert into tmp table-->
+        <job name="dcw_spotlight_url_cronjob" instance="Dcw\Spotlight\Cron\SpotlightUrl" method="execute">
+            <schedule>*/2 1-4 * * *</schedule>
+        </job>
+
+        <!--generate spotlight urls to CSV-->
+        <job name="dcw_spotlight_generate_cronjob" instance="Dcw\Spotlight\Cron\SpotlightUrl" method="addSpotlightDataIntoCSV">
+            <schedule>0 5 * * *</schedule>
+        </job>
+
+        <!--sync Bazaarvoice reviews daily at 3:00 AM (RUNS FIRST)-->
+        <job name="dcw_spotlight_sync_bazaarvoice_reviews" instance="Dcw\Spotlight\Cron\SyncBazaarvoiceReviews" method="execute">
+            <schedule>0 3 * * *</schedule>
+        </job>
+
+        <!--warm JSON-LD schema cache for configurable products (RUNS AFTER reviews sync)-->
+        <!--Includes Bazaarvoice aggregateRating + top 5 reviews from database tables-->
+        <job name="dcw_spotlight_jsonld_cache_warm" instance="Dcw\Spotlight\Cron\WarmJsonLdCache" method="execute">
+            <schedule>30 3 * * *</schedule>
+        </job>
+    </group>
+</config>

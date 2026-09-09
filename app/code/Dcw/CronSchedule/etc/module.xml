@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="Dcw_CronSchedule" setup_version="1.0.0">
+        <sequence>
+            <module name="Magento_AsynchronousOperations"/>
+            <module name="Magento_Captcha"/>
+            <module name="Magento_Indexer"/>
+            <module name="Magento_NewRelicReporting"/>
+            <module name="Magento_Newsletter"/>
+            <module name="Magento_Staging"/>
+            <module name="Magento_CheckoutStaging"/>
+            <module name="Magento_Integration"/>
+            <module name="Magento_Catalog"/>
+            <module name="Magento_CatalogEvent"/>
+            <module name="Magento_InventoryInStorePickupSales"/>
+            <module name="Magento_SaaSCategory"/>
+            <module name="Magento_SaaSScopes"/>
+            <module name="Amasty_Base"/>
+            <module name="Amasty_Feed"/>
+            <module name="Magefan_Blog"/>
+            <module name="Magefan_BlogPlus"/>
+            <module name="Avalara_AvaTax"/>
+            <module name="Avalara_BaseProvider"/>
+        </sequence>
+    </module>
+</config>

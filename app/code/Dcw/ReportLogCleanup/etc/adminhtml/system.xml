@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_reportlogcleanup" translate="label" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="0">
+            <class>separator-top</class>
+            <label>Report Log Cleanup</label>
+            <tab>dcw_store_config</tab>
+            <resource>Magento_Backend::admin</resource>
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                <label>General Settings</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Enable Cleanup</label>
+                    <comment>When enabled, the cron job will remove old records from report_viewed_product_index, mst_search_report_log, and avatax_log tables.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="retention_days" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+                    <label>Retention Period (Days)</label>
+                    <comment>Delete records older than this many days. Minimum 30 days. Cron runs daily at 2:00 AM.</comment>
+                    <backend_model>Dcw\ReportLogCleanup\Model\Config\Backend\RetentionDays</backend_model>
+                    <validate>required-entry validate-number integer</validate>
+                    <frontend_class>validate-number</frontend_class>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

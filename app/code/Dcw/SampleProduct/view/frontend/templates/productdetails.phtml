@@ -1,0 +1,177 @@
+<?php
+/**
+ * HyvÃ¤ Themes - https://hyva.io
+ * Copyright Â© HyvÃ¤ Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
+
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+$currentUrl = $block->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => true]);
+
+$getLayout = $block->getLayout();
+$uniqueId = '_' . uniqid();
+$curSymbol = $block->getCurrentCurrencySymbol();
+$productId = $block->getProductId();
+$_product = $block->getLoadProduct($productId);
+
+if ($_product) {
+    $childIds = [];
+    $sampleIdArray = [];
+    $selectedProducts = [];
+    $productdata = [];
+    $spidsColor = "";
+    $childproids = "";
+    
+    if ($_product->getTypeId() == 'configurable') {
+        $_children = $_product->getTypeInstance()->getUsedProducts($_product);
+        foreach ($_children as $child) {
+            if($child->getStatus() == Status::STATUS_ENABLED) {
+                $childIds[] = $child->getId();
+            }
+        }
+    } else if ($_product->getTypeId() == 'simple') {
+        $childIds[] = $_product->getId();
+    }
+    
+    if (is_array($childIds) && count($childIds) > 0) {
+        $buildSampleProductData = $block->buildSampleProductData($childIds);
+
+        if (is_array($buildSampleProductData) && count($buildSampleProductData) > 0) {
+            if (isset($buildSampleProductData['sampleIdArray']));
+            {
+                $sampleIdArray = $buildSampleProductData['sampleIdArray'] ?? [];
+            }
+
+            if (isset($buildSampleProductData['selectedProducts']));
+            {
+                $selectedProducts = $buildSampleProductData['selectedProducts'] ?? [];
+            }
+
+            if (isset($buildSampleProductData['productdata']));
+            {
+                $productdata = $buildSampleProductData['productdata'] ?? [];
+            }
+
+            if (isset($buildSampleProductData['spidsColor']));
+            {
+                $spidsColor = $buildSampleProductData['spidsColor'] ?? '';
+            }
+        }
+    }
+    
+    if (is_array($sampleIdArray) && count($sampleIdArray) > 0) {
+        // add canto image code
+        $mainImageData = $block->getMainImageData($_product);
+        // end canto image code
+
+        $mainprice = $_product->getPriceInfo()->getPrice('final_price')->getAmount()->getValue();
+        $priceHtml = '<span>'.$curSymbol.$mainprice.'</span>';
+
+        $childproids = implode(",", $sampleIdArray);
+
+        $pricehtml = $block->renderPriceHtml($_product);
+    
+        //if (preg_match('/\d|x/', $_product->getName())) {
+            // Escape single quotes
+            $pName = str_replace("'", "\\'", $_product->getName());
+            $pName = str_replace('"', '\\"', $pName);
+        //} else {
+            //$pName = $_product->getName();
+       //}
+        ?>
+        <div class="order_sample"  x-data="{mainproduct:<?= /** @noEscape */$productId?>, inputValue: 0, colors:[], spidsColors:[], productids: [<?= /** @noEscape */$spidsColor?>],imageUrl: '<?=/** @noEscape */$mainImageData?>',
+        productname:'<?= $escaper->escapeHtml(__($pName)) ?>',
+        productprice:'<?= /** @noEscape */$priceHtml ?>'}">
+
+            <?php echo $getLayout->createBlock("Magento\Framework\View\Element\Template")->setTemplate("Magento_Theme::html/messages.phtml")->toHtml() ?>
+            <?php echo $getLayout->createBlock("Magento\Framework\View\Element\Messages")->setTemplate("Magento_Theme::messages.phtml")->toHtml() ?>
+            <div class="left relative mb-6 sm:mb-4" >
+                <h2><?= $escaper->escapeHtml(__('Order Free Samples')) ?></h2> 
+
+                <div  class="gallery-placeholder _block-content-loading"   >
+                    <img :src="imageUrl" alt="Image">
+                </div>
+                <div>
+                    <a href="<?=/** @noEscape */$_product->getProductUrl()?>"><strong class="product name product-item-name" x-text="productname"></strong></a>
+                    <!-- <div x-html="productprice" class="price "></div>-->
+    
+                    <div class="text-gray-900" >
+                        <?=/** @noEscape */ $pricehtml?>
+                    </div>
+                </div>
+        
+                <strong class="viewproduct">
+                    <a href="<?=/** @noEscape */$_product->getProductUrl()?>"><h2><?= $escaper->escapeHtml(__('View Product Details')) ?></h2></a>               
+                </strong> 
+            </div>
+            <div class="right relative mb-6">
+                <div>
+                    <div>
+                        <input type="hidden" x-model="inputValue">
+                        <?php 
+                        foreach ($productdata as $single) {
+                            $check_duplicate_color[] = $single['color_name'];
+                            $color_pid = $single['child_id']."~".$single['color_name'];
+                            $color_spid = $single['id']."~".$single['color_name'];
+                            //if (preg_match('/\d|x/', $single['name'])) {
+                                // Escape single quotes
+                                $sName = str_replace("'", "\\'", $single['name']);
+                                $sName = str_replace('"', '\\"', $sName);
+                            //} else {
+                                //$sName = $single['name'];
+                            //}
+                            ?>
+                            <div class="order-free-sample-prod-info" x-data="{ checked:productids.includes('<?= /* @noEscape */$color_spid?>')}" 
+                                x-on:click="checked = !checked, 
+                                (checked == true) ? productids.push('<?= $color_spid?>') : 
+                                productids.splice(productids.indexOf('<?=$color_spid?>'), 1),
+                                (checked == true) ? colors.push('<?= $color_pid?>') : 
+                                colors.splice(colors.indexOf('<?= $color_pid?>'), 1),
+                                (checked == true) ? spidsColors.push('<?= $color_spid?>') : 
+                                spidsColors.splice(spidsColors.indexOf('<?= $color_spid?>'), 1),
+                                imageUrl = (checked == true) ? '<?= /** @noEscape */$single['medium']?>' : '<?= /** @noEscape */$mainImageData?>',
+                                productname = (checked == true) ? '<?= /** @noEscape */$sName?>' :
+                                '<?= $escaper->escapeHtml(__($pName)) ?>',
+                                productprice = (checked == true) ? '<?=/** @noEscape */$single['childprice']?>' : '<?=/** @noEscape */ $priceHtml ?>'
+                                " x-bind:class="{ 'border': checked, '': !checked }" id="color_check_<?=(int)$single['id']?>">
+                                <input class="" type="checkbox" x-model="productids"  :value="'<?= /* @noEscape */$color_spid?>'" /> 
+                                <div class="product-info">
+                                    <div class="color_swatches"  style="height: 111px;width: 111px; border-radius: 6px; margin: 0 !important;display: block !important;">
+                                        <img class="product-image-small" src="<?php echo  $single['small'] ?>"  title="<?= /** @noEscape */$single['color_variant_name']?>">
+                                    </div>    
+                                    <div class="mt-2 mb-1 items-center justify-center text-primary font-semibold text-lg text-center ">
+                                        <strong class="product name product-item-name">
+                                            <?= /** @noEscape */$single['color_variant_name']?>                    
+                                        </strong>
+                                    </div>    
+                                </div>
+                            </div> 
+                        <?php                  
+                        }       
+                        ?>
+                    </div>
+                </div>
+            </div>
+            <?php
+            if (count($selectedProducts)) { ?>
+                <button type="button" x-on:click="inputValue = 2,samplesubmit(mainproduct,inputValue,productids,colors,spidsColors,'<?= $escaper->escapeHtml(__($pName))?>','<?= $escaper->escapeHtml(__($_product->getId()))?>','<?= $escaper->escapeHtml(__($childproids))?>')" 
+            class="inline-flex shrink-0 ml-auto xl:mt-0 btn btn-primary leftremovebutton" id="removesampleproduct">
+                    <?= $escaper->escapeHtml(__('Remove Sample')) ?>
+                </button>
+            <?php } ?>
+
+            <button type="button" x-on:click="inputValue = 1,samplesubmit(mainproduct,inputValue,productids,colors,spidsColors,'<?= $escaper->escapeHtml(__($pName))?>','<?= $escaper->escapeHtml(__($_product->getId()))?>','<?= $escaper->escapeHtml(__($childproids))?>')" 
+            class="inline-flex shrink-0 ml-auto xl:mt-0 btn btn-primary rightremovebutton" id="addsampleproduct">
+                <?= $escaper->escapeHtml(__('Add to Cart')) ?>
+            </button>
+        </div>
+    <?php
+    }
+}
+?>

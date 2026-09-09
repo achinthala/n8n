@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="adminhtml_restrictions_rule_edit_tab_main_prepare_form">
+        <observer name="dcw_order_pending_review_order_restriction_apply_type"
+                  instance="Dcw\OrderPendingReview\Observer\Adminhtml\AddOrderRestrictionApplyTypeField"/>
+    </event>
+</config>

@@ -1,0 +1,713 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+
+
+?>
+<script>
+    function initSwatchOptions(swatchConfig, swatchLabelValues = null) {
+        const normalizedSwatchLabelValues = (
+            swatchLabelValues
+            && typeof swatchLabelValues === 'object'
+            && !Array.isArray(swatchLabelValues)
+        ) ? swatchLabelValues : {};
+
+        return {
+            swatchConfig,
+            swatchLabelValues: normalizedSwatchLabelValues,
+            resolveSwatchLabel(attributeId, optionId) {
+                if (optionId === undefined || optionId === null || optionId === '') {
+                    return '';
+                }
+
+                const optionKey = String(optionId);
+                const labels = (
+                    this.swatchLabelValues
+                    && typeof this.swatchLabelValues === 'object'
+                    && !Array.isArray(this.swatchLabelValues)
+                ) ? this.swatchLabelValues : {};
+                const flatLabel = labels[optionKey] ?? labels[optionId];
+                if (flatLabel !== undefined && flatLabel !== null && flatLabel !== '') {
+                    return String(flatLabel);
+                }
+
+                const attrConfig = this.swatchConfig?.[attributeId] ?? this.swatchConfig?.[String(attributeId)];
+                const attrLabels = attrConfig?.swatchLabelValues;
+                if (attrLabels) {
+                    const attrLabel = attrLabels[optionKey] ?? attrLabels[optionId];
+                    if (attrLabel !== undefined && attrLabel !== null && attrLabel !== '') {
+                        return String(attrLabel);
+                    }
+                }
+
+                const swatchOption = attrConfig?.[optionKey] ?? attrConfig?.[optionId];
+                if (swatchOption?.label) {
+                    return String(swatchOption.label);
+                }
+
+                return this.getOptionLabelFromOptionConfig(attributeId, optionId) || '';
+            },
+            getAttributeSwatchData(attributeId) {
+                const attributeKey = String(attributeId);
+                const rawConfig = this.swatchConfig?.[attributeId] ?? this.swatchConfig?.[attributeKey];
+                const labels = (
+                    this.swatchLabelValues
+                    && typeof this.swatchLabelValues === 'object'
+                    && !Array.isArray(this.swatchLabelValues)
+                ) ? this.swatchLabelValues : {};
+                if (!rawConfig) {
+                    return {details: {}, swatchLabelValues: labels};
+                }
+                const swatchConfig = Object.assign({}, rawConfig);
+                if (swatchConfig['additional_data']) {
+                    try {
+                        swatchConfig['details'] = JSON.parse(swatchConfig['additional_data']);
+                    } catch (error) {
+                        swatchConfig['details'] = {};
+                    }
+                } else {
+                    swatchConfig['details'] = swatchConfig['details'] ?? {};
+                }
+                swatchConfig['swatchLabelValues'] = labels;
+
+                return swatchConfig;
+            },
+            getAllAttributeOptions(attributeId) {
+                return (
+                    this.optionConfig.attributes[attributeId] &&
+                    this.optionConfig.attributes[attributeId].options
+                ) || []
+            },
+            optionIsActive(attributeId, optionId) {
+                const optionKey = String(optionId);
+                return !!this.getAllowedAttributeOptions(attributeId).find(
+                    option => String(option.id) === optionKey
+                );
+            },
+            optionIsEnabled(attributeId, optionId) {
+                const attributeKey = String(attributeId);
+                const optionKey = String(optionId);
+                const index = this.optionConfig?.index || {};
+                for (const productId in index) {
+                    const productOptions = index[productId] || {};
+                    if (
+                        String(productOptions[attributeKey]) === optionKey
+                        || String(productOptions[attributeId]) === optionKey
+                    ) {
+                        return true;
+                    }
+                }
+                const attributeOptions = (
+                    this.optionConfig?.attributes?.[attributeId]?.options
+                    || this.optionConfig?.attributes?.[attributeKey]?.options
+                    || []
+                );
+                const match = attributeOptions.find((option) => String(option.id) === optionKey);
+                if (!match?.products?.length) {
+                    return false;
+                }
+                return match.products.some((childId) => {
+                    const key = String(childId);
+                    return Object.prototype.hasOwnProperty.call(index, key)
+                        || Object.prototype.hasOwnProperty.call(index, childId);
+                });
+            },
+            mapSwatchTypeNumberToTypeCode(typeNumber) {
+                switch ("" + typeNumber) {
+                    case "1":
+                        return "color"
+                    case "2":
+                        return "image"
+                    case "3":
+                        return "empty"
+                    case "0":
+                    default:
+                        return "text"
+                }
+            },
+            getTypeOfFirstOption(attributeId) {
+                for (const optionId in this.swatchConfig[attributeId]) {
+                    const option = this.swatchConfig[attributeId][optionId];
+                    if (typeof option.type !== 'undefined') {
+                        return this.mapSwatchTypeNumberToTypeCode(option.type);
+                    }
+                }
+            },
+            getVisualSwatchType(attributeId, targetOptionId) {
+                // If a type configuration is present for the given option id, use it
+                const config = this.swatchConfig[attributeId];
+                if (config[targetOptionId] && typeof config[targetOptionId].type !== 'undefined') {
+                    return this.mapSwatchTypeNumberToTypeCode(config[targetOptionId].type);
+                }
+
+                // Otherwise - if no config is present for the target option - use the type of the first option
+                // with a type property from the attribute, thus assuming its the same type as the target option.
+                // (This edge case condition can occur on single swatch products if some options are not salable)
+                return this.getTypeOfFirstOption(attributeId);
+            },
+            getSwatchType(attributeId, optionId) {
+                // Deserialize the attribute details the first time they are used
+                if (this.swatchConfig[attributeId] && ! this.swatchConfig[attributeId].details) {
+                    this.swatchConfig[attributeId] = this.getAttributeSwatchData(attributeId);
+                }
+                const type =  this.swatchConfig[attributeId] &&
+                    this.swatchConfig[attributeId].details &&
+                    this.swatchConfig[attributeId].details.swatch_input_type ||
+                    "empty";
+                return type === 'visual' ? this.getVisualSwatchType(attributeId, optionId) : type;
+            },
+            isTextSwatch(attributeId, optionId) {
+                return this.getSwatchType(attributeId, optionId) === 'text';
+            },
+            isVisualSwatch(attributeId, optionId) {
+                const type = this.getSwatchType(attributeId, optionId);
+
+                return ['image', 'color'].includes(type);
+            },
+            getSwatchBackgroundStyle(attributeId, optionId) {
+                const config = this.getSwatchConfig(attributeId, optionId);
+                const type = this.getSwatchType(attributeId, optionId);
+
+                if (type === "color") {
+                        return 'background-color:' + config.value;
+                } else if (type === "image") {
+                        return "background: #ffffff url('" + config.value + "') no-repeat center";
+                } else {
+                    return '';
+                }
+            },
+			getSwatchText(attributeId, optionId) {
+                return this.resolveSwatchLabel(attributeId, optionId);
+            },
+            getLegacyColorSwatchImageHtml(attributeId, optionId) {
+                const map = this._legacyColorSwatchImages || {};
+                return this.getSwatchTextUrl(attributeId, optionId, map);
+            },
+            getSwatchTextUrl(attributeId, optionId, childSwatch) {
+                const config = this.getSwatchConfig(attributeId, optionId);
+                const optionKey = String(optionId);
+                const swatchMap = (
+                    childSwatch
+                    && typeof childSwatch === 'object'
+                    && !Array.isArray(childSwatch)
+                ) ? childSwatch : {};
+                const swatchUrl = swatchMap[optionKey] ?? swatchMap[optionId];
+                if(swatchUrl != "" && swatchUrl != null && isValidURL(swatchUrl)){
+					return "<img loading='lazy' src="+swatchUrl+" title="+swatchUrl+" alt="+swatchUrl+"/>";
+				} else if(config && config.value!="" && config.value!= null && isValidURL(config.value)){
+					return "<img loading='lazy' src="+config.value+" title="+config.value+" alt="+config.value+"/>";
+				} else {
+					 var placeHoldernew = BASE_URL+'media/catalog/product/placeholder/default/swatch_placeholder.png';
+
+					return "<img  width= '60px' height='60px' src="+placeHoldernew+" title="+placeHoldernew+" alt="+placeHoldernew+"/>";
+				}
+			},
+            getOptionLabelFromOptionConfig(attributeId, optionId) {
+                const optionKey = String(optionId);
+                const option = this.getAllAttributeOptions(attributeId).find(
+                    (entry) => String(entry.id) === optionKey
+                );
+                return option?.label || '';
+            },
+            getSwatchConfig(attributeId, optionId) {
+                const attrConfig = this.swatchConfig[attributeId] ?? this.swatchConfig[String(attributeId)];
+                if (!attrConfig) {
+                    return false;
+                }
+                return attrConfig[optionId] ?? attrConfig[String(optionId)] ?? false;
+            },
+            activeTooltipItem: false,
+            tooltipPositionElement: false,
+            isTooltipVisible() {
+                return this.activeTooltipItem &&
+                    this.getSwatchConfig(
+                        this.activeTooltipItem.attribute,
+                        this.activeTooltipItem.item
+                    );
+            },
+            getTooltipImageStyle(attributeId, optionId) {
+                const config = this.getSwatchConfig(attributeId, optionId);
+                const type = this.getSwatchType(attributeId, optionId);
+
+                if (type === "color") {
+                    return 'background-color:' + config.value + '; width: 110px; height: 90px;';
+                } else if (type === "image") {
+                    return "background: #ffffff url('" + config.thumb +
+                        "') center center no-repeat; width: 110px; height: 90px;";
+                } else {
+                    return 'display:none';
+                }
+            },
+            getTooltipPosition() {
+                if (!this.tooltipPositionElement) {
+                    return '';
+                }
+                const rect = this.tooltipPositionElement.getBoundingClientRect();
+                const elementWidth = rect.width;
+                const elementHeight = rect.height;
+                const container = document.querySelector('.swatch___render');
+                if (!container) {
+                    return '';
+                }
+                const containerRect = container.getBoundingClientRect();
+                const topPosition = rect.top - containerRect.top + 10;
+                const leftPosition = rect.left - containerRect.left;
+
+                return `                    
+                    top: ${topPosition}px;
+                    left: ${leftPosition}px;
+                `;
+            },
+            getSwatchConfigLabel(attributeId, optionId) {
+                const label = this.resolveSwatchLabel(attributeId, optionId);
+                return label !== '' ? label : false;
+            },
+            getTooltipLabel() {
+                return this.getSwatchConfigLabel(this.activeTooltipItem.attribute, this.activeTooltipItem.item);
+                //return this.getSwatchConfig(this.activeTooltipItem.attribute, this.activeTooltipItem.item).label
+            },
+            focusedLabel: false,
+            focusLabel(optionId) {
+                this.focusedLabel = optionId;
+            },
+            blurLabel() {
+                this.focusedLabel = false;
+            },
+            showSwatches: true,
+            initShowSwatchesIntersect() {
+                this.showSwatches = true;
+            },
+
+            quickShipValidation(attributeCode, attributeId, optionId){
+               if (optionId === undefined || optionId === null || optionId === '') {
+                   return 0;
+               }
+               var is_quick_ship_color = 0;
+                var optionConfigObj = this.optionConfig;
+                if (!optionConfigObj || typeof optionConfigObj !== 'object') {
+                    return 0;
+                }
+                if(attributeCode == 'incstores_pim_color_axis'){
+                    var attributes = optionConfigObj.attributes;
+                    if (!attributes || !attributes[attributeId] || !attributes[attributeId]['options']) {
+                        return 0;
+                    }
+                    var quickShipColorIds = optionConfigObj.quick_ship_color_ids || [];
+                    if (quickShipColorIds.length) {
+                        return quickShipColorIds.some(function (id) {
+                            return String(id) === String(optionId);
+                        }) ? 1 : 0;
+                    }
+                    var quickShipMap = optionConfigObj.quick_ship;
+                    if (!quickShipMap) {
+                        return 0;
+                    }
+                    var attributes_options = attributes[attributeId]['options'];
+
+                    attributes_options.forEach(function(option_details) {
+                        if(option_details['id'] == optionId){
+                            option_details['products'].forEach(function(child_product_id) {
+                                if(quickShipMap[String(child_product_id)] == 1 || quickShipMap[child_product_id] == 1){
+                                    is_quick_ship_color = 1;
+                                    return false;
+                                }
+                            });
+                        }
+                    });
+                }
+                return is_quick_ship_color;
+            },
+
+            hasQuickShipColorOptions(attributeCode, attributeId) {
+                if (!this.optionConfig?.attributes?.[attributeId]?.options?.length) {
+                    return false;
+                }
+                if (this.selectedValues) {
+                    Object.keys(this.selectedValues).forEach(function (key) {
+                        void this.selectedValues[key];
+                    }.bind(this));
+                }
+                var colorIds = this.optionConfig.quick_ship_color_ids || [];
+                var options = this.optionConfig.attributes[attributeId].options;
+                for (var i = 0; i < options.length; i++) {
+                    var optionId = options[i].id;
+                    var isQuick = colorIds.length
+                        ? colorIds.some(function (id) { return String(id) === String(optionId); })
+                        : (this.quickShipValidation(attributeCode, attributeId, optionId) === 1);
+                    if (!isQuick) {
+                        continue;
+                    }
+                    if (!this.optionIsEnabled(attributeId, optionId)) {
+                        continue;
+                    }
+                    if (!this.optionIsActive(attributeId, optionId)) {
+                        continue;
+                    }
+                    return true;
+                }
+                return false;
+            },
+
+            hasNormalColorOptions(attributeCode, attributeId) {
+                if (!this.optionConfig?.attributes?.[attributeId]?.options?.length) {
+                    return false;
+                }
+                if (this.shipRegionZipActive && this.customerRegionCode) {
+                    return false;
+                }
+                var colorIds = this.optionConfig.quick_ship_color_ids || [];
+                var options = this.optionConfig.attributes[attributeId].options;
+                for (var i = 0; i < options.length; i++) {
+                    var optionId = options[i].id;
+                    var isQuick = colorIds.length
+                        ? colorIds.some(function (id) { return String(id) === String(optionId); })
+                        : (this.quickShipValidation(attributeCode, attributeId, optionId) === 1);
+                    if (!isQuick) {
+                        if (!this.optionIsEnabled(attributeId, optionId)) {
+                            continue;
+                        }
+                        if (!this.optionIsActive(attributeId, optionId)) {
+                            continue;
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            },
+
+            shouldShowQuickShipSection(attributeCode, attributeId) {
+                if (this.shipRegionZipActive && this.customerRegionCode) {
+                    return false;
+                }
+                return this.hasQuickShipColorOptions(attributeCode, attributeId);
+            },
+
+            getOtherSwatchAttributeId(section = null) {
+                const target = section || document.querySelector('.swatch-attribute.other_swatch_option');
+                if (!target || !this.optionConfig?.attributes) {
+                    return null;
+                }
+                for (const key in this.optionConfig.attributes) {
+                    const code = this.optionConfig.attributes[key]?.code;
+                    if (code && code !== 'incstores_pim_color_axis' && target.classList.contains(code)) {
+                        return parseInt(key, 10);
+                    }
+                }
+                for (const key in this.optionConfig.attributes) {
+                    const code = this.optionConfig.attributes[key]?.code;
+                    if (code && code !== 'incstores_pim_color_axis') {
+                        return parseInt(key, 10);
+                    }
+                }
+                return null;
+            },
+
+            /**
+             * Count salable/enabled options only. Disabled Magento variants stay out of the UI.
+             * Hide "Select An Option" when fewer than two enabled options remain.
+             */
+            countEnabledOtherSwatchOptions(attrId) {
+                if (!attrId) {
+                    return 0;
+                }
+                const options = this.optionConfig?.attributes?.[attrId]?.options || [];
+                return options.filter((option) => this.optionIsEnabled(attrId, option.id)).length;
+            },
+
+            countVisibleOtherSwatchOptions() {
+                return this.countEnabledOtherSwatchOptions(this.getOtherSwatchAttributeId());
+            },
+
+            syncOtherSwatchOptionVisibility() {
+                const sections = document.querySelectorAll('.swatch-attribute.other_swatch_option');
+                if (!sections.length) {
+                    return;
+                }
+                const self = this;
+                const applyVisibility = () => {
+                    sections.forEach((variantSection) => {
+                        const attrId = self.getOtherSwatchAttributeId(variantSection);
+                        if (!attrId) {
+                            return;
+                        }
+                        const optionCount = self.countEnabledOtherSwatchOptions(attrId);
+                        const shouldShow = optionCount > 1;
+                        variantSection.classList.toggle('dcw-single-option-hidden', !shouldShow);
+                        // Theme CSS defaults other_swatch_option to display:none — force block/none.
+                        variantSection.style.setProperty(
+                            'display',
+                            shouldShow ? 'block' : 'none',
+                            'important'
+                        );
+                        if (!shouldShow && optionCount === 1) {
+                            const options = self.optionConfig?.attributes?.[attrId]?.options || [];
+                            const enabledOption = options.find((option) => self.optionIsEnabled(attrId, option.id));
+                            const optionId = enabledOption?.id;
+                            if (optionId !== undefined
+                                && String(self.selectedValues[attrId]) !== String(optionId)
+                                && typeof self.changeOption === 'function') {
+                                self.changeOption(attrId, optionId);
+                            }
+                        }
+                    });
+                };
+                applyVisibility();
+                window.setTimeout(applyVisibility, 300);
+            },
+
+            /**
+             * After color selection only (including disabled colors): if current variant/option
+             * is incompatible, auto-select the cheapest compatible one. Never run on variant clicks.
+             */
+            autoSelectCompatibleOtherOption(colorAttrId) {
+                if (!colorAttrId || !this.optionConfig?.attributes) {
+                    return;
+                }
+                const selectedColor = this.selectedValues[colorAttrId];
+                if (!selectedColor) {
+                    return;
+                }
+
+                let otherAttrId = null;
+                if (typeof this.getAttributeIdByCode === 'function') {
+                    otherAttrId = this.getAttributeIdByCode('incstores_pim_variant_axis')
+                        || this.getAttributeIdByCode('product_option');
+                }
+                if (!otherAttrId) {
+                    const section = document.querySelector('.swatch-attribute.other_swatch_option');
+                    otherAttrId = this.getOtherSwatchAttributeId(section);
+                }
+                if (!otherAttrId || !this.optionConfig.attributes[otherAttrId]) {
+                    return;
+                }
+
+                const currentOther = this.selectedValues[otherAttrId];
+                const isCurrentCompatible = currentOther
+                    && typeof this.optionIsActive === 'function'
+                    && this.optionIsActive(otherAttrId, currentOther);
+
+                if (isCurrentCompatible) {
+                    return;
+                }
+
+                const options = this.optionConfig.attributes[otherAttrId].options || [];
+                let lowestPrice = null;
+                let lowestOptionId = null;
+
+                options.forEach((option) => {
+                    if (typeof this.optionIsEnabled === 'function'
+                        && !this.optionIsEnabled(otherAttrId, option.id)) {
+                        return;
+                    }
+                    const productIds = option.products || [];
+                    productIds.forEach((productId) => {
+                        const product = this.optionConfig.index[productId]
+                            || this.optionConfig.index[String(productId)];
+                        if (!product || String(product[colorAttrId]) !== String(selectedColor)) {
+                            return;
+                        }
+                        const priceData = this.optionConfig.optionPrices[productId]
+                            || this.optionConfig.optionPrices[String(productId)];
+                        if (!priceData) {
+                            return;
+                        }
+                        const price = priceData.finalPrice.amount;
+                        if (lowestPrice === null || price < lowestPrice) {
+                            lowestPrice = price;
+                            lowestOptionId = option.id;
+                        }
+                    });
+                });
+
+                if (lowestOptionId === null
+                    || String(this.selectedValues[otherAttrId]) === String(lowestOptionId)) {
+                    return;
+                }
+
+                if (typeof this.changeOption === 'function') {
+                    this.changeOption(otherAttrId, lowestOptionId);
+                    return;
+                }
+
+                const el = document.querySelector(
+                    'input[name="super_attribute[' + otherAttrId + ']"][value="' + lowestOptionId + '"]'
+                );
+                if (el) {
+                    el.click();
+                }
+            },
+
+            /**
+             * After variant / Select An Option change: if current color is unavailable,
+             * auto-select the cheapest compatible color. Never run on color clicks.
+             */
+            autoSelectCompatibleColorOption(otherAttrId) {
+                if (!otherAttrId || !this.optionConfig?.attributes) {
+                    return;
+                }
+                const selectedOther = this.selectedValues[otherAttrId];
+                if (!selectedOther) {
+                    return;
+                }
+
+                let colorAttrId = null;
+                if (typeof this.getAttributeIdByCode === 'function') {
+                    colorAttrId = this.getAttributeIdByCode('incstores_pim_color_axis');
+                }
+                if (!colorAttrId && typeof this.getShipRegionColorAttributeId === 'function') {
+                    colorAttrId = this.getShipRegionColorAttributeId();
+                }
+                if (!colorAttrId || !this.optionConfig.attributes[colorAttrId]) {
+                    return;
+                }
+
+                const currentColor = this.selectedValues[colorAttrId];
+                const isCurrentCompatible = currentColor
+                    && typeof this.optionIsActive === 'function'
+                    && this.optionIsActive(colorAttrId, currentColor);
+
+                if (isCurrentCompatible) {
+                    return;
+                }
+
+                const options = this.optionConfig.attributes[colorAttrId].options || [];
+                let lowestPrice = null;
+                let lowestOptionId = null;
+
+                options.forEach((option) => {
+                    if (typeof this.optionIsEnabled === 'function'
+                        && !this.optionIsEnabled(colorAttrId, option.id)) {
+                        return;
+                    }
+                    const productIds = option.products || [];
+                    productIds.forEach((productId) => {
+                        const product = this.optionConfig.index[productId]
+                            || this.optionConfig.index[String(productId)];
+                        if (!product || String(product[otherAttrId]) !== String(selectedOther)) {
+                            return;
+                        }
+                        const priceData = this.optionConfig.optionPrices[productId]
+                            || this.optionConfig.optionPrices[String(productId)];
+                        if (!priceData) {
+                            return;
+                        }
+                        const price = priceData.finalPrice.amount;
+                        if (lowestPrice === null || price < lowestPrice) {
+                            lowestPrice = price;
+                            lowestOptionId = option.id;
+                        }
+                    });
+                });
+
+                if (lowestOptionId === null
+                    || String(this.selectedValues[colorAttrId]) === String(lowestOptionId)) {
+                    return;
+                }
+
+                if (typeof this.changeOption === 'function') {
+                    this.changeOption(colorAttrId, lowestOptionId);
+                    return;
+                }
+
+                const el = document.querySelector(
+                    'input[name="super_attribute[' + colorAttrId + ']"][value="' + lowestOptionId + '"]'
+                );
+                if (el) {
+                    el.click();
+                }
+            },
+
+            syncNormalColorSwatchQuickShipVisibility() {
+                if (this.shipRegionZipActive && this.customerRegionCode) {
+                    return;
+                }
+                if (typeof this.quickShipValidation !== 'function') {
+                    if (typeof this.syncNormalColorSwatchSectionVisibility === 'function') {
+                        this.syncNormalColorSwatchSectionVisibility();
+                    }
+                    return;
+                }
+                const self = this;
+                document.querySelectorAll('.normal_color_swatch_option .selectOptionColor').forEach(function (el) {
+                    const input = el.querySelector('input.product-option-value-input[name^="super_attribute"]');
+                    if (!input) {
+                        return;
+                    }
+                    const nameMatch = input.name.match(/super_attribute\[(\d+)\]/);
+                    if (!nameMatch) {
+                        return;
+                    }
+                    const attributeId = parseInt(nameMatch[1], 10);
+                    const optionId = input.value;
+                    const attributeCode = input.getAttribute('data-attributecode') || 'incstores_pim_color_axis';
+                    if (self.quickShipValidation(attributeCode, attributeId, optionId) === 1) {
+                        el.classList.add('hidden');
+                        el.style.display = 'none';
+                    } else {
+                        el.classList.remove('hidden');
+                        el.style.display = '';
+                    }
+                });
+                if (typeof this.syncNormalColorSwatchSectionVisibility === 'function') {
+                    this.syncNormalColorSwatchSectionVisibility();
+                }
+            },
+
+            getColorAttributeId() {
+                if (typeof this.getAttributeIdByCode === 'function') {
+                    const id = this.getAttributeIdByCode('incstores_pim_color_axis');
+                    return id ? parseInt(String(id), 10) : null;
+                }
+                if (!this.optionConfig?.attributes) {
+                    return null;
+                }
+                for (const key in this.optionConfig.attributes) {
+                    if (this.optionConfig.attributes[key]?.code === 'incstores_pim_color_axis') {
+                        return parseInt(key, 10);
+                    }
+                }
+                return null;
+            },
+
+            /**
+             * Hide entire "Select A Color" block when every color is Quick Ship (or none left).
+             */
+            syncNormalColorSwatchSectionVisibility() {
+                const sections = document.querySelectorAll('.normal_color_swatch_option');
+                if (!sections.length) {
+                    return;
+                }
+                const colorAttrId = this.getColorAttributeId();
+                const shouldShow = colorAttrId
+                    && typeof this.hasNormalColorOptions === 'function'
+                    && this.hasNormalColorOptions('incstores_pim_color_axis', colorAttrId);
+
+                sections.forEach((section) => {
+                    if (!shouldShow) {
+                        section.classList.add('hidden');
+                        section.style.setProperty('display', 'none', 'important');
+                    } else {
+                        section.classList.remove('hidden', 'sr-only');
+                        section.style.setProperty('display', 'block', 'important');
+                    }
+                });
+            }
+        }
+    }
+
+	function isValidURL(url) {
+    // Regular expression for URL validation
+    var pattern = /^(https?:\/\/)?([\w.]+)\.([a-z]{2,})(\/[\w\.-]*)*\/?$/i;
+    return pattern.test(url);
+}
+</script>

@@ -1,0 +1,45 @@
+--- a/vendor/amasty/module-fpc-warmer/Model/Config/Source/CustomerGroup.php
++++ b/vendor/amasty/module-fpc-warmer/Model/Config/Source/CustomerGroup.php
+@@ -32,6 +32,31 @@
+         $this->persistentData = $persistentData;
+     }
+ 
++    /**
++     * Convert value to string, handling arrays recursively
++     *
++     * @param mixed $value
++     * @return string
++     */
++    private function convertValueToString($value): string
++    {
++        if (is_array($value)) {
++            if (empty($value)) {
++                return '';
++            }
++            if (count($value) === 1) {
++                return $this->convertValueToString(reset($value));
++            }
++            foreach ($value as $item) {
++                if (!is_array($item)) {
++                    return (string)$item;
++                }
++            }
++            return json_encode($value);
++        }
++        return (string)$value;
++    }
++
+     public function toOptionArray()
+     {
+         $result = parent::toOptionArray();
+@@ -39,8 +64,9 @@
+ 
+         if ($this->persistentData->isEnabled()) {
+             foreach ($result as $customerGroupOption) {
++                $value = $this->convertValueToString($customerGroupOption['value'] ?? '');
+                 $result[] = [
+-                    'value' => self::PERSISTENT_PREFIX . $customerGroupOption['value'],
++                    'value' => self::PERSISTENT_PREFIX . $value,
+                     'label' => $customerGroupOption['label'] . __(' (Persistent)')
+                 ];
+             }

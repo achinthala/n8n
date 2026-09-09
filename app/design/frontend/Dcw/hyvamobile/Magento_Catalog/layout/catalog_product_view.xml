@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+ -->
+<page layout="1column" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="catalog_product_opengraph"/>
+    <update handle="hyva_product_slider" />
+    <body>
+         <referenceBlock name="description" remove="true" />         
+         <referenceBlock name="reviews.tab" remove="true" />
+         <referenceBlock name="product.review.form" remove="true" />
+         <referenceBlock name="product.info.review" remove="true" />
+         <referenceBlock name="bazaarvoice.reviews.summary" remove="true" />
+        
+        <block class="Magento\Framework\View\Element\Template" name="bazaarvoice.reviews.summary.custom" as="bv_summary_custom" template="Bazaarvoice_Connector::rr/summary.phtml">
+        <arguments>
+          <argument name="view_model" xsi:type="object">Bazaarvoice\Connector\ViewModel\Reviews</argument>
+        </arguments>
+		  </block>
+
+        <move element="bazaarvoice.reviews.summary.custom" destination="product.info" />
+        <referenceBlock name="page.main.title" remove="false" />
+        <!-- Remove Magento default related products, add our slider template -->
+        <referenceBlock name="catalog.product.related" remove="true" />
+        <!-- <referenceContainer name="content.aside">
+            <block class="Dcw\Custom\Block\Product\RelatedSlider" name="related" as="related" template="Magento_Catalog::product/list/related-slider.phtml" before="product.info.upsell"/>
+        </referenceContainer>
+        <referenceBlock name="dcw.crosssell">
+            <block class="Magento\Framework\View\Element\Template" name="slider.item.template" template="Magento_Catalog::product/list/item-related.phtml"/>
+        </referenceBlock> -->
+    </body>
+</page>

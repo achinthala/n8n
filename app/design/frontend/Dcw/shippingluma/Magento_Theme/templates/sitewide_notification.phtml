@@ -1,0 +1,23 @@
+<div class="notification4 pt-2 pb-2 text-center text-size13 font-normal text-white bg-custom-blue">		
+    <?php
+        echo $this->getLayout()
+        ->createBlock('Magento\Cms\Block\Block')
+        ->setBlockId('global_site_stripe')
+        ->toHtml();
+    ?>
+</div>
+
+<script>
+    require(['jquery'], function ($) {
+        $(document).ready(function(){
+            $(window).scroll(function(){
+                var scrollHeight = $(this).scrollTop(); // Get the current scroll position
+                if (scrollHeight >= 100) {
+                    $('body').addClass('scrolled');
+                } else {
+                    $('body').removeClass('scrolled');
+                }
+            });
+        });
+    });
+</script>

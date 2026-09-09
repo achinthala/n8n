@@ -1,0 +1,199 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+$currentCategory = $customViewModel->getCurrentCategory();
+$compareProductCount = $this->helper('Magento\Catalog\Helper\Product\Compare')->getItemCollection()->count();
+if(isset($currentCategory)) :
+    $display_type = $currentCategory->getDisplayMode();
+    if($display_type != "PAGE") : ?>
+        <script>
+        function compareSidebarFetchHandler(postUrl, postHeaders, isSingleItem = true) {
+            const messages = {
+                "success": isSingleItem
+                    ? "<?= $escaper->escapeHtml(__("You removed product %1 from the comparison list", __("Product"))) ?>"
+                    : "<?= $escaper->escapeHtml(__("You removed all products from the comparison list")) ?>",
+                "warning": isSingleItem
+                    ? "<?= $escaper->escapeHtml(__('Could not remove item from compare.')) ?>"
+                    : "<?= $escaper->escapeHtml(__('Could not remove all item from compare.')) ?>",
+            }
+
+            return fetch(postUrl, postHeaders).then(function (response) {
+                if (response.redirected) {
+                    //window.location.href = response.url;
+                    window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                } else if (response.ok) {
+                    window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                    //return response.json();
+                } else {
+                    typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                        [{ type: "warning", text: messages.warning }], 1000
+                    );
+                }
+            }).then(function (response) {
+                if (!response) return;
+                typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                    [{
+                        type: (response.success) ? "success" : "error",
+                        text: (response.success) ? messages.success : response.error_message
+                    }], 1000
+                );
+                let reloadCustomerDataEvent = new CustomEvent("reload-customer-section-data");
+                window.dispatchEvent(reloadCustomerDataEvent);
+            }).catch(function (error) {
+                typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                    [{ type: "error", text: error }], 1000
+                );
+            });
+        }
+        function initCompareSidebarClear() {
+            return {
+                clearCompare: function() {
+                    const formKey = hyva.getFormKey();
+                    this.itemCount=0;
+                    const postUrl = BASE_URL + 'catalog/product_compare/clear/isAjax/true/';           
+                    const postHeaders = {
+                        "headers": {
+                            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        },
+                        "body": "form_key=" + formKey + "&uenc=" + hyva.getUenc(),
+                        "method": "POST",
+                        "mode": "cors",
+                        "credentials": "include"
+                    };
+
+                    compareSidebarFetchHandler(postUrl, postHeaders, isSingleItem = false);
+                }
+            }
+        }
+        </script>
+        <?php
+        $curntCatId = $customViewModel->compareRestrictionBlock()->getCurrentCatId();
+        $sessionCatId = $customViewModel->compareRestrictionBlock()->getCustomerSession()->getCurrentCatId();
+
+        if ($curntCatId != $sessionCatId) { ?>
+            <script>
+                window.onload=function(){  
+                document.getElementById("clear_all_item_compare").click();
+                setTimeout(() => {
+                    var checkboxes = document.getElementsByClassName('compare_checkbox');
+                    for (var checkbox of checkboxes) {
+                        checkbox.checked = false;
+                    }
+                }, 1000);
+                document.getElementById("compare-list").value = '';
+                };
+            </script>
+        <?php
+        } else { ?>
+        <script>
+        fetch(BASE_URL+"comparerestrict/compare/comparelist/")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(function (product) {
+                    if(document.getElementById('compare_checkbox_'+product.id)) {
+                        document.getElementById('compare_checkbox_'+product.id).checked = true;
+                    }
+                    prodArray.push(product.id);
+                    var name=product.name;
+                    var url=product.product_url;
+                    var imageUrl=product.image_url;
+                    compareListHtml(product.id,name,url,imageUrl);
+                });
+
+                document.getElementById("compare-list").value = prodArray;
+                if (compare_list) {
+                    prodArray = compare_list.split(",").map(Number);
+                }
+                var sidebar=document.getElementById('compare-widget');
+                var comparebtn=document.getElementById('compare-btn');
+                if(prodArray.length>1){
+                    comparebtn.style.display='block'; 
+                } else {
+                    comparebtn.style.display='none'; 
+                }
+                
+                if(prodArray.length>0){
+                    sidebar.style.display='block';
+                } else {
+                    sidebar.style.display='none';
+                }
+                return true;
+        });
+        </script>
+        <?php
+        }
+        $customViewModel->compareRestrictionBlock()->getCustomerSession()->setCurrentCatId($curntCatId);
+        ?>
+        <div id="loading">
+            <img id="loading-image" src="<?= $this->getViewFileUrl('Amasty_AjaxCartHyva::images/loading-gif.gif') ?>" alt="Loading..." />
+        </div>
+        <div id="error-message" class="error-message" style="display:none;--tw-bg-opacity: 1;
+        position: fixed;left: 0;width: 100%;bottom: 144px !important;background: rgb(255 70 58) !important;
+        color: #FFFFFF !important;padding: 0.625rem 0.5rem;text-align: center;margin: 0;z-index: 999;">
+            <?=  "You've already selected the maximum number of items to compare (4)" ?>   
+            <a href="#" data-rel="back" class="close-error" onclick="document.getElementById('error-message').style.display= 'none'"><span class="close">&times;</span></a>
+        </div>
+        <form id="compare_form" action="<?= $escaper->escapeUrl($block->getUrl('comparerestrict/compare/add')) ?>" method="POST">
+            <input type="hidden" name="compare-list" id="compare-list"  value="">
+            <input type="hidden" name="form_key" id="form-key-compare" value="<?php echo $block->getFormKey() ?>" />
+            <input type="hidden" name="catId" value="<?php echo $currentCategory->getId() ?>" />
+        </form>
+        <script>
+            function submitCompareForm(e) {
+                //document.getElementById("compare_form").submit();
+                var newFormKey = hyva.getFormKey();
+                if (newFormKey) { console.log("newFormKey = "+newFormKey);
+                    document.getElementById("form-key-compare").value = newFormKey;
+                    document.getElementById("compare_form").submit();
+                }
+            }
+        </script>         
+
+        <div class="compare-widget hidden w-full" style="display:none" id="compare-widget">
+            <div class="flex justify-between compare-widget-in">
+                <div class="flex flex-wrap items-center select" x-data>
+                    <span class="compare_restriction_text text-size16 font-normal text-white">Select 2 to 4 items to compare</span>
+                    <button @click="submitCompareForm"
+                        title="<?= $escaper->escapeHtml(__('Compare Products')); ?>" style='display:none'
+                        id="compare-btn"
+                        class="btn btn-secondary text-size16 font-normal text-white bg-darkyellow w-full border-0 text-center">
+                        <span class="m-0 p-0 block w-full"><?= $escaper->escapeHtml(__('Compare')); ?></span>
+                    </button>
+                    <button x-data="initCompareSidebarClear()"
+                        @click.prevent="clearCompare()"
+                        aria-label="<?= $escaper->escapeHtmlAttr(__('Remove all Products')) ?>"
+                        class="p-1 inline-flex shrink-0 items-center justify-center text-gray-500 hover:text-primary ml-auto hidden"
+                        id="clear_all_item_compare">
+                        <span><?= $escaper->escapeHtml(__('Clear all')); ?></span>
+                    </button>
+                </div>        
+                    <ul class="flex"  id='imagelist'>                
+                    </ul>
+            </div>
+        </div>
+    <?php 
+    endif;
+endif; 
+?>

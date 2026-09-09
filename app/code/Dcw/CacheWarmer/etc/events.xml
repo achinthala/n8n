@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="sales_order_place_after">
+        <observer name="dcw_cachewarmer_order_place_after" instance="Dcw\CacheWarmer\Observer\OrderPlaceAfter" />
+    </event>
+    <event name="catalog_product_save_after">
+        <observer name="dcw_cachewarmer_product_save_after" instance="Dcw\CacheWarmer\Observer\ProductSaveAfter" />
+    </event>
+</config>
+

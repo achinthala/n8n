@@ -1,0 +1,1196 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ShipRegionAvailability\ViewModel\Product\ShipRegionAvailability;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var ShipRegionAvailability $shipRegionVm */
+$shipRegionVm = $viewModels->require(ShipRegionAvailability::class);
+
+// Only patch swatch JS on PDPs where this product has Ship Region Availability enabled.
+if (!$shipRegionVm->isEnabledForProduct()) {
+    return;
+}
+?>
+<script>
+(function () {
+    'use strict';
+
+    function normalizeRegionCode(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    function expandRegionCodes(codes) {
+        const expanded = [];
+        (codes || []).forEach((code) => {
+            String(code || '')
+                .split(/[,|]/)
+                .map((part) => normalizeRegionCode(part))
+                .filter(Boolean)
+                .forEach((part) => expanded.push(part));
+        });
+        return expanded;
+    }
+
+    function extendSwatchOptions(base) {
+        const getShipRegionCodesForChild = function (childId) {
+            const map = this.optionConfig?.ships_from_region || {};
+            const key = String(childId);
+            const codes = map[key] ?? map[Number(childId)] ?? [];
+            return expandRegionCodes(codes);
+        };
+
+        return Object.assign(base, {
+            swatchLabelValues: (
+                base.swatchLabelValues
+                && typeof base.swatchLabelValues === 'object'
+                && !Array.isArray(base.swatchLabelValues)
+            ) ? base.swatchLabelValues : {},
+            getShipRegionCodesForChild,
+            shipRegionZipActive: false,
+            customerRegionCode: null,
+            customerRegionName: null,
+
+            isColorNearRegion(attributeId, optionId) {
+                if (!this.customerRegionCode || !this.optionConfig?.ships_from_region) {
+                    return true;
+                }
+                const childIds = this.getChildIdsForColorWithSelectedThickness(attributeId, optionId);
+                if (!childIds.length) {
+                    return false;
+                }
+                const region = this.customerRegionCode;
+                // Near only when the thickness+color child explicitly lists the customer's region.
+                // Empty / unset incstores_pim_ships_from_region → farther (longer transit).
+                return childIds.some((childId) => {
+                    const codes = this.getShipRegionCodesForChild(childId);
+                    if (!codes.length) {
+                        return false;
+                    }
+                    return codes.includes(region);
+                });
+            },
+
+            /**
+             * Thickness / Select An Option attribute used to scope color near/far.
+             */
+            getShipRegionThicknessAttributeId() {
+                if (typeof this.getAttributeIdByCode === 'function') {
+                    const id = this.getAttributeIdByCode('incstores_pim_variant_axis')
+                        || this.getAttributeIdByCode('product_option');
+                    return id ? parseInt(String(id), 10) : null;
+                }
+                return this.getShipRegionVariantAttributeId
+                    ? this.getShipRegionVariantAttributeId()
+                    : null;
+            },
+
+            getSelectedThicknessOptionId() {
+                const thicknessAttrId = this.getShipRegionThicknessAttributeId();
+                if (!thicknessAttrId) {
+                    return null;
+                }
+                const value = this.selectedValues?.[thicknessAttrId];
+                return value !== undefined && value !== null && value !== '' ? value : null;
+            },
+
+            /**
+             * Child simples for a color, optionally filtered to the selected thickness.
+             * When a thickness is selected, only that color+thickness SKU drives near/far.
+             */
+            getChildIdsForColorWithSelectedThickness(attributeId, optionId) {
+                const childIds = this.getChildIdsForOption(attributeId, optionId);
+                if (!childIds.length) {
+                    return [];
+                }
+                const thicknessAttrId = this.getShipRegionThicknessAttributeId();
+                const thicknessOptionId = this.getSelectedThicknessOptionId();
+                if (!thicknessAttrId || thicknessOptionId === null) {
+                    return childIds;
+                }
+                return childIds.filter((childId) => {
+                    const row = this.optionConfig?.index?.[childId]
+                        || this.optionConfig?.index?.[String(childId)]
+                        || this.optionConfig?.index?.[Number(childId)];
+                    if (!row) {
+                        return false;
+                    }
+                    return String(row[thicknessAttrId]) === String(thicknessOptionId);
+                });
+            },
+
+            isColorAvailableForSelectedThickness(attributeId, optionId) {
+                const thicknessOptionId = this.getSelectedThicknessOptionId();
+                if (thicknessOptionId === null) {
+                    return this.getChildIdsForOption(attributeId, optionId).length > 0;
+                }
+                return this.getChildIdsForColorWithSelectedThickness(attributeId, optionId).length > 0;
+            },
+
+            /**
+             * Quick Ship for the selected thickness+color child only (avoids duplicates
+             * when another thickness of the same color is Quick Ship).
+             */
+            isColorQuickShipForSelectedThickness(attributeCode, attributeId, optionId) {
+                const childIds = this.getChildIdsForColorWithSelectedThickness(attributeId, optionId);
+                if (!childIds.length) {
+                    return false;
+                }
+                const quickMap = this.optionConfig?.quick_ship || {};
+                const colorIds = this.optionConfig?.quick_ship_color_ids || [];
+                if (childIds.some((childId) =>
+                    quickMap[childId] == 1 || quickMap[String(childId)] == 1
+                )) {
+                    return true;
+                }
+                // Fallback: color-level quick map only when no thickness filter applied.
+                if (!this.getSelectedThicknessOptionId()) {
+                    if (colorIds.length) {
+                        return colorIds.some((id) => String(id) === String(optionId));
+                    }
+                    return this.quickShipValidation(attributeCode, attributeId, optionId) === 1;
+                }
+                return false;
+            },
+
+            getChildIdsForOption(attributeId, optionId) {
+                const options = this.optionConfig?.attributes?.[attributeId]?.options || [];
+                const match = options.find((opt) => String(opt.id) === String(optionId));
+                if (!match?.products) {
+                    return [];
+                }
+                return match.products.map((id) => String(id));
+            },
+
+            isShipRegionOptionVisibleInSection(section, attributeCode, attributeId, optionId) {
+                if (!this.shipRegionZipActive || !this.customerRegionCode) {
+                    return false;
+                }
+                if (!this.optionIsEnabled(attributeId, optionId)) {
+                    return false;
+                }
+                // After ZIP: only colors that exist for the selected thickness (no greys).
+                if (!this.isColorAvailableForSelectedThickness(attributeId, optionId)) {
+                    return false;
+                }
+                if (typeof this.optionIsActive === 'function'
+                    && !this.optionIsActive(attributeId, optionId)) {
+                    return false;
+                }
+                if (!this.shipRegionShowInSection(section, attributeCode, attributeId, optionId)) {
+                    return false;
+                }
+                const isQuick = this.isColorQuickShipForSelectedThickness(
+                    attributeCode,
+                    attributeId,
+                    optionId
+                );
+                if (section === 'quickship' || section === 'farther_quick') {
+                    return isQuick;
+                }
+                if (section === 'normal' || section === 'farther_normal') {
+                    return !isQuick;
+                }
+                return true;
+            },
+
+            countShipRegionSubsectionColors(section, attributeCode, attributeId) {
+                const options = this.optionConfig?.attributes?.[attributeId]?.options || [];
+                return options.filter((item) =>
+                    this.isShipRegionOptionVisibleInSection(section, attributeCode, attributeId, item.id)
+                ).length;
+            },
+
+            countShipRegionSectionColors(zone, attributeCode, attributeId) {
+                if (zone === 'near') {
+                    return this.countShipRegionSubsectionColors('quickship', attributeCode, attributeId)
+                        + this.countShipRegionSubsectionColors('normal', attributeCode, attributeId);
+                }
+                return this.countShipRegionSubsectionColors('farther_quick', attributeCode, attributeId)
+                    + this.countShipRegionSubsectionColors('farther_normal', attributeCode, attributeId);
+            },
+
+            countLegacyQuickShipColors(attributeCode, attributeId) {
+                const options = this.optionConfig?.attributes?.[attributeId]?.options || [];
+                let count = 0;
+                options.forEach((item) => {
+                    if (this.quickShipValidation(attributeCode, attributeId, item.id) !== 1) {
+                        return;
+                    }
+                    if (!this.optionIsEnabled(attributeId, item.id)) {
+                        return;
+                    }
+                    count++;
+                });
+                return count;
+            },
+
+            /**
+             * Hide legacy Quick Ship (label + swatches) after ZIP; before ZIP require quick-ship colors.
+             */
+            shouldShowQuickShipSection(attributeCode, attributeId) {
+                if (this.shipRegionZipActive && this.customerRegionCode) {
+                    return false;
+                }
+                return this.hasQuickShipColorOptions(attributeCode, attributeId);
+            },
+
+            isSelectedProductNearRegion() {
+                if (!this.shipRegionZipActive || !this.customerRegionCode) {
+                    return true;
+                }
+                const productIndex = this.productIndex;
+                if (!productIndex) {
+                    return false;
+                }
+                const codes = this.getShipRegionCodesForChild(productIndex);
+                if (!codes.length) {
+                    return false;
+                }
+                return codes.includes(this.customerRegionCode);
+            },
+
+            getShipRegionExpectedDaysShip() {
+                const productIndex = this.productIndex;
+                if (!productIndex || !this.optionConfig?.expected_days_ship) {
+                    return '';
+                }
+                return this.optionConfig.expected_days_ship[productIndex]
+                    || this.optionConfig.expected_days_ship[String(productIndex)]
+                    || '';
+            },
+
+            shipRegionClonedPriceHtml: '',
+            _shipRegionChildSwatchJson: null,
+            _shipRegionChildSwatchParsed: false,
+            _shipRegionSwatchUrlByChildId: null,
+
+            bindShipRegionPriceSync() {
+                if (this._shipRegionPriceSyncBound || !this.productId) {
+                    return;
+                }
+                this._shipRegionPriceSyncBound = true;
+                const productId = this.productId;
+                const self = this;
+                window.addEventListener('update-prices-' + productId, function () {
+                    self.scheduleShipRegionPriceClone();
+                    self.scheduleShipRegionSwatchSync();
+                    if (self.shipRegionZipActive) {
+                        self.scheduleShipRegionSwatchImageRefresh();
+                    }
+                });
+                window.addEventListener('update-max-roll-length-restriction-' + productId, function () {
+                    self.scheduleShipRegionPriceClone();
+                });
+            },
+
+            findPdpPriceAlpineRoot() {
+                const priceDetails = document.querySelector('.product-info-main .price-details');
+                const calculatorTypes = ['roll', 'sqft', 'cbc', 'case', 'pre_cut_roll', 'none'];
+                if (priceDetails) {
+                    for (let i = 0; i < calculatorTypes.length; i++) {
+                        const wrap = priceDetails.querySelector('.' + calculatorTypes[i]);
+                        if (!wrap || wrap.offsetParent === null) {
+                            continue;
+                        }
+                        const box = wrap.querySelector('.price-box[x-data]');
+                        if (box) {
+                            return box;
+                        }
+                    }
+                }
+                return document.querySelector('.product-info-main .price-box.price-final_price[x-data]')
+                    || document.querySelector('.product-info-main .price-box[x-data]');
+            },
+
+            findPdpPriceContainer() {
+                const priceDetails = document.querySelector('.product-info-main .price-details');
+                const calculatorTypes = ['roll', 'sqft', 'cbc', 'case', 'pre_cut_roll', 'none'];
+                if (priceDetails) {
+                    for (let i = 0; i < calculatorTypes.length; i++) {
+                        const wrap = priceDetails.querySelector('.' + calculatorTypes[i]);
+                        if (!wrap || wrap.offsetParent === null) {
+                            continue;
+                        }
+                        const container = wrap.querySelector('.sale_price_info .price-container.flex.items-baseline')
+                            || wrap.querySelector('.price-container.flex.items-baseline');
+                        if (container) {
+                            return container;
+                        }
+                    }
+                }
+                return document.querySelector('.product-info-main .sale_price_info .price-container.flex.items-baseline')
+                    || document.querySelector('.product-info-main .price-container.flex.items-baseline');
+            },
+
+            findPdpPriceScope() {
+                const alpineRoot = this.findPdpPriceAlpineRoot();
+                if (alpineRoot) {
+                    const saleInfo = alpineRoot.querySelector('.sale_price_info');
+                    if (saleInfo) {
+                        return saleInfo;
+                    }
+                    return alpineRoot;
+                }
+                return this.findPdpPriceContainer();
+            },
+
+            getRenderedText(el) {
+                if (!el) {
+                    return '';
+                }
+                const text = (el.textContent || '').trim();
+                return text === 'undefined' ? '' : text;
+            },
+
+            isVisiblePriceElement(el) {
+                if (!el) {
+                    return false;
+                }
+                if (el.classList.contains('hidden')
+                    || el.classList.contains('invisible')
+                    || el.classList.contains('sr-only')) {
+                    return false;
+                }
+                const style = window.getComputedStyle(el);
+                return style.display !== 'none' && style.visibility !== 'hidden';
+            },
+
+            isVisiblePriceLabel(el) {
+                if (!this.isVisiblePriceElement(el)) {
+                    return false;
+                }
+                const text = (el.textContent || '').replace(/\u00a0/g, ' ').trim();
+                return text !== '' && text !== ':';
+            },
+
+            getOldPriceTextFromDom(scopeEl) {
+                if (!scopeEl) {
+                    return '';
+                }
+                const oldPrices = scopeEl.querySelectorAll('.old-price');
+                for (let i = 0; i < oldPrices.length; i++) {
+                    const oldPriceEl = oldPrices[i];
+                    if (!this.isVisiblePriceElement(oldPriceEl)) {
+                        continue;
+                    }
+                    const line = oldPriceEl.querySelector('.price.line-through, .price');
+                    const lineText = this.getRenderedText(line);
+                    if (lineText) {
+                        return lineText;
+                    }
+                }
+                return '';
+            },
+
+            getOldPriceTextFromAlpine(root) {
+                if (typeof Alpine === 'undefined' || !root) {
+                    return '';
+                }
+                const data = Alpine.$data(root);
+                if (!data || !data.activeProductsPriceData) {
+                    return '';
+                }
+
+                const priceData = data.activeProductsPriceData;
+                const finalKey = data.finalPriceKey || 'finalPrice';
+                const regularKey = data.regularPriceKey || 'regularPrice';
+                if (!priceData.oldPrice
+                    || !priceData[finalKey]
+                    || !priceData[regularKey]
+                    || priceData[finalKey].amount >= priceData[regularKey].amount) {
+                    return '';
+                }
+
+                const regularMethods = [
+                    'getRegularPricePerSquerfoot',
+                    'getRegularPricePerSqft',
+                    'getFormattedRegularPrice',
+                    'getRegularPricePerTile'
+                ];
+                for (let i = 0; i < regularMethods.length; i++) {
+                    const method = regularMethods[i];
+                    if (typeof data[method] !== 'function') {
+                        continue;
+                    }
+                    const regularHtml = data[method]();
+                    if (regularHtml && regularHtml !== 'undefined') {
+                        return regularHtml;
+                    }
+                }
+
+                if (typeof hyva !== 'undefined' && typeof hyva.formatPrice === 'function') {
+                    const customOptionPrice = typeof data.getCustomOptionPrice === 'function'
+                        ? data.getCustomOptionPrice()
+                        : 0;
+                    return hyva.formatPrice(priceData[regularKey].amount + customOptionPrice);
+                }
+
+                return '';
+            },
+
+            appendShipRegionOldPriceParts(parts, oldPriceText) {
+                if (!oldPriceText) {
+                    return;
+                }
+                parts.push(
+                    '<div class="old-price flex mr-2"><span class="price-wrapper title-font font-regular text-xl text-gray-900">',
+                    '<span class="price line-through">', oldPriceText, '</span>',
+                    '</span></div>'
+                );
+            },
+
+            appendShipRegionOldPriceFromSources(parts, alpineRoot, domScope) {
+                let oldPriceText = this.getOldPriceTextFromDom(domScope);
+                if (!oldPriceText && alpineRoot && domScope !== alpineRoot) {
+                    oldPriceText = this.getOldPriceTextFromDom(alpineRoot);
+                }
+                if (!oldPriceText) {
+                    oldPriceText = this.getOldPriceTextFromAlpine(alpineRoot);
+                }
+                this.appendShipRegionOldPriceParts(parts, oldPriceText);
+            },
+
+            getFinalPriceTextFromAlpine(root) {
+                if (typeof Alpine === 'undefined' || !root) {
+                    return '';
+                }
+                const data = Alpine.$data(root);
+                if (!data || typeof data.getFormattedFinalPrice !== 'function') {
+                    return '';
+                }
+
+                if (data.activeProductsPriceData) {
+                    const selectedFinal = data.getFormattedFinalPrice();
+                    if (selectedFinal && selectedFinal !== 'undefined') {
+                        return selectedFinal;
+                    }
+                }
+
+                if (data.initMinPriceFlag && typeof data.getMinFormattedFinalPrice === 'function') {
+                    const minFinal = data.getMinFormattedFinalPrice();
+                    if (minFinal && minFinal !== 'undefined') {
+                        return minFinal;
+                    }
+                }
+
+                const finalPrice = data.getFormattedFinalPrice();
+                if (finalPrice && finalPrice !== 'undefined') {
+                    return finalPrice;
+                }
+
+                return '';
+            },
+
+            getFinalPriceTextForClone(alpineRoot, source) {
+                const alpinePrice = this.getFinalPriceTextFromAlpine(alpineRoot);
+                if (alpinePrice) {
+                    return alpinePrice;
+                }
+                if (!source) {
+                    return '';
+                }
+                const finalPriceEl = source.querySelector('.final-price .price');
+                return this.getRenderedText(finalPriceEl);
+            },
+
+            getVisiblePdpUnitLabel(scopeEl) {
+                if (!scopeEl) {
+                    return '';
+                }
+                const labels = scopeEl.querySelectorAll('.price-label');
+                for (let i = 0; i < labels.length; i++) {
+                    const labelEl = labels[i];
+                    if (!this.isVisiblePriceLabel(labelEl)) {
+                        continue;
+                    }
+                    return (labelEl.textContent || '').replace(/\u00a0/g, ' ').trim();
+                }
+                return '';
+            },
+
+            appendShipRegionFinalPriceParts(parts, priceText, unitLabel) {
+                parts.push(
+                    '<div class="price-container flex items-baseline dcw-ship-region-price-clone">',
+                    '<div class="final-price inline-block"><span class="price-wrapper">',
+                    '<span class="price inter text-size21 font-bold text-darkblack">', priceText, '</span>'
+                );
+                if (unitLabel) {
+                    parts.push(
+                        '<span class="price-label inter text-size14 font-normal text-darkblack mr-2">',
+                        unitLabel,
+                        '</span>'
+                    );
+                }
+                parts.push('</span></div>');
+            },
+
+            buildShipRegionPriceHtmlFromPriceComponent() {
+                if (typeof Alpine === 'undefined') {
+                    return '';
+                }
+                const root = this.findPdpPriceAlpineRoot();
+                if (!root || root.offsetParent === null) {
+                    return '';
+                }
+                const data = Alpine.$data(root);
+                if (!data || typeof data.getFormattedFinalPrice !== 'function') {
+                    return '';
+                }
+
+                const finalPrice = this.getFinalPriceTextForClone(root, root.querySelector('.price-container.flex.items-baseline'));
+                if (!finalPrice) {
+                    return '';
+                }
+
+                const unitLabelScope = root.querySelector('.sale_price_info') || root;
+                const unitLabel = this.getVisiblePdpUnitLabel(unitLabelScope);
+
+                const parts = [];
+                this.appendShipRegionFinalPriceParts(parts, finalPrice, unitLabel);
+                this.appendShipRegionOldPriceFromSources(
+                    parts,
+                    root,
+                    root.querySelector('.sale_price_info') || root
+                );
+
+                const linearFoot = root.querySelector('.price-linear_foot-container');
+                if (linearFoot && linearFoot.offsetParent !== null) {
+                    const finalLf = linearFoot.querySelector('.final_price_per_linear_foot');
+                    const regularLf = linearFoot.querySelector('.regular_price_per_linear_foot');
+                    const finalLfText = this.getRenderedText(finalLf);
+                    const regularLfText = this.getRenderedText(regularLf);
+                    if (finalLfText) {
+                        parts.push('<div class="price-linear_foot-container flex">');
+                        parts.push('<div class="final_price_per_linear_foot inter-imp text-size14 text-blackalt">');
+                        parts.push(finalLfText);
+                        parts.push('</div>');
+                        if (regularLfText && regularLf && regularLf.offsetParent !== null) {
+                            parts.push('<div class="regular_price_per_linear_foot inter-imp text-size14 text-blackalt">');
+                            parts.push(regularLfText);
+                            parts.push('</div>');
+                        }
+                        parts.push('</div>');
+                    }
+                }
+
+                const tileFoot = root.querySelector('.price-tile-container');
+                if (tileFoot && tileFoot.offsetParent !== null) {
+                    const tileHtml = this.stripAlpineFromClone(tileFoot.cloneNode(true)).innerHTML;
+                    if (tileHtml && !tileHtml.includes('undefined')) {
+                        parts.push('<div class="price-tile-container flex">', tileHtml, '</div>');
+                    }
+                }
+
+                parts.push('</div>');
+                return parts.join('');
+            },
+
+            stripAlpineFromClone(element) {
+                const nodes = [element].concat(Array.from(element.querySelectorAll('*')));
+                nodes.forEach(function (el) {
+                    Array.from(el.attributes).forEach(function (attr) {
+                        if (attr.name.startsWith('x-')
+                            || attr.name.startsWith('@')
+                            || attr.name.startsWith(':')
+                            || attr.name.startsWith('wire:')) {
+                            el.removeAttribute(attr.name);
+                        }
+                    });
+                });
+                return element;
+            },
+
+            buildShipRegionPriceHtmlFromDomScrape() {
+                const alpineRoot = this.findPdpPriceAlpineRoot();
+                const source = this.findPdpPriceContainer();
+                const priceScope = this.findPdpPriceScope();
+                if (!source || !this.isVisiblePriceElement(source)) {
+                    return '';
+                }
+                const priceText = this.getFinalPriceTextForClone(alpineRoot, source);
+                if (!priceText) {
+                    return '';
+                }
+                const unitLabel = this.getVisiblePdpUnitLabel(source);
+                const parts = [];
+                this.appendShipRegionFinalPriceParts(parts, priceText, unitLabel);
+                this.appendShipRegionOldPriceFromSources(parts, alpineRoot, priceScope);
+
+                const lf = source.querySelector('.price-linear_foot-container');
+                if (lf && this.isVisiblePriceElement(lf)) {
+                    const finalLf = lf.querySelector('.final_price_per_linear_foot');
+                    const regularLf = lf.querySelector('.regular_price_per_linear_foot');
+                    const finalLfText = this.getRenderedText(finalLf);
+                    const regularLfText = this.getRenderedText(regularLf);
+                    if (finalLfText) {
+                        parts.push('<div class="price-linear_foot-container flex">');
+                        parts.push('<div class="final_price_per_linear_foot inter-imp text-size14 text-blackalt">');
+                        parts.push(finalLfText);
+                        parts.push('</div>');
+                        if (regularLfText && regularLf && this.isVisiblePriceElement(regularLf)) {
+                            parts.push('<div class="regular_price_per_linear_foot inter-imp text-size14 text-blackalt">');
+                            parts.push(regularLfText);
+                            parts.push('</div>');
+                        }
+                        parts.push('</div>');
+                    }
+                }
+
+                const tile = source.querySelector('.price-tile-container');
+                if (tile && this.isVisiblePriceElement(tile)) {
+                    const finalTile = tile.querySelector('.final_price_per_tile');
+                    const regularTile = tile.querySelector('.regular_price_per_tile');
+                    const finalTileText = this.getRenderedText(finalTile);
+                    const regularTileText = this.getRenderedText(regularTile);
+                    if (finalTileText) {
+                        parts.push('<div class="price-tile-container flex">');
+                        parts.push('<div class="final_price_per_tile inter text-size14 text-blackalt">');
+                        parts.push(finalTileText);
+                        parts.push('</div>');
+                        if (regularTileText && regularTile && this.isVisiblePriceElement(regularTile)) {
+                            parts.push('<div class="regular_price_per_tile inter text-size14 text-blackalt">');
+                            parts.push(regularTileText);
+                            parts.push('</div>');
+                        }
+                        parts.push('</div>');
+                    }
+                }
+
+                parts.push('</div>');
+                return parts.join('');
+            },
+
+            syncShipRegionPriceClone() {
+                if (!this.shipRegionZipActive) {
+                    this.shipRegionClonedPriceHtml = '';
+                    return;
+                }
+                let html = this.buildShipRegionPriceHtmlFromPriceComponent();
+                if (!html || html.indexOf('undefined') !== -1) {
+                    html = this.buildShipRegionPriceHtmlFromDomScrape();
+                } else if (html.indexOf('old-price') === -1) {
+                    const injectParts = [];
+                    this.appendShipRegionOldPriceFromSources(
+                        injectParts,
+                        this.findPdpPriceAlpineRoot(),
+                        this.findPdpPriceScope()
+                    );
+                    if (injectParts.length) {
+                        html = html.slice(0, -6) + injectParts.join('') + '</div>';
+                    }
+                }
+                if (html && html.indexOf('undefined') === -1) {
+                    this.shipRegionClonedPriceHtml = html;
+                }
+            },
+
+            scheduleShipRegionPriceClone() {
+                this.bindShipRegionPriceSync();
+                const self = this;
+                const run = function () {
+                    self.syncShipRegionPriceClone();
+                };
+                window.clearTimeout(this._shipRegionPriceCloneTimer);
+                window.setTimeout(run, 150);
+                this._shipRegionPriceCloneTimer = window.setTimeout(run, 700);
+                window.setTimeout(run, 1200);
+            },
+
+            resetShipRegionSwatchImageCache() {
+                this._shipRegionChildSwatchJson = null;
+                this._shipRegionChildSwatchParsed = false;
+                this._shipRegionSwatchUrlByChildId = null;
+            },
+
+            parseShipRegionChildSwatchImages(force) {
+                const root = document.querySelector('.dcw-ship-region-sections[data-ship-region-swatch-images]')
+                    || document.querySelector('.colors_swat[data-ship-region-swatch-images]');
+                if (!root) {
+                    return this._shipRegionChildSwatchJson || {};
+                }
+                if (!force && this._shipRegionChildSwatchParsed) {
+                    return this._shipRegionChildSwatchJson || {};
+                }
+                try {
+                    const raw = root.getAttribute('data-ship-region-swatch-images') || '{}';
+                    const parsed = JSON.parse(raw);
+                    this._shipRegionChildSwatchJson = parsed && typeof parsed === 'object' ? parsed : {};
+                } catch (e) {
+                    this._shipRegionChildSwatchJson = {};
+                }
+                this._shipRegionChildSwatchParsed = true;
+                this._shipRegionSwatchUrlByChildId = null;
+                return this._shipRegionChildSwatchJson;
+            },
+
+            shipRegionSwatchUrlIsUsable(url) {
+                const value = String(url || '').trim();
+                if (!value || value.indexOf('swatch_placeholder') !== -1) {
+                    return false;
+                }
+                if (typeof isValidURL === 'function' && isValidURL(value)) {
+                    return true;
+                }
+                return /^https?:\/\//i.test(value)
+                    || value.indexOf('//') === 0
+                    || /\.[a-z]{2,}(\/|$)/i.test(value);
+            },
+
+            buildShipRegionSwatchUrlByChildId() {
+                if (this._shipRegionSwatchUrlByChildId) {
+                    return this._shipRegionSwatchUrlByChildId;
+                }
+                const byOption = this.parseShipRegionChildSwatchImages();
+                const byChild = {};
+                const colorAttrId = this.getShipRegionColorAttributeId();
+                const index = this.optionConfig?.index;
+                if (!colorAttrId || !index) {
+                    this._shipRegionSwatchUrlByChildId = byChild;
+                    return byChild;
+                }
+                Object.keys(index).forEach(function (childId) {
+                    const colorVal = index[childId] && index[childId][colorAttrId];
+                    if (colorVal == null) {
+                        return;
+                    }
+                    const url = byOption[String(colorVal)] || byOption[colorVal];
+                    if (url && String(url).trim() !== '') {
+                        byChild[String(childId)] = url;
+                    }
+                });
+                this._shipRegionSwatchUrlByChildId = byChild;
+                return byChild;
+            },
+
+            resolveShipRegionSwatchUrl(attributeId, optionId) {
+                const map = this.parseShipRegionChildSwatchImages();
+                const optionKey = String(optionId);
+                const direct = map[optionKey] || map[optionId];
+                if (direct && String(direct).trim() !== '') {
+                    return direct;
+                }
+                const options = this.optionConfig?.attributes?.[attributeId]?.options || [];
+                const match = options.find(function (opt) {
+                    return String(opt.id) === optionKey;
+                });
+                if (!match || !match.products || !match.products.length) {
+                    return null;
+                }
+                const byChild = this.buildShipRegionSwatchUrlByChildId();
+                for (let i = 0; i < match.products.length; i++) {
+                    const childId = String(match.products[i]);
+                    const fromChild = byChild[childId];
+                    if (fromChild && String(fromChild).trim() !== '') {
+                        return fromChild;
+                    }
+                    const idxVal = this.optionConfig?.index?.[childId]?.[attributeId];
+                    if (idxVal != null) {
+                        const fromIdx = map[String(idxVal)] || map[idxVal];
+                        if (fromIdx && String(fromIdx).trim() !== '') {
+                            return fromIdx;
+                        }
+                    }
+                }
+                return null;
+            },
+
+            getShipRegionSwatchImageHtml(attributeId, optionId) {
+                const resolved = this.resolveShipRegionSwatchUrl(attributeId, optionId);
+                if (resolved && this.shipRegionSwatchUrlIsUsable(resolved)) {
+                    const safeUrl = String(resolved).replace(/"/g, '&quot;');
+                    return '<img loading="lazy" src="' + safeUrl + '" alt="" />';
+                }
+                if (typeof this.getSwatchTextUrl === 'function') {
+                    const map = this.parseShipRegionChildSwatchImages();
+                    const fallback = this.getSwatchTextUrl(attributeId, optionId, map);
+                    if (fallback && fallback.indexOf('swatch_placeholder') === -1) {
+                        return fallback;
+                    }
+                }
+                const bgStyle = typeof this.getSwatchBackgroundStyle === 'function'
+                    ? this.getSwatchBackgroundStyle(attributeId, optionId)
+                    : '';
+                if (bgStyle) {
+                    return '<div class="dcw-ship-region-swatch__fallback" style="' + bgStyle + '"></div>';
+                }
+                return '';
+            },
+
+            refreshShipRegionSwatchImages() {
+                const self = this;
+                const attrId = this.getShipRegionColorAttributeId();
+                if (!attrId || !this.shipRegionZipActive) {
+                    return;
+                }
+                this.resetShipRegionSwatchImageCache();
+                this.parseShipRegionChildSwatchImages(true);
+                document.querySelectorAll('.dcw-ship-region-sections [id^="child-color-' + attrId + '-"]').forEach(function (el) {
+                    const parts = el.id.split('-');
+                    const optionId = parts[parts.length - 1];
+                    if (!optionId) {
+                        return;
+                    }
+                    const html = self.getShipRegionSwatchImageHtml(attrId, optionId);
+                    if (html) {
+                        el.innerHTML = html;
+                    }
+                });
+            },
+
+            scheduleShipRegionSwatchImageRefresh() {
+                const self = this;
+                const run = function () {
+                    self.refreshShipRegionSwatchImages();
+                };
+                run();
+                window.setTimeout(run, 80);
+                window.setTimeout(run, 400);
+            },
+
+            getShipRegionActiveSwatchHtml(attributeId) {
+                const optionId = this.selectedValues[attributeId];
+                if (!optionId) {
+                    return '';
+                }
+                const optionKey = String(optionId);
+                const selectors = [
+                    '.dcw-ship-region-sections #swatch-label-box-' + attributeId + '-' + optionKey + '.checked .dcw-ship-region-swatch__image img',
+                    '.dcw-ship-region-sections label.dcw-ship-region-swatch__card.checked .dcw-ship-region-swatch__image img',
+                    '#swatch-label-box-' + attributeId + '-' + optionKey + '.checked .dcw-ship-region-swatch__image img',
+                    '#child-color-' + attributeId + '-' + optionKey + ' img'
+                ];
+                for (let i = 0; i < selectors.length; i++) {
+                    const img = document.querySelector(selectors[i]);
+                    if (img && img.getAttribute('src') && img.getAttribute('src').indexOf('swatch_placeholder') === -1) {
+                        return img.outerHTML;
+                    }
+                }
+                return this.getShipRegionSwatchImageHtml(attributeId, optionId);
+            },
+
+            scheduleShipRegionSwatchSync() {
+                const self = this;
+                const run = function () {
+                    document.querySelectorAll('.dcw-ship-region-active-swatch, .active-color-swatch').forEach(function (el) {
+                        const line = el.closest('.dcw-ship-region-active-line');
+                        if (!line || line.offsetParent === null) {
+                            return;
+                        }
+                        const sections = el.closest('.dcw-ship-region-sections');
+                        if (!sections) {
+                            return;
+                        }
+                        const attrId = self.getShipRegionColorAttributeId();
+                        if (!attrId) {
+                            return;
+                        }
+                        el.innerHTML = self.getShipRegionActiveSwatchHtml(attrId);
+                    });
+                };
+                run();
+                window.setTimeout(run, 100);
+                window.setTimeout(run, 650);
+            },
+
+            getShipRegionColorAttributeId() {
+                if (!this.optionConfig?.attributes) {
+                    return null;
+                }
+                const attrs = this.optionConfig.attributes;
+                for (const key in attrs) {
+                    if (attrs[key]?.code === 'incstores_pim_color_axis') {
+                        return parseInt(key, 10);
+                    }
+                }
+                return null;
+            },
+
+            getLegacyColorSwatchImageHtml(attributeId, optionId) {
+                if (typeof this.getShipRegionSwatchImageHtml === 'function') {
+                    const shipRegionHtml = this.getShipRegionSwatchImageHtml(attributeId, optionId);
+                    if (shipRegionHtml) {
+                        return shipRegionHtml;
+                    }
+                }
+                const map = typeof this.parseShipRegionChildSwatchImages === 'function'
+                    ? this.parseShipRegionChildSwatchImages()
+                    : (this._legacyColorSwatchImages || {});
+                if (typeof this.getSwatchTextUrl === 'function') {
+                    return this.getSwatchTextUrl(attributeId, optionId, map);
+                }
+                return '';
+            },
+
+            syncLegacyColorSwatchImages() {
+                const self = this;
+                const attrId = typeof this.getShipRegionColorAttributeId === 'function'
+                    ? this.getShipRegionColorAttributeId()
+                    : null;
+                if (!attrId) {
+                    return;
+                }
+                document.querySelectorAll(
+                    '.normal_color_swatch_option [id^="child-color-' + attrId + '-"]'
+                ).forEach(function (el) {
+                    if (el.closest('.dcw-ship-region-sections')) {
+                        return;
+                    }
+                    const prefix = 'child-color-' + attrId + '-';
+                    const optionId = el.id.indexOf(prefix) === 0 ? el.id.slice(prefix.length) : '';
+                    if (!optionId) {
+                        return;
+                    }
+                    const html = self.getLegacyColorSwatchImageHtml(attrId, optionId);
+                    if (html) {
+                        el.innerHTML = html;
+                    }
+                });
+            },
+
+            syncConfigurableOptionSections() {
+                if (typeof this.ensureLegacyColorSwatchVisible === 'function') {
+                    this.ensureLegacyColorSwatchVisible();
+                } else if (typeof this.restoreLegacyColorSwatchView === 'function') {
+                    this.restoreLegacyColorSwatchView();
+                }
+                document.querySelectorAll('.normal_color_swatch_option .selectOptionContent').forEach(function (el) {
+                    el.classList.remove('sr-only');
+                });
+                if (typeof this.syncNormalColorSwatchQuickShipVisibility === 'function') {
+                    this.syncNormalColorSwatchQuickShipVisibility();
+                } else if (typeof this.syncNormalColorSwatchSectionVisibility === 'function') {
+                    this.syncNormalColorSwatchSectionVisibility();
+                }
+                this.syncOtherSwatchOptionVisibility();
+                if (typeof this.syncLegacyColorSwatchImages === 'function') {
+                    this.syncLegacyColorSwatchImages();
+                }
+            },
+
+            getShipRegionVariantAttributeId() {
+                if (typeof this.getAttributeIdByCode === 'function') {
+                    const id = this.getAttributeIdByCode('incstores_pim_variant_axis')
+                        || this.getAttributeIdByCode('product_option');
+                    return id ? parseInt(String(id), 10) : null;
+                }
+                if (!this.optionConfig?.attributes) {
+                    return null;
+                }
+                const attrs = this.optionConfig.attributes;
+                for (const key in attrs) {
+                    if (attrs[key]?.code === 'incstores_pim_variant_axis'
+                        || attrs[key]?.code === 'product_option') {
+                        return parseInt(key, 10);
+                    }
+                }
+                return null;
+            },
+
+            getShipRegionSelectedVariantLabel() {
+                const variantAttrId = this.getShipRegionVariantAttributeId();
+                if (!variantAttrId || !this.selectedValues[variantAttrId]) {
+                    return '';
+                }
+                const variantText = this.getSwatchText(variantAttrId, this.selectedValues[variantAttrId]);
+                return variantText ? String(variantText).trim() : '';
+            },
+
+            getShipRegionSelectedColorLabel(colorAttributeId) {
+                const colorOptionId = this.selectedValues[colorAttributeId];
+                if (!colorOptionId) {
+                    return '';
+                }
+                const colorText = this.getSwatchText(colorAttributeId, colorOptionId);
+                return colorText ? String(colorText).trim() : '';
+            },
+
+            getShipRegionSelectedProductLabel(colorAttributeId) {
+                const parts = [];
+                const variantLabel = this.getShipRegionSelectedVariantLabel();
+                const colorLabel = this.getShipRegionSelectedColorLabel(colorAttributeId);
+                if (variantLabel) {
+                    parts.push(variantLabel);
+                }
+                if (colorLabel) {
+                    parts.push(colorLabel);
+                }
+                return parts.join(' — ');
+            },
+
+            syncShipRegionActiveSwatchDisplay(attributeId, el) {
+                if (!el || !this.shipRegionZipActive) {
+                    return;
+                }
+                const self = this;
+                const apply = function () {
+                    el.innerHTML = self.getShipRegionActiveSwatchHtml(attributeId);
+                };
+                apply();
+                window.setTimeout(apply, 100);
+                window.setTimeout(apply, 650);
+            },
+
+            shipRegionShowInSection(section, attributeCode, attributeId, optionId) {
+                if (!this.shipRegionZipActive || !this.customerRegionCode) {
+                    return true;
+                }
+                if (attributeCode !== 'incstores_pim_color_axis') {
+                    return true;
+                }
+                // Must exist for selected thickness — prevents near+far / greys / duplicates.
+                if (!this.isColorAvailableForSelectedThickness(attributeId, optionId)) {
+                    return false;
+                }
+                const isNear = this.isColorNearRegion(attributeId, optionId);
+                const isQuick = this.isColorQuickShipForSelectedThickness(
+                    attributeCode,
+                    attributeId,
+                    optionId
+                );
+
+                switch (section) {
+                    case 'quickship':
+                        return isNear && isQuick;
+                    case 'normal':
+                        return isNear && !isQuick;
+                    case 'farther_quick':
+                        return !isNear && isQuick;
+                    case 'farther_normal':
+                        return !isNear && !isQuick;
+                    default:
+                        return true;
+                }
+            },
+
+            applyShipRegionFilter(regionCode, regionName, zipCode) {
+                this.resetShipRegionSwatchImageCache();
+                this.shipRegionZipActive = true;
+                this.customerRegionCode = normalizeRegionCode(regionCode);
+                this.customerRegionName = regionName || regionCode;
+                document.querySelectorAll('.colors_swat').forEach((el) => {
+                    el.classList.add('ship-region-zip-active');
+                });
+                this.scheduleShipRegionPriceClone();
+                this.scheduleShipRegionSwatchSync();
+                this.scheduleShipRegionSwatchImageRefresh();
+                if (typeof this.updatePrices === 'function') {
+                    this.updatePrices();
+                }
+                window.dispatchEvent(new CustomEvent('dcw-ship-region-updated', {
+                    detail: {
+                        code: this.customerRegionCode,
+                        name: this.customerRegionName
+                    }
+                }));
+                if (typeof this.syncConfigurableOptionSections === 'function') {
+                    this.syncConfigurableOptionSections();
+                }
+                window.setTimeout(() => {
+                    if (typeof this.syncOtherSwatchOptionVisibility === 'function') {
+                        this.syncOtherSwatchOptionVisibility();
+                    }
+                }, 650);
+                window.setTimeout(() => {
+                    const el = document.querySelector('.dcw-ship-region-sections');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                }, 150);
+            },
+
+            restoreLegacyColorSwatchView() {
+                document.querySelectorAll('.colors_swat').forEach(function (el) {
+                    el.classList.remove('ship-region-zip-active');
+                });
+                document.querySelectorAll('.normal_color_swatch_option').forEach(function (el) {
+                    el.classList.remove('hidden');
+                });
+                document.querySelectorAll('.normal_color_swatch_option .color_swatches.mb-10').forEach(function (el) {
+                    el.style.display = '';
+                });
+
+                const attrId = this.getShipRegionColorAttributeId();
+                if (!attrId) {
+                    return;
+                }
+
+                this.parseShipRegionChildSwatchImages(true);
+                const map = this._shipRegionChildSwatchJson || {};
+                const legacySelector =
+                    '.quickship_swatch_option [id^="child-color-' + attrId + '-"], '
+                    + '.normal_color_swatch_option [id^="child-color-' + attrId + '-"]';
+
+                document.querySelectorAll(legacySelector).forEach((el) => {
+                    if (el.closest('.dcw-ship-region-sections')) {
+                        return;
+                    }
+                    const prefix = 'child-color-' + attrId + '-';
+                    const optionId = el.id.indexOf(prefix) === 0
+                        ? el.id.slice(prefix.length)
+                        : '';
+                    if (!optionId) {
+                        return;
+                    }
+                    let html = '';
+                    if (typeof this.getShipRegionSwatchImageHtml === 'function') {
+                        html = this.getShipRegionSwatchImageHtml(attrId, optionId);
+                    }
+                    if ((!html || html.indexOf('swatch_placeholder') !== -1)
+                        && typeof this.getSwatchTextUrl === 'function') {
+                        html = this.getSwatchTextUrl(attrId, optionId, map);
+                    }
+                    if (html) {
+                        el.innerHTML = html;
+                    }
+                });
+            },
+
+            clearShipRegionFilter() {
+                this.resetShipRegionSwatchImageCache();
+                this.shipRegionZipActive = false;
+                this.customerRegionCode = null;
+                this.customerRegionName = null;
+                this.shipRegionClonedPriceHtml = '';
+                this.restoreLegacyColorSwatchView();
+                if (typeof this.syncConfigurableOptionSections === 'function') {
+                    this.syncConfigurableOptionSections();
+                }
+                if (typeof this.updatePrices === 'function') {
+                    this.updatePrices();
+                }
+                if (this.productId) {
+                    window.dispatchEvent(new CustomEvent('update-prices-' + this.productId));
+                }
+                window.dispatchEvent(new CustomEvent('dcw-ship-region-cleared'));
+            }
+        });
+    }
+
+    window.dcwEnsureShipRegionSwatchPatch = function dcwEnsureShipRegionSwatchPatch() {
+        if (window.__dcwShipRegionSwatchPatched || typeof window.initSwatchOptions !== 'function') {
+            return;
+        }
+        const originalInitSwatchOptions = window.initSwatchOptions;
+        window.initSwatchOptions = function (swatchConfig, swatchLabelValues) {
+            return extendSwatchOptions(originalInitSwatchOptions(swatchConfig, swatchLabelValues));
+        };
+        window.__dcwShipRegionSwatchPatched = true;
+    };
+
+    window.dcwEnsureShipRegionSwatchPatch();
+    document.addEventListener('alpine:init', window.dcwEnsureShipRegionSwatchPatch);
+
+    let attempts = 0;
+    const retry = setInterval(function () {
+        window.dcwEnsureShipRegionSwatchPatch();
+        attempts += 1;
+        if (window.__dcwShipRegionSwatchPatched || attempts > 200) {
+            clearInterval(retry);
+        }
+    }, 25);
+})();
+</script>

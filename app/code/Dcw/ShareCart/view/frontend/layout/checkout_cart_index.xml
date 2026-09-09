@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="head.additional">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="dcw.sharecart.restore.head"
+                   template="Dcw_ShareCart::cart/share-restore-head.phtml"
+                   before="-">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Dcw\ShareCart\ViewModel\ShareCartRestore</argument>
+                </arguments>
+            </block>
+        </referenceBlock>
+        <referenceContainer name="after.body.start">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="dcw.sharecart.restore.init"
+                   template="Dcw_ShareCart::cart/share-restore-init.phtml"
+                   before="-">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Dcw\ShareCart\ViewModel\ShareCartRestore</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+        <referenceContainer name="checkout.cart.form.before">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="dcw.sharecart.link"
+                   template="Dcw_ShareCart::cart/share-link.phtml"
+                   before="-">
+                <arguments>
+                    <argument name="view_model" xsi:type="object">Dcw\ShareCart\ViewModel\ShareCart</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

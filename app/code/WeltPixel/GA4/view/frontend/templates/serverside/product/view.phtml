@@ -1,0 +1,28 @@
+<?php
+/**
+ * @var $block \Magento\Catalog\Block\Product\View
+ */
+/** @var \WeltPixel\GA4\Helper\ServerSideTracking $ga4Helper */
+$ga4Helper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking');
+?>
+<?php
+if ($ga4Helper->isServerSideTrakingEnabled() && $ga4Helper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_VIEW_ITEM)) :
+$product = $block->getProduct();
+?>
+<script>
+    requirejs(['jquery'],
+        function   ($) {
+            $(document).ready(function() {
+                var requestUrl = '<?php echo $this->getUrl("weltpixel_ga4/track/product/"); ?>';
+                $.post({
+                    url: requestUrl,
+                    global: false,
+                    data: {
+                        'product_id': '<?= $product->getId()?>',
+                        'product_type': '<?= $product->getTypeId() ?>'
+                    }
+                });
+            });
+        });
+</script>
+<?php endif; ?>

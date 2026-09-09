@@ -1,0 +1,76 @@
+/**
+ * Fix overlapping "Select Date" text on admin report date range filters.
+ * @see https://github.com/magento/magento2/issues/35834
+ */
+.admin__filter-actions .field-row {
+    display: inline-block;
+    margin-right: 1.5rem;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.admin__filter-actions .field-row .admin__control-support-text {
+    margin-right: 0.5rem;
+}
+
+.admin__filter-actions .dcw-report-date-control {
+    display: inline-block;
+    position: relative;
+    vertical-align: top;
+}
+
+.admin__filter-actions .dcw-report-date-control ._has-datepicker.admin__control-text,
+.admin__filter-actions .dcw-report-date-control .hasDatepicker.admin__control-text {
+    box-sizing: border-box;
+    padding-right: 3.5rem;
+    width: 15rem;
+}
+
+.admin__filter-actions .dcw-report-date-control ._has-datepicker + .ui-datepicker-trigger,
+.admin__filter-actions .dcw-report-date-control .hasDatepicker + .ui-datepicker-trigger {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 0;
+    height: 3.3rem;
+    line-height: 0;
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    vertical-align: top;
+    width: 3.3rem;
+    z-index: 1;
+}
+
+.admin__filter-actions .dcw-report-date-control .ui-datepicker-trigger img,
+.admin__filter-actions .dcw-report-date-control .ui-datepicker-trigger > span {
+    display: none !important;
+}
+
+.admin__filter-actions .dcw-report-date-control .ui-datepicker-trigger:after {
+    color: #514943;
+    content: '\e627';
+    display: block;
+    font-family: 'Admin Icons';
+    font-size: 2.1rem;
+    font-weight: normal;
+    line-height: 3.3rem;
+    speak: none;
+    text-align: center;
+    -webkit-font-smoothing: antialiased;
+}
+
+.admin__filter-actions .dcw-report-date-control .ui-datepicker-trigger:hover:after,
+.admin__filter-actions .dcw-report-date-control .ui-datepicker-trigger:focus:after {
+    color: #007bdb;
+}
+
+.admin__filter-actions .admin__control-filter {
+    display: inline-block;
+    vertical-align: top;
+}

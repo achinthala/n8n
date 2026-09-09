@@ -1,0 +1,189 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2023 Amasty (https://www.amasty.com)
+ * @package Ajax Cart Hyva Compatibility (System)
+ */
+
+use Amasty\AjaxCartHyva\ViewModel\PageId;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+
+$pageIdViewModel = $viewModels->require(PageId::class);
+?>
+
+<script>
+    (function () {
+        'use strict';
+
+        /**
+         * @typedef {Object} CartResponse
+         *
+         * Popup common props
+         * @property {[
+         *     name: string,
+         *     action: {
+         *         name: string,
+         *         payload: string|undefined
+         *     }
+         * ]|undefined} buttons
+         * @property {string|undefined} popup_action
+         * @property {string|undefined} message
+         * @property {string|undefined} title
+         *
+         * DialogPopup props
+         * @property {string|null|undefined} selected_options
+         *
+         * ConfirmationPopup props
+         * @property {string|undefined} align
+         * @property {string|undefined} checkout
+         * @property {string|undefined} product_id
+         * @property {string|undefined} product_sku
+         * @property {string|undefined} related
+         * @property {number|undefined} timer
+         *
+         * Redirect props
+         * @property {string|undefined} redirect url to redirect
+         */
+
+        let globalActionName;
+
+        const addToCartAction = ({detail: form}) => {
+            const isProductForm = form.id === 'product_addtocart_form';
+
+            globalActionName = getCartAction(form);
+
+            if (isProductForm) {
+                window.dispatchEvent(new CustomEvent('amcart-trigger-grouped-form-validate'));
+
+                if (form.checkValidity()) {
+                    performRequest(form, isProductForm);
+                }
+            } else {
+                performRequest(form, isProductForm)
+            }
+        };
+
+        const performRequest = function (form, isProductForm) {
+            const cartUrl = `${BASE_URL}amasty_cart/cart/${getCartAction(form)}`;
+            const isProductPage = document.body.classList.contains('catalog-product-view');
+            const headers = {
+                'content-type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            };
+            const formData = new FormData(form);
+            formData.set('product_page', isProductPage && isProductForm);
+            formData.set('last_category_id', hyva.getBrowserStorage().getItem('last_category_id'));
+            formData.set('form_key', hyva.getFormKey());
+            !formData.get('id') && formData.get('item') && formData.set('id', formData.get('item'));
+
+            const body = new URLSearchParams(formData);
+
+            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+            window.dispatchEvent(new CustomEvent('amcart-add-start', { detail: form }));
+
+            fetch(cartUrl, {headers: {...headers}, body: body, method: 'POST'})
+                .then(response => response.json())
+                .then((result) => {
+                    resultActionResolver.resolve(result);
+                    const relatedProductDialog = document.querySelector('.related-product-dialog-wrapper');
+                    const cartLink = document.getElementById('menu-cart-icon');
+                    const isRelatedProductForm = form.closest('.related-products-pdp-section');
+                    if (relatedProductDialog && !isRelatedProductForm) {
+                        setTimeout(() => {
+                            window.dispatchEvent(
+                                new CustomEvent('hyva-modal-show', { detail: { dialog: 'related-product-slider-dialog' } })
+                            );
+                        }, 2000);
+                    } else if (cartLink) {
+                        cartLink.click();
+                    }
+                }).catch((error) => {
+                    typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                        [{
+                            type: "error",
+                            text: error
+                        }], 5000
+                    );
+                }).finally(() => {
+                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                });
+        };
+
+        const getCartAction = function(formNode) {
+            return formNode.action.includes('updateItemOptions')
+                ? `UpdateItemOptions`
+                : 'add';
+        };
+
+        const resultActionResolver = {
+            /**
+             * @param {CartResponse} result
+             */
+            resolve: function (result) {
+				
+				if(typeof result.is_add_to_cart != "undefined"){
+					var msg = result.message;
+					/*if($($.parseHTML(result.message)).filter(".message.error").text()){
+						msg =  $($.parseHTML(result.message)).filter(".message.error").text(); 
+					}*/
+
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(result.message, 'text/html');
+                    var errorMsg = doc.querySelector('.message.error') ? doc.querySelector('.message.error').textContent : '';
+
+                    if (errorMsg) {
+                        msg = errorMsg;
+                    }
+
+					window.dispatchMessages && window.dispatchMessages([{
+                        type: 'error',
+                        text: msg
+                    }]);
+					
+				}
+                switch (true) {
+                    case !!result.popup_action:
+                    var parser = new DOMParser();
+                    var doc = parser.parseFromString(result.message, 'text/html');
+                    var errorMsg = doc.querySelector('.message.error') ? doc.querySelector('.message.error').textContent : '';
+                    if (errorMsg) {
+                        msg = errorMsg;
+                        window.dispatchMessages && window.dispatchMessages([{
+                            type: 'error',
+                            text: msg
+                        }]);
+                    } else {
+                        window.dispatchEvent(new CustomEvent(result.popup_action, {detail: result}));
+                        window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+
+                        if (globalActionName == 'UpdateItemOptions') {
+                           window.location.href = `${BASE_URL}checkout/cart`;
+                        }
+                    }
+                        break;
+                    case !!result.redirect:
+                        window.location.href = result.redirect;
+                        break;
+                }
+            }
+        }
+
+        if (document.body.classList.contains('catalog-category-view')) {
+            hyva.getBrowserStorage().setItem(
+                'last_category_id',
+                '<?= $escaper->escapeHtml($pageIdViewModel->getPageId()) ?>'
+            );
+        }
+
+        const groupedOptions = document.querySelector('div[x-data^=initGroupedOptions]');
+
+        if (!!groupedOptions) {
+            groupedOptions.setAttribute('x-on:amcart-trigger-grouped-form-validate.window', 'validateForm()');
+        }
+
+        window.addEventListener('amcart-add-to-cart-action', addToCartAction);
+    })();
+</script>

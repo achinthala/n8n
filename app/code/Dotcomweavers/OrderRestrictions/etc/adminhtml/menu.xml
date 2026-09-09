@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!--
+/** OrderRestrictions menu xml
+ * @category  Dotcomweavers
+ * @package   Dotcomweavers_OrderRestrictions
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Dotcomweavers_OrderRestrictions::manager" title="Order Restrictions" module="Dotcomweavers_OrderRestrictions" sortOrder="10" resource="Dotcomweavers_OrderRestrictions::manager"/>
+        <add id="Dotcomweavers_OrderRestrictions::add_row" title="Order Restrictions Manager" module="Dotcomweavers_OrderRestrictions" sortOrder="20" parent="Dotcomweavers_OrderRestrictions::manager" action="orderrestrictions/restrictions_rule" resource="Dotcomweavers_OrderRestrictions::add_row"/>
+    </menu>
+</config>

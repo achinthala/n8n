@@ -1,0 +1,18 @@
+
+<?php if ($_categoryBottomContent = $block->getCategoryBottomContent()) :?>
+
+<?php $categoryBottomContentHtml=$this->helper(Magento\Catalog\Helper\Output::class)->categoryAttribute(
+            $block->getCurrentCategory(),
+            $_categoryBottomContent,
+            'description'
+        );
+
+// $categoryBottomContentHtml=str_replace('<a','<span data-element="filter" @click="handleClick"> <a class="special-filters"',$categoryBottomContentHtml);
+// $categoryBottomContentHtml=str_replace("</a>","</a></span>",$categoryBottomContentHtml);
+
+        ?> 
+
+    <div class="category-bottom-content">
+        <?= /* @noEscape */ $categoryBottomContentHtml ?>
+    </div> 
+    <?php endif;?>

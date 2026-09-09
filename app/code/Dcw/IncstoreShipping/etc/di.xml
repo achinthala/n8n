@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Magento\Quote\Model\Quote\Address\Total\Shipping" type="Dcw\IncstoreShipping\Model\Quote\Address\Total\Shipping" />
+    <preference for="Dcw\IncstoreShipping\Api\Data\OrderItemAttributeInterface" type="Dcw\IncstoreShipping\Model\OrderItemAttribute" />
+    <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="load_orderattributes_shipping_metadata" type="Dcw\IncstoreShipping\Plugin\Model\Order\LoadOrderAttributes"/>
+    </type>
+	<type name="Magento\Quote\Model\Quote\Item\ToOrderItem">
+        <plugin name="cedapi_quote_to_order_item" type="Dcw\IncstoreShipping\Model\Plugin\Quote\QuoteToOrderItem"/>
+    </type>
+
+    <preference for="Magento\Checkout\Model\Session" type="Dcw\IncstoreShipping\Checkout\Model\Session" />
+
+    <type name="Dcw\IncstoreShipping\Logger\Handler\Shipping">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/shippingAPI.log</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\IncstoreShipping\Logger\Logger">
+        <arguments>
+            <argument name="handler" xsi:type="object">Dcw\IncstoreShipping\Logger\Handler\Shipping</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\IncstoreShipping\Model\Carrier\Incstoreshipping">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\IncstoreShipping\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\IncstoreShipping\Model\Api">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\IncstoreShipping\Logger\Logger</argument>
+        </arguments>
+    </type>
+	
+	<!--Override Shipping Amount afterCollect plugin - DISABLED
+    <type name="Magento\Quote\Model\Quote\Address\Total\Shipping">
+        <plugin name="dcw_override_shipping_amount"
+                type="Dcw\IncstoreShipping\Plugin\OverrideShippingAmount"
+                sortOrder="100" />
+    </type>
+    -->
+</config>

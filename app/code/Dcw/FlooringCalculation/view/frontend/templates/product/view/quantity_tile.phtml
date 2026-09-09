@@ -1,0 +1,964 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductStockItem;
+use Magento\Catalog\Block\Product\View;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Escaper;
+use Dcw\FlooringCalculation\ViewModel\Data;
+
+// phpcs:disable Generic.WhiteSpace.ScopeIndent.Incorrect
+
+/** @var View $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var Product $product */
+$product = $block->getProduct();
+
+/** @var ProductStockItem $stockItemViewModel */
+$stockItemViewModel = $viewModels->require(ProductStockItem::class);
+$minSalesQty        = $stockItemViewModel->getMinSaleQty($product);
+$maxSalesQty        = $stockItemViewModel->getMaxSaleQty($product);
+
+$maxSalesQtyLength  = ($maxSalesQty ? strlen((string) $maxSalesQty) : 4)
+    + (/* add one if decimal for separator */
+    (int) $stockItemViewModel->isQtyDecimal($product));
+
+$step = $stockItemViewModel->getQtyIncrements($product)
+    ? $stockItemViewModel->getQtyIncrements($product)
+    : null;
+
+$flooringCalculationBlock = $block->getLayout()->createBlock(\Dcw\FlooringCalculation\Block\Index::class);
+$flooringCalculationHelper = $flooringCalculationBlock->flooringCalculationHelper();
+$flooringCalculationViewModel = $viewModels->require(Data::class);
+$request = $flooringCalculationViewModel->getRequest();
+
+$quoteItemId = (int)$request->getParam('id');
+$editProductId = (int)$request->getParam('product_id');
+$customerWidth = $customerLength = $customerSquareFootage = $customerOveragePercent = "";
+
+if ($quoteItemId && $editProductId) {
+    $cart = $flooringCalculationViewModel->getCart();
+
+    // Get the quote from the cart
+    $quote = $cart->getQuote();
+    $quoteItem = $quote->getItemById($quoteItemId);
+
+    $getPdpLineItem = $quoteItem !== false ? $quoteItem->getData('pdp_line_item') : null;
+
+    if ($getPdpLineItem) {
+        // Decode the JSON string into an associative array
+        $data = json_decode($getPdpLineItem, true);
+        $customerWidth = $data['CustomerWidth'] ?? '';
+        $customerLength = $data['CustomerLength'] ?? '';
+        $customerSquareFootage = $data['SquareFootage'] ?? '';
+        $customerOveragePercent = $data['OveragePercent'] ?? '';
+    }
+}
+$referer = $block->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => true]);
+$editqty = 0;
+if (strpos($referer, 'checkout/cart/configure') !== false) {
+    $editqty = 1;
+}
+?>
+<?php if ($block->shouldRenderQuantity()): ?>
+    <script>
+        function initQtyField() {
+            /** START - Ram - 10th Aug 2024 */
+            document.querySelector(".affirm-banner-container").innerHTML = '';
+            /** END - Ram - 10th Aug 2024 */
+            ProductEdit();
+
+            return {
+                qty: <?= (float)($block->getProductDefaultQty() ?: 1) ?>,
+                itemId: <?= $quoteItemId;?>,
+                productId: '<?= (int)$product->getId() ?>',
+                <?php // populate the qty when editing a product from the cart ?>
+                onGetCartData: function onGetCartData(data, $dispatch) {
+                    if (!this.itemId) {
+                        return;
+                    }
+                    const cart = data && data.data && data.data.cart;
+                    const quotecart = data && data.data && data.data.quotecart;
+                    const cartItems = cart && cart.items;
+                    const quotecartItems = quotecart && quotecart.items;
+                    if (!cartItems && !quotecartItems) {
+                        return;
+                    }
+                    const cartItem = cartItems ? cartItems.find((item) => {
+                        return String(item.item_id) === String(this.itemId)
+                            && String(item.product_id) === String(this.productId);
+                    }) : null;
+                    const quotecartItem = quotecartItems ? quotecartItems.find((item) => {
+                        return String(item.item_id) === String(this.itemId)
+                            && String(item.product_id) === String(this.productId);
+                    }) : null;
+                    const line = (cartItem && cartItem.qty != null) ? cartItem : quotecartItem;
+                    if (!line || line.qty == null) {
+                        return;
+                    }
+                    this.qty = line.qty;
+                    this.total_qty = line.qty;
+                    this.total_qty_tile = line.qty;
+                    this.total_qty_case = line.qty;
+
+                        this.total_price = hyva.formatPrice(
+                                                        parseFloat(this.total_qty_tile) *
+                                                        (parseFloat(this.final_price)*
+                                                            parseFloat(this.sqft_per_tile)).toFixed(2)
+                                                        );
+                        this.total_regular_price = hyva.formatPrice(
+                                                        parseFloat(this.total_qty_tile) *
+                                                        (parseFloat(this.regular_price)*
+                                                        parseFloat(this.sqft_per_tile)).toFixed(2)
+                                                        );
+                        $dispatch('update-qty-' + this.productId, this.qty);
+                        var custompice =  this.total_price.replace('$','');
+                        if (document.getElementById('pdp_hide_price')) {
+                            document.getElementById('pdp_hide_price').value = custompice;
+                        }
+                }
+            };
+        }
+
+        function ProductEdit() {
+            var itemId = "<?= $quoteItemId;?>";
+
+            if (itemId) {
+                const changeEvent = new Event('input', {
+                    bubbles: true, // Allow the event to bubble up
+                    cancelable: false // Allow the event to be canceled
+                });
+
+                var customerWidth = "<?php echo $customerWidth;?>";
+                var customerLength = "<?php echo $customerLength;?>"
+                var customerSquareFootage = "<?php echo $customerSquareFootage;?>";
+                if (customerSquareFootage != "") {
+                    var squareFootageField = document.querySelector('.square_footage_sec input[name="square_footage"]');
+                    squareFootageField.value = customerSquareFootage;
+                    squareFootageField.dispatchEvent(changeEvent);
+                } else if (customerWidth != '' && customerLength != '') {
+                    var lengthField = document.querySelector('.length_sec_in input[name="length"]');
+                    var widthField = document.querySelector('.length_sec_in input[name="width"]');
+                    lengthField.value = customerLength;
+                    widthField.value = customerWidth;
+
+                    lengthField.dispatchEvent(changeEvent);
+                    widthField.dispatchEvent(changeEvent);
+                }
+
+                setTimeout(() => {
+                    var changeEvent = new Event("change");
+                    let overagePercentCheckbox = document.getElementById("overage_percent");
+                    var customerOveragePercent = "<?= $customerOveragePercent;?>";
+
+                    if (overagePercentCheckbox && customerOveragePercent == "true") {
+                        overagePercentCheckbox.checked = true;
+                        overagePercentCheckbox.dispatchEvent(changeEvent);
+                    } else if (overagePercentCheckbox) {
+                        overagePercentCheckbox.checked = true;
+                        overagePercentCheckbox.dispatchEvent(changeEvent);
+                        overagePercentCheckbox.checked = false;
+                        overagePercentCheckbox.dispatchEvent(changeEvent);
+                    }
+                }, "3000");
+            }
+        }
+
+        function flooringCalcDetails() {
+                return {
+                    square_footage:'',
+                    length:'',
+                    width:'',
+                    corner_tiles:0,
+                    border_tiles:0,
+                    center_tiles:0,
+                    exact_width:'',
+                    exact_length:'',
+                    final_price: initPriceSqft<?= /* @noEscape */ (int)$product->getId() ?>().getFinalPrice(),
+                    regular_price: initPriceSqft<?= /* @noEscape */ (int)$product->getId() ?>().getRegularPrice(),
+                    is_check_overage_percent:'',
+                    overage_percent: '',
+                    total_qty: <?php echo $editqty; ?>,
+                    total_qty_tile:<?php echo $editqty; ?>,
+                    total_qty_case: 0,
+                    coverage_per_case: '',
+                    total_coverage_sqft:'',
+                    total_price:'',
+                    total_price_number:'',
+                    total_regular_price:'',
+                    showPriceSummary: false,
+                    // tile_size_area_text:'',
+                    rubberTilesTab:'shop_by_room_size',
+                    checkForTileOrCase: '',
+                    sqft_per_tile: initPriceSqft<?= (int)$product->getId() ?>().getSqftPerTile,
+                    <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+                    min_tile_quantity: initPriceSqft<?= (int)$product->getId() ?>().getMibTileQty,
+                    <?php endif; ?>
+                    lengthKeyup: function () {
+                        var regexp = /^\d*\.?\d*$/;
+                        var isValidated = regexp.test(this.length);
+                        if (isValidated && this.length != '') {
+                           // this.calc_total_qty_sqft_price_func(qty_calc);
+                            this.square_footage = '';
+                            if (this.width > 0 && this.width != '') {
+
+                                var qty_calc = 1;
+                                var room_length_inch = this.length * 12;
+                                var room_width_inch = this.width * 12;
+
+                                var no_of_tiles_length = Math.ceil(parseFloat(room_length_inch) / parseFloat(this.exact_length));
+                                var no_of_tiles_width = Math.ceil(parseFloat(room_width_inch) / parseFloat(this.exact_width));
+
+                                qty_calc = parseInt(no_of_tiles_length) * parseInt(no_of_tiles_width);
+
+
+                                if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                                    var extra_qty_calc = (parseFloat(qty_calc) * parseFloat(this.overage_percent))/100;
+                                    qty_calc = Math.ceil(parseFloat(qty_calc) + parseFloat(extra_qty_calc));
+                                }
+
+                                this.calc_total_qty_sqft_price_func(qty_calc);
+
+                            }
+                        } else {
+                            this.length = '';
+                        }
+                    },
+                    widthKeyup: function () {
+                        var regexp = /^\d*\.?\d*$/;
+                        var isValidated = regexp.test(this.width);
+
+                        if (isValidated && this.width != '') {
+                            this.square_footage = '';
+                            if (this.length > 0 && this.length != '') {
+                                var qty_calc = 1;
+                                var room_length_inch = this.length * 12;
+                                var room_width_inch = this.width * 12;
+
+                                var no_of_tiles_length = Math.ceil(parseFloat(room_length_inch) / parseFloat(this.exact_length));
+                                var no_of_tiles_width = Math.ceil(parseFloat(room_width_inch) / parseFloat(this.exact_width));
+
+                                qty_calc = parseInt(no_of_tiles_length) * parseInt(no_of_tiles_width);
+
+                                if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                                    var extra_qty_calc = (parseFloat(qty_calc) * parseFloat(this.overage_percent))/100;
+                                    qty_calc = Math.ceil(parseFloat(qty_calc) + parseFloat(extra_qty_calc));
+                                }
+
+                                this.calc_total_qty_sqft_price_func(qty_calc);
+                            }
+                        } else {
+                             this.width = '';
+                        }
+                    },
+                    squareFootageKeyup: function () {
+                        //alert(this.square_footage);
+                        var regexp = /^\d*\.?\d*$/;     ///^\d+(\.\d{1,2})?$/;
+                        var isValidated = regexp.test(this.square_footage);
+
+                        if (isValidated && this.square_footage != '') {
+                            this.length = '';
+                            this.width = '';
+
+                            var qty_calc = 1;
+                            var total_square_footage = parseFloat(this.square_footage);
+
+                            if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                                var extra_square_footage_overage = (parseFloat(this.square_footage)*
+                                                                parseFloat(this.overage_percent))/100;
+
+                                total_square_footage = parseFloat(this.square_footage) +
+                                                        parseFloat(extra_square_footage_overage);
+                            }
+
+                            qty_calc = parseFloat(total_square_footage)/parseFloat(this.sqft_per_tile);
+                            qty_calc = Math.ceil(qty_calc);
+
+                            this.calc_total_qty_sqft_price_func(qty_calc);
+                        } else {
+                            this.square_footage = '';
+                        }
+                    },
+                    overagePercent:  function () {
+                        if (this.square_footage) {
+                            var qty_calc = 1;
+                            var total_square_footage = parseFloat(this.square_footage);
+
+                            if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                                var extra_square_footage_overage = (parseFloat(total_square_footage)*
+                                                                parseFloat(this.overage_percent))/100;
+
+                                total_square_footage = parseFloat(total_square_footage) +
+                                                        parseFloat(extra_square_footage_overage);
+                            }
+                            qty_calc = parseFloat(total_square_footage)/parseFloat(this.sqft_per_tile);
+                            qty_calc = Math.ceil(qty_calc);
+                            this.calc_total_qty_sqft_price_func(qty_calc);
+                        } else if(this.length && this.width) {
+                            var qty_calc = 1;
+
+                            var room_length_inch = this.length * 12;
+                            var room_width_inch = this.width * 12;
+
+                            var no_of_tiles_length = Math.ceil(parseFloat(room_length_inch) / parseFloat(this.exact_length));
+                            var no_of_tiles_width = Math.ceil(parseFloat(room_width_inch) / parseFloat(this.exact_width));
+
+                            qty_calc = parseInt(no_of_tiles_length) * parseInt(no_of_tiles_width);
+
+                            if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                                var extra_qty_calc = (parseFloat(qty_calc) * parseFloat(this.overage_percent))/100;
+                                qty_calc = Math.ceil(parseFloat(qty_calc) + parseFloat(extra_qty_calc));
+                            }
+
+                            this.calc_total_qty_sqft_price_func(qty_calc);
+                        }
+                    },
+                    qtyFieldClick:  function () {
+                        if (this.total_qty < 1 ||this.total_qty == '' || this.total_qty == null) {
+                           this.total_qty = 0;
+                        }
+                    },
+                    qtyUpdate:  function () {
+                        if (this.total_qty < 1 ||this.total_qty == '' || this.total_qty == null) {
+                                this.total_qty = 0;
+                            }
+                        this.calc_total_qty_sqft_price_func(this.total_qty);
+                    },
+                    qtyFieldBlur:  function () {
+                        if (this.total_qty < 1 ||this.total_qty == '' || this.total_qty == null) {
+                            this.total_qty = 0
+                        }
+                    },
+                    decrement:  function () {
+                        if (this.total_qty > 1) {
+                                this.total_qty--;
+                            }
+                        this.calc_total_qty_sqft_price_func(this.total_qty);
+                    },
+                    increment:  function () {
+                        this.total_qty++;
+                        this.calc_total_qty_sqft_price_func(this.total_qty);
+                    },
+                    decrement_length:  function () {
+                        if (this.length > 1) {
+                            this.length--;
+                        }
+                        this.lengthKeyup();
+                    },
+                    increment_length:  function () {
+                        this.length++;
+                        this.lengthKeyup();
+                    },
+                    decrement_width:  function () {
+                        if (this.width > 1) {
+                            this.width--;
+                        }
+                        this.widthKeyup();
+                    },
+                    increment_width:  function () {
+                        this.width++;
+                        this.widthKeyup();
+                    },
+                    decrement_qty:  function () {
+                        if (this.total_qty > 1) {
+                            this.total_qty--;
+                        }
+                        this.calc_total_qty_sqft_price_func(this.total_qty);
+                    },
+                    increment_qty:  function () {
+                        this.total_qty++;
+                        this.calc_total_qty_sqft_price_func(this.total_qty);
+                    },
+                    updateTotalQtySqftPriceOnPageLoad:  function () {
+                        <?php if (empty($flooringCalculationHelper->isCartConfigurePdp())) {?>
+                            <?php  if(!isset($_REQUEST['color'])) { ?>
+                        var CONTROL_INTERVAL = setInterval(function(){
+                            if(document.querySelector('.product-option-value-input')){
+                                document.querySelectorAll('.product-option-values').forEach(function(option_box) {
+                                    option_box.querySelector('.product-option-value-input').click();
+                                });
+                                clearInterval(CONTROL_INTERVAL);
+                            }
+                        }, 100);
+                        <?php }?>
+                        <?php }?>
+                    },
+                    calc_total_qty_sqft_price_func:   function (qty_calc) {
+                        this.total_qty = qty_calc;
+                        this.total_qty_tile = qty_calc;
+                        this.total_qty_case = qty_calc;
+
+                        <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+
+                            this.min_tile_quantity=parseFloat(document.getElementById('min_tile_quantity').value);
+                            if(this.total_qty<this.min_tile_quantity){
+                                this.total_qty=this.min_tile_quantity;
+                                this.total_qty_tile=this.min_tile_quantity;
+                            }
+                        <?php endif; ?>
+
+                        this.total_coverage_sqft = (parseFloat(this.sqft_per_tile) *
+                        parseFloat(this.total_qty_tile)).toFixed(2);
+
+                        this.total_price = hyva.formatPrice(
+                            parseFloat(this.total_qty_tile) *
+                            (parseFloat(this.final_price)*
+                                parseFloat(this.sqft_per_tile)).toFixed(2)
+                        );
+                        
+                        if(this.checkForTileOrCase == 'case') {
+                            this.total_regular_price = hyva.formatPrice(
+                                parseFloat(this.total_qty_tile) *
+                                (parseFloat(this.regular_price)*
+                                parseFloat(this.coverage_per_case)).toFixed(2)
+                            );
+                        } else {
+                            this.total_regular_price = hyva.formatPrice(
+                                parseFloat(this.total_qty_tile) *
+                                (parseFloat(this.regular_price)*
+                                parseFloat(this.sqft_per_tile)).toFixed(2)
+                            );
+                        }
+                        //START - Ram - 10th Aug 2024
+                        console.log('Affirm API Call - Start - Tile');
+                        var affirmReqUrl = document.getElementById("affirmReqUrl").value;
+                        var affirmReqKey = document.getElementById("affirmReqKey").value;
+                        var pdpPriceFormat = this.total_price;
+                        var affirmReqAmount = Number(pdpPriceFormat.replace(/[^0-9\.-]+/g, "")) * 100;
+                        var affirmLocale = document.getElementById("affirm_locale").value;
+                        var affirmLogoColor = document.getElementById("affirm_logo_color").value;
+                        console.log('Affirm Req URL : '+affirmReqUrl+'/'+affirmReqKey+'?amount='+affirmReqAmount+'&field=ala&locale='+affirmLocale+'&logo_color='+affirmLogoColor);
+                        fetch(affirmReqUrl+'/'+affirmReqKey+'?amount='+affirmReqAmount+'&field=ala&locale='+affirmLocale+'&logo_color='+affirmLogoColor+'&logo_type=logo&promo_external_id=promo_set_RubberFlooring&show_cta=true')
+						.then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+						.then(data => {
+                            console.log('Data received:', data);
+                            var htmlAla = data.promo.html_ala;
+                            htmlAla = htmlAla.replace("<a class='affirm-modal-trigger'>", "<a class='affirm-site-modal' x-init='affirmClick()' x-on:click='affirmClick()' aria-label='See if you qualify - Affirm Financing (opens in modal)' style='cursor: pointer;'>");
+                            htmlAla = '<span class="affirm-as-low-as" data-promo-id="promo_set_RubberFlooring" data-affirm-color="blue" data-bind="attr: { \'data-amount\': affirmAmount }" data-amount="'+affirmReqAmount+'">'+htmlAla+'</span>';
+                            console.log('html_ala:', htmlAla);
+                            if(htmlAla=='')
+                            {
+                               document.querySelector(".affirm-banner-container").innerHTML = '';
+                            }
+                            else
+                            {
+                                document.querySelector(".affirm-banner-container").innerHTML = htmlAla;
+                            }
+						});
+                        console.log('Affirm API Call - End');
+                        //END - Ram - 10th Aug 2024
+
+                        <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing') {?>
+
+                        <?php } ?>
+					},
+                    addToCartClickVerify:   function () {
+						const colorBoxes = document.querySelectorAll(
+							'.normal_color_swatch_option .selectOptionColor'
+						);
+						var colorNotAvailable = 0;
+						const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+						colorBoxes.forEach((colorBox) => {
+							if (colorBox.querySelector('.select_none label.checked')) {
+								colorNotAvailable = 1;
+								colorerrorDiv.textContent = 'Please select a valid available color.';
+								colorerrorDiv.style.display = 'block';
+								const colorSection = document.querySelector('.normal_color_swatch_option');
+
+								if (colorSection) {
+									colorSection.scrollIntoView({
+										behavior: 'smooth',
+										block: 'center'
+									});
+								}
+							}
+						});
+						if (colorNotAvailable){
+							return false;
+						} else {
+							colorerrorDiv.textContent = '';
+							colorerrorDiv.style.display = 'none';
+						}
+                        if (this.total_qty <= 0 || this.total_qty == '' || this.total_qty == null) {
+                            this.total_qty = document.querySelector('.sqft .all_total_calc_section input[name="qty"]').value;
+                        }
+						const qtyVal = this.total_qty;
+                        const errorDiv = document.getElementById('qty-error-msg-tile');
+						if (qtyVal <= 0) {
+							errorDiv.textContent = 'Please enter a quantity greater than zero.';
+                            errorDiv.style.display = 'block';
+						}else{
+							errorDiv.textContent = '';
+                            errorDiv.style.display = 'none';
+                            this.total_price_number = (parseFloat(this.final_price)*
+                                                                parseFloat(this.sqft_per_tile)).toFixed(2);
+                            var selected_option_child_id = document.querySelector('input[name="selected_option_child_id"]').value;
+                            var shiptotext = document.getElementById("s-ships").innerHTML;
+                            var custompice =  document.getElementById("pdp-price").innerHTML;
+                            custompice = custompice.replace('$','');
+                            //Add code for Line item
+                            var pricePerSqft = this.final_price;
+                            var length  = this.length ?? 0;
+                            var width = this.width ?? 0;
+                            // var tileSize = this.tile_size_area_text ?? ' ';
+                            var tileSize = '';
+                            var squareFootage = this.square_footage ?? 0;
+                            <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+                            var min_tile_quantity = document.getElementById("min_tile_quantity").value;
+                            <?php else: ?>
+                            var min_tile_quantity = 0;
+                            <?php endif;?>
+                            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+                            var overagePercentCheck = "";
+
+                            if (document.getElementById("overage_percent")) {
+                                overagePercentCheck = document.getElementById("overage_percent").checked;
+                            }
+
+                            const params = new URLSearchParams({
+                                main_product_id: "<?= /* @noEscape */ $product->getId() ?>",
+                                product_floor_type: "Tire Price",
+                                selected_option_child_id,
+                                qty: this.total_qty,
+                                ship_to_text: shiptotext,
+                                custom_price: this.total_price_number,
+                                pricePerSqft,
+                                tileSize,
+                                squareFootage,
+                                length,
+                                width,
+                                QuantityRange: min_tile_quantity,
+                                overage_percent: overagePercentCheck,
+                                is_updating: <?php echo $block->getRequest()->getActionName() == 'configure' ? 1 : 0; ?>,
+                                item: <?= (int)$quoteItemId ?>
+                            });
+
+                            fetch(BASE_URL+'flooring/index/cartpost?form_key=' + hyva.getFormKey(), {
+                                method: "POST",
+                                headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                                body: params
+                            })
+                            .then(response => {
+                                getCustomerData(['customer'], function(data) {
+                                    var messagesType = data.messages.messages[0].type;
+                                    var messagesText = data.messages.messages[0].text;
+
+                                    if(messagesType === "success"){
+                                        dispatchMessages([
+                                            {
+                                                type: messagesType,
+                                                text: messagesText
+                                            }
+                                        ]);
+
+                                        const relatedProductDialog = document.querySelector('.related-product-dialog-wrapper');
+                                        const cartLink = document.getElementById('menu-cart-icon');
+
+                                        if (relatedProductDialog) {
+                                            setTimeout(() => {
+                                                window.dispatchEvent(
+                                                    new CustomEvent('hyva-modal-show', { detail: { dialog: 'related-product-slider-dialog' } })
+                                                );
+                                            }, 2000);
+                                        } else if (cartLink) {
+                                            cartLink.click();
+                                        }
+
+                                    } else {
+                                        dispatchMessages([
+                                            {
+                                                type: messagesType,
+                                                text: messagesText
+                                            }
+                                        ]);
+                                    }
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+
+                                });
+                                window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                            })
+                            .then(data => {
+                                // window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                // window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            });
+                        }
+                    },
+                    addToCartClickforNone:   function () {
+						const colorBoxes = document.querySelectorAll(
+							'.normal_color_swatch_option .selectOptionColor'
+						);
+						var colorNotAvailable = 0;
+						const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+						colorBoxes.forEach((colorBox) => {
+							if (colorBox.querySelector('.select_none label.checked')) {
+								colorNotAvailable = 1;
+								colorerrorDiv.textContent = 'Please select a valid available color.';
+								colorerrorDiv.style.display = 'block';
+								const colorSection = document.querySelector('.normal_color_swatch_option');
+
+								if (colorSection) {
+									colorSection.scrollIntoView({
+										behavior: 'smooth',
+										block: 'center'
+									});
+								}
+							}
+						});
+						if (colorNotAvailable){
+							return false;
+						} else {
+							colorerrorDiv.textContent = '';
+							colorerrorDiv.style.display = 'none';
+						}
+						const qtyVal = document.getElementById('qtyNone').value;
+                        const errorDiv = document.getElementById('qty-error-msg-none');
+						if (qtyVal <= 0) {
+							errorDiv.textContent = 'Please enter a quantity greater than zero.';
+                            errorDiv.style.display = 'block';
+						}else{
+							errorDiv.textContent = '';
+                            errorDiv.style.display = 'none';
+                            var selected_option_child_id = document.querySelector('input[name="selected_option_child_id"]').value;
+                            var shiptotext = document.getElementById("s-ships").innerHTML;
+                            var custompice =  document.getElementById("finalPriceNone").innerHTML;
+                            custompice = custompice.replace('$','').replace(/,/g, '');
+
+                            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+
+                            if (document.getElementById("overage_percent")) {
+                                overagePercentCheck = document.getElementById("overage_percent").checked;
+                            }
+
+                            const params = new URLSearchParams({
+                                product_floor_type: "None",
+                                main_product_id: "<?= /* @noEscape */ $product->getId() ?>",
+                                selected_option_child_id,
+                                qty: qtyVal,
+                                ship_to_text: shiptotext,
+                                custom_price: custompice,
+                                is_updating: <?php echo $block->getRequest()->getActionName() == 'configure' ? 1 : 0; ?>,
+                                item: <?= (int)$quoteItemId ?>
+                            });
+
+                            fetch(BASE_URL+'flooring/index/cartpost?form_key=' + hyva.getFormKey(), {
+                                method: "POST",
+                                headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                                body: params
+                            })
+                            .then(response => {
+                                getCustomerData(['customer'], function(data) {
+                                    var messagesType = data.messages.messages[0].type;
+                                    var messagesText = data.messages.messages[0].text;
+
+                                    if(messagesType === "success"){
+                                        dispatchMessages([
+                                            {
+                                                type: messagesType,
+                                                text: messagesText
+                                            }
+                                        ]);
+
+                                        const relatedProductDialog = document.querySelector('.related-product-dialog-wrapper');
+                                        const cartLink = document.getElementById('menu-cart-icon');
+
+                                        if (relatedProductDialog) {
+                                            setTimeout(() => {
+                                                window.dispatchEvent(
+                                                    new CustomEvent('hyva-modal-show', { detail: { dialog: 'related-product-slider-dialog' } })
+                                                );
+                                            }, 2000);
+                                        } else if (cartLink) {
+                                            cartLink.click();
+                                        }
+
+                                    } else {
+                                        dispatchMessages([
+                                            {
+                                                type: messagesType,
+                                                text: messagesText
+                                            }
+                                        ]);
+                                    }
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+
+                                });
+                                window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                            })
+                            .then(data => {
+                                // window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                // window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            });
+                        }
+                    },
+                    addToCartClickforPreCutRoll:   function () {
+						const colorBoxes = document.querySelectorAll(
+							'.normal_color_swatch_option .selectOptionColor'
+						);
+						var colorNotAvailable = 0;
+						const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+						colorBoxes.forEach((colorBox) => {
+							if (colorBox.querySelector('.select_none label.checked')) {
+								colorNotAvailable = 1;
+								colorerrorDiv.textContent = 'Please select a valid available color.';
+								colorerrorDiv.style.display = 'block';
+								const colorSection = document.querySelector('.normal_color_swatch_option');
+
+								if (colorSection) {
+									colorSection.scrollIntoView({
+										behavior: 'smooth',
+										block: 'center'
+									});
+								}
+							}
+						});
+						if (colorNotAvailable){
+							return false;
+						} else {
+							colorerrorDiv.textContent = '';
+							colorerrorDiv.style.display = 'none';
+						}
+                        const qtyVal = document.getElementById('qtyPreCutRoll').value;
+                        const errorDiv = document.getElementById('qty-error-msg-pre-cut-roll');
+                        if (qtyVal <= 0) {
+                            errorDiv.textContent = 'Please enter a quantity greater than zero.';
+                            errorDiv.style.display = 'block';
+                        } else {
+                            errorDiv.textContent = '';
+                            errorDiv.style.display = 'none';
+                            var selected_option_child_id = document.querySelector('input[name="selected_option_child_id"]').value;
+                            var shiptotext = document.getElementById("s-ships").innerHTML;
+                            var custompice =  document.getElementById("finalPreCutRollPrice").innerHTML;
+                            custompice = custompice.replace('$','').replace(/,/g, '');
+
+                            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+
+                            const params = new URLSearchParams({
+                                product_floor_type: "Pre Cut Roll",
+                                main_product_id: "<?= /* @noEscape */ $product->getId() ?>",
+                                selected_option_child_id,
+                                qty: qtyVal,
+                                ship_to_text: shiptotext,
+                                custom_price: custompice,
+                                is_updating: <?php echo $block->getRequest()->getActionName() == 'configure' ? 1 : 0; ?>,
+                                item: <?= (int)$quoteItemId ?>
+                            });
+
+                            fetch(BASE_URL+'flooring/index/cartpost?form_key=' + hyva.getFormKey(), {
+                                method: "POST",
+                                headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                                body: params
+                            })
+                            .then(response => {
+                                getCustomerData(['customer'], function(data) {
+                                    var messagesType = data.messages.messages[0].type;
+                                    var messagesText = data.messages.messages[0].text;
+
+                                    if(messagesType === "success"){
+                                        dispatchMessages([
+                                            {
+                                                type: messagesType,
+                                                text: messagesText
+                                            }
+                                        ]);
+
+                                        const relatedProductDialog = document.querySelector('.related-product-dialog-wrapper');
+                                        const cartLink = document.getElementById('menu-cart-icon');
+
+                                        if (relatedProductDialog) {
+                                            setTimeout(() => {
+                                                window.dispatchEvent(
+                                                    new CustomEvent('hyva-modal-show', { detail: { dialog: 'related-product-slider-dialog' } })
+                                                );
+                                            }, 2000);
+                                        } else if (cartLink) {
+                                            cartLink.click();
+                                        }
+
+                                    } else {
+                                        dispatchMessages([
+                                            {
+                                                type: messagesType,
+                                                text: messagesText
+                                            }
+                                        ]);
+                                    }
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                });
+                                window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                            })
+                            .then(data => {
+                            });
+                        }
+                    }
+                }
+        }
+
+    </script>
+
+    <?php
+    if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+        <input type="hidden" id='min_tile_quantity' value='125' />
+    <?php endif;?>
+    <div class="all_total_calc_section">
+        <div class="all_total_calc_section_in bg-white rounded-md ">
+            <div class="calc_content flex items-center">
+                <div class="calc_content_left">
+                    <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/calc.png'); ?>"
+                        alt="calc" width="41" height="47">
+                </div>
+                <div class="calc_content_right">
+                    <div class="calculator-header text-size19 font-semibold text-black">
+                        How much flooring will you need?
+                    </div>
+                </div>
+            </div>
+            <div class="length_width_square_footage_field_area flex flex-wrap w-full justify-between">
+                <div class="length_width_field_area flex flex-nowrap align-center">
+                    <div class="length_sec">
+                        <label for="square_footage" class="text-size14 font-semibold text-black text-center block">
+                            Length (ft)
+                        </label>
+                        <div class="length_sec_in flex flex-nowrap align-center">
+                            <button x-on:click="decrement_length()"
+                                class="qty-decrement inter text-size18 font-semibold text-black md:mr-5">-</button>
+                            <input type="text" id="square_footage"
+                                class="input-text" name="length" value=""
+                                x-model="length" x-on:keyup="lengthKeyup" autocomplete="off"/>
+                            <button x-on:click="increment_length()"
+                                class="qty-increment inter text-size18 font-semibold text-black">+</button>
+                        </div>
+                    </div>
+                    <div class="width_sec">
+                        <label for="square_footage" class="text-size14 font-semibold text-black text-center block">
+                            Width (ft)
+                        </label>
+                        <div class="length_sec_in flex flex-nowrap align-center">
+                            <button x-on:click="decrement_width()"
+                                class="qty-decrement inter text-size18 font-semibold text-black md:mr-5">-</button>
+                            <input type="text"
+                                class="input-text" name="width" value=""
+                                x-model="width" x-on:keyup="widthKeyup" autocomplete="off"/>
+                            <button x-on:click="increment_width()"
+                                class="qty-increment inter text-size18 font-semibold text-black">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="square_footage_sec">
+                    <label for="square_footage" class="text-size14 font-semibold text-black text-center block">
+                        Square Footage
+                    </label>
+                    <input type="text"  class="input-text" name="square_footage" value=""
+                        x-validate.number x-model="square_footage" x-on:keyup="squareFootageKeyup" autocomplete="off"/>
+                </div>
+            </div>
+            <template x-if="overage_percent">
+                <div class="overage_percent_sec flex items-center justify-center md:justify-start mt-5">
+                    <input type="checkbox" id="overage_percent" name="overage_percent"
+                            x-model="is_check_overage_percent" x-on:change="overagePercent" checked="checked" value=""/>
+                    <label for="overage_percent" class="inter text-size14 font-normal text-black flex items-center">
+                        Include extra <span x-text="overage_percent"></span>%
+                        <div class="over_percentage_tooltip flex items-center relative">
+                            <img src="<?= /* @noEscape */ $block->getViewFileUrl('images/mark1.png'); ?>"
+                                alt="mark1" width="15" height="15" class="ml-1 inline-block align-text-top">
+                            <div class="over_percentage_tooltip_content hidden absolute">Some overage is recommended to cover cuts, potential mistakes & pattern matching.</div>
+                        </div>
+                    </label>
+                </div>
+            </template>
+        </div>
+        <div class="err_message" id="qty-error-msg-tile" style="color: red; display: none;"></div>
+        <div x-data="initQtyField()"
+            class="quantity-container mb-6 flex items-center">
+            <?php if ($product->isSaleable()): ?>
+                <div class="flex items-center" x-show="sqft_per_tile > 0 && sqft_per_tile !=''">
+                    <label for="qty[<?= (int)$product->getId() ?>]"
+                        class="inter text-size18 font-semibold text-black md:mr-5"
+                    >
+                        <?= $escaper->escapeHtml(__('Quantity')) ?>
+                    </label>
+                    <button x-on:click="decrement_qty()"
+                        class="qty-decrement inter text-size18 font-semibold text-black md:mr-5">-</button>
+                    <input name="qty"
+                        @private-content-loaded.window="onGetCartData($event.detail, $dispatch)"
+                        id="qty[<?= (int)$product->getId() ?>]"
+                        form="product_addtocart_form"
+                        <?php if ($stockItemViewModel->isQtyDecimal($product)): ?>
+                        type="text"
+                        pattern="[0-9](\.[0-9])?{0,<?= /** @noEscape */ $maxSalesQtyLength ?>}'"
+                        inputmode="decimal"
+                        <?php else: ?>
+                        type="text"
+                        pattern="[0-9]{0,<?= /** @noEscape */ $maxSalesQtyLength ?>}"
+                        inputmode="numeric"
+                        <?php if ($minSalesQty): ?>min="<?= /** @noEscape */ $minSalesQty ?>"<?php endif; ?>
+                        <?php if ($maxSalesQty): ?>max="<?= /** @noEscape */ $maxSalesQty ?>"<?php endif; ?>
+                        <?php if ($step): ?>step="<?= /** @noEscape */ $step ?>"<?php endif; ?>
+                        <?php endif; ?>
+                        :value="qty"
+                        class="form-input md:mr-5 bg-transparent invalid:ring-2 invalid:ring-red-500"
+                        x-model.number="total_qty"
+                        @click="qtyFieldClick"
+                        @input="qtyUpdate"
+                        @blur="qtyFieldBlur"
+                        @change="$dispatch('update-qty-<?= (int)$product->getId() ?>', qty)"
+                    />
+                    <button x-on:click="increment_qty()"
+                        class="qty-increment inter text-size18 font-semibold text-black">+</button>
+                </div>
+            <?php endif; ?>
+            <!-- <div class="unit_equals_sqft 222222 text-size14 font-normal text-black pl-6 ml-2"
+            x-show="showPriceSummary == 1 && tile_size_area_text">
+                (<span x-text="tile_size_area_text" ></span>)
+            </div> -->
+        </div>
+
+        <div class="price-summary-container flex justify-between bg-white rounded-md relative"
+             x-show="showPriceSummary == 1 && (sqft_per_tile > 0 && sqft_per_tile !='')">
+            <div class="left">
+                <div class="total-case">
+                    <span x-text="total_qty_tile" class="inter text-size28 font-medium text-black mr-1"></span>
+                    <span class="inter text-size16 font-normal text-black">tiles</span>
+                </div>
+                <div class="total-coverageSqft hidden">Covers <span x-text="total_coverage_sqft"></span> sqft</div>
+            </div>
+            <div class="right your_price flex">
+                <div class="inter text-size16 font-medium text-black price_left">Your price</div>
+                <div class="total-price-info ml-6">
+                    <div class="total-regular-price inter line-through text-size14 font-normal text-custom-blue"
+                     x-show="total_price!=total_regular_price" x-text="total_regular_price"></div>
+                    <div class="total-price inter text-size21 font-bold text-custom-blue" x-text="total_price" id ="pdp-price"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<script>
+window.addEventListener("load", function() {
+    var itemId = "<?= $quoteItemId;?>";
+    const qtyField = document.querySelector('.all_total_calc_section input[name="qty"]');
+    var quantity = <?= (float)($block->getProductDefaultQty() ?: 1) ?>;
+
+    if (qtyField && !itemId) {
+        qtyField.value = quantity;
+    }
+});
+</script>

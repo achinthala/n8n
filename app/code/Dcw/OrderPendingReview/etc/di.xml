@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Dcw\OrderPendingReview\Api\HoldReasonCollectorInterface"
+                type="Dcw\OrderPendingReview\Model\HoldReasonCollector"/>
+    <!-- sortOrder 100: inside ParadoxLabs TokenBase around plugins (10) -->
+    <type name="Magento\Checkout\Api\PaymentInformationManagementInterface">
+        <plugin name="dcw_order_pending_review_increment_failed_payment"
+                type="Dcw\OrderPendingReview\Plugin\Checkout\PaymentInformationManagementPlugin"
+                sortOrder="100"/>
+    </type>
+    <type name="Magento\Checkout\Api\GuestPaymentInformationManagementInterface">
+        <plugin name="dcw_order_pending_review_increment_failed_payment_guest"
+                type="Dcw\OrderPendingReview\Plugin\Checkout\GuestPaymentInformationManagementPlugin"
+                sortOrder="100"/>
+    </type>
+    <!-- Cart ZIP estimate: do not let Magento wipe name/street/phone on quote.shipping_address -->
+    <type name="Magento\Checkout\Api\TotalsInformationManagementInterface">
+        <plugin name="dcw_order_pending_review_preserve_address_on_totals"
+                type="Dcw\OrderPendingReview\Plugin\Checkout\PreserveQuoteAddressOnTotalsInformationPlugin"
+                sortOrder="10"/>
+    </type>
+    <type name="Magento\Checkout\Api\GuestTotalsInformationManagementInterface">
+        <plugin name="dcw_order_pending_review_preserve_address_on_guest_totals"
+                type="Dcw\OrderPendingReview\Plugin\Checkout\PreserveQuoteAddressOnTotalsInformationPlugin"
+                sortOrder="10"/>
+    </type>
+    <type name="Magento\Quote\Api\ShipmentEstimationInterface">
+        <plugin name="dcw_order_pending_review_preserve_address_on_estimate"
+                type="Dcw\OrderPendingReview\Plugin\Quote\PreserveQuoteAddressOnShippingEstimatePlugin"
+                sortOrder="10"/>
+    </type>
+    <type name="Magento\Quote\Api\GuestShipmentEstimationInterface">
+        <plugin name="dcw_order_pending_review_preserve_address_on_guest_estimate"
+                type="Dcw\OrderPendingReview\Plugin\Quote\PreserveQuoteAddressOnShippingEstimatePlugin"
+                sortOrder="10"/>
+    </type>
+    <!-- Copy billing onto incomplete quote shipping before Magento validates address at place order -->
+    <type name="Magento\Quote\Api\CartManagementInterface">
+        <plugin name="dcw_order_pending_review_backfill_shipping_before_place"
+                type="Dcw\OrderPendingReview\Plugin\Quote\BackfillShippingAddressBeforePlaceOrderPlugin"
+                sortOrder="20"/>
+    </type>
+    <!-- Guest two-step API: PUT /V1/guest-carts/:id/order calls placeOrder only (no savePaymentInformationAndPlaceOrder) -->
+    <type name="Magento\Quote\Api\GuestCartManagementInterface">
+        <plugin name="dcw_order_pending_review_guest_place_order_failed_attempts"
+                type="Dcw\OrderPendingReview\Plugin\Quote\GuestCartManagementPlugin"
+                sortOrder="100"/>
+    </type>
+    <!-- Magento_AsyncOrder overrides POST …/payment-information webapi to Async*Publisher (bypasses Checkout API when async path is used) -->
+    <type name="Magento\AsyncOrder\Api\AsyncPaymentInformationGuestPublisherInterface">
+        <plugin name="dcw_order_pending_review_async_guest_publisher_failed_attempts"
+                type="Dcw\OrderPendingReview\Plugin\AsyncOrder\AsyncPaymentInformationGuestPublisherPlugin"
+                sortOrder="100"/>
+    </type>
+    <type name="Magento\AsyncOrder\Api\AsyncPaymentInformationCustomerPublisherInterface">
+        <plugin name="dcw_order_pending_review_async_customer_publisher_failed_attempts"
+                type="Dcw\OrderPendingReview\Plugin\AsyncOrder\AsyncPaymentInformationCustomerPublisherPlugin"
+                sortOrder="100"/>
+    </type>
+    <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="dcw_order_pending_review_order_extension_attributes"
+                type="Dcw\OrderPendingReview\Plugin\Sales\OrderRepositoryPlugin"/>
+    </type>
+    <type name="Magento\Quote\Api\CartRepositoryInterface">
+        <plugin name="dcw_order_pending_review_quote_extension_attributes"
+                type="Dcw\OrderPendingReview\Plugin\Quote\CartRepositoryPlugin"/>
+    </type>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider">
+        <plugin name="dcw_order_pending_review_sales_order_grid_data"
+                type="Dcw\OrderPendingReview\Plugin\Ui\SalesOrderGridDataProviderPlugin"/>
+    </type>
+    <type name="Magento\Sales\Model\ResourceModel\Order\Grid\Collection">
+        <plugin name="dcw_order_pending_review_grid_filter_by_restriction_rule"
+                type="Dcw\OrderPendingReview\Plugin\Sales\Order\Grid\CollectionPlugin"/>
+    </type>
+    <type name="Dcw\SplitPayment\Controller\Index\PlaceOrder">
+        <plugin name="dcw_order_pending_review_split_payment_failed_attempts"
+                type="Dcw\OrderPendingReview\Plugin\SplitPayment\PlaceOrderPlugin"/>
+    </type>
+    <type name="Dotcomweavers\OrderRestrictions\Plugin\OrderManagement">
+        <plugin name="dcw_order_pending_review_compute_quote_fraud_flag"
+                type="Dcw\OrderPendingReview\Plugin\Dotcomweavers\ComputeQuoteFraudFlagBeforeOrderPlace"
+                sortOrder="5"/>
+    </type>
+</config>

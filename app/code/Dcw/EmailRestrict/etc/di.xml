@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!--<type name="Magento\Framework\Mail\TransportInterface">-->
+        <!--<plugin name="emailrestriction_transport_plugin"-->
+                <!--type="Dcw\EmailRestrict\Plugin\TransportPlugin" />-->
+    <!--</type>-->
+    <type name="Magento\Framework\Mail\Template\TransportBuilder">
+        <plugin name="emailguard_transportbuilder_plugin" type="Dcw\EmailRestrict\Plugin\TransportBuilderPlugin" sortOrder="10"/>
+    </type>
+</config>

@@ -1,0 +1,13 @@
+{
+    "sales_order_item": {
+        "column": {
+            "incstore_item_shipping": true,
+            "pdp_line_item": true
+        }
+    },
+    "quote_item": {
+        "column": {
+            "pdp_line_item": true
+        }
+    }
+}

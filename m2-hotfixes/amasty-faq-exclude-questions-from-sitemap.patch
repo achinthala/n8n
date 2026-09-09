@@ -1,0 +1,15 @@
+diff --git a/vendor/amasty/module-faq-product-questions/Plugin/Sitemap/Model/Sitemap.php b/vendor/amasty/module-faq-product-questions/Plugin/Sitemap/Model/Sitemap.php
+index 1234567..abcdefg 100644
+--- a/vendor/amasty/module-faq-product-questions/Plugin/Sitemap/Model/Sitemap.php
++++ b/vendor/amasty/module-faq-product-questions/Plugin/Sitemap/Model/Sitemap.php
+@@ -98,7 +98,9 @@ class Sitemap
+         $frequency = $this->configProvider->getFrequency($storeId);
+         $priority = $this->configProvider->getSitemapPriority($storeId);
+         $this->faqUrlKey = $this->configProvider->getUrlKey($storeId);
+-        $questions = $this->getQuestions($storeId);
++        // Patch: Exclude FAQ questions from sitemap - uncomment line below to re-enable
++        // $questions = $this->getQuestions($storeId);
++        $questions = [];
+ 
+         if (!empty($questions)) {
+             // need to use deprecated function to support Magento 2.2.x

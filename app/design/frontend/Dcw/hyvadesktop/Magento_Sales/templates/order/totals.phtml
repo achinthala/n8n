@@ -1,0 +1,85 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/**
+ * @var $block \Magento\Sales\Block\Order\Totals
+ * @see \Magento\Sales\Block\Order\Totals
+ */
+
+$dcwCheckoutBlock = $block->getLayout()->createBlock(\Dcw\Checkout\Block\Index::class);
+$dcwSavedAmountBlock = $block->getLayout()->createBlock(\Dcw\SaveShippingAmount\Block\Index::class);
+$amastyQuoteData = $dcwSavedAmountBlock->getAmastyQuoteData();
+//echo json_encode($amastyQuoteData[0]['shipping_amount']); exit;
+$shippingAmount = 0;
+$taxAmount = 0;
+// Get the values from the fetched data
+if (!empty($amastyQuoteData[0])) {
+    $shippingAmount = isset($amastyQuoteData[0]['shipping_amount']) ? (float) $amastyQuoteData[0]['shipping_amount'] : 0;
+    $taxAmount = isset($amastyQuoteData[0]['tax_amount']) ? (float) $amastyQuoteData[0]['tax_amount'] : 0;
+}
+?>
+<style>
+    .account.amasty_quote-account-view #maincontent .columns .column.main table tfoot tr.shipping, .account.amasty_quote-account-view #maincontent .columns .column.main table tfoot tr.tax{
+        display: block;
+    }
+</style>
+<?php 
+$is_ship_one=0;
+$is_tax_one=0;
+$subtotal=0;
+foreach ($block->getTotals() as $_code => $_total) : 
+  
+    if ($_total->getValue() == 0) {
+        continue;
+    }
+    // Get the values from the fetched data (make sure the table has values for these)
+    ?>
+    <?php if ($_total->getBlockName()) : ?>
+        <?php if ($dcwCheckoutBlock->getFullActionName() == 'sales_order_invoice_email') {?>
+            <?php echo  $block->getChildHtml($_total->getBlockName(), false) ?>
+        <?php }?>
+    <?php else :?>
+        <tr>
+            <td colspan="5" class="quote-raq">
+                <table width="100%" border="0" cellpadding="0" cellspacing="0" align="center"> 
+    
+                    <tr class="<?= $block->escapeHtmlAttr($_code) ?>">
+                        <th <?= /* @noEscape */ $block->getLabelProperties() ?> scope="row" style="font-weight: 400;font-size: 14px;color: #000;text-align: left !important;box-sizing: border-box !important;"> 
+                            <?php if ($_total->getStrong() || $_total->getLabel() == "Grand Total") : ?>
+                                <strong style="font-weight: 700;font-size: 16px;color:#000;"><?= $block->escapeHtml($_total->getLabel()) ?></strong>
+                            <?php else : ?>
+                                <?= $block->escapeHtml($_total->getLabel()) ?>
+                            <?php endif ?>
+                        </th>
+                        <td <?= /* @noEscape */ $block->getValueProperties() ?> data-th="<?= $block->escapeHtmlAttr($_total->getLabel()) ?>"  style="font-weight: 400;font-size: 14px;line-height: 20px;color: #000;text-align: right !important;box-sizing: border-box !important;">
+                            <?php if ($_total->getStrong() || $_total->getLabel() == "Grand Total") : ?>
+                                <strong style="font-weight: 700;font-size: 16px;color:#000;"><?php 
+                                    $grandTotal = $_total->getValue();
+                                  
+                                        echo  $dcwSavedAmountBlock->formatPrice($grandTotal); ?>
+                                   </strong>
+                            <?php else : ?>
+                                <?php echo  $block->formatValue($_total) ?>
+                                
+                                <?php //echo $_total->getValue();
+                                if($_total->getLabel() == "Subtotal"){
+                                    $subtotal = $_total->getValue();
+                                }
+                                ?>
+                            <?php endif?>
+                        </td>
+                    </tr>
+
+                    
+                </table>
+            </td>
+        </tr>    
+    <?php endif; ?>
+<?php endforeach?>
+
+<script>
+    jQuery('.amasty_quote-account-view .quote-item-notes + tfoot td').attr('colspan', '12');
+</script>

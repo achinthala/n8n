@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_feed>
+            <sf_pricing>
+                <mode>whitelist</mode>
+                <sku_whitelist>14000,14048,1006,14003,1005,1043</sku_whitelist>
+            </sf_pricing>
+            <unit_pricing>
+                <mode>disabled</mode>
+                <sku_whitelist></sku_whitelist>
+                <target_attribute>product|incstores_pim_coverage</target_attribute>
+            </unit_pricing>
+        </dcw_feed>
+    </default>
+</config>

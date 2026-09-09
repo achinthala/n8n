@@ -1,0 +1,38 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Contact\Block\ContactForm;
+use Magento\Contact\Helper\Data as ContactHelper;
+use Magento\Framework\Escaper;
+use Hyva\Theme\ViewModel\ReCaptcha;
+
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundHelper
+
+/** @var ContactForm $block */
+/** @var Escaper $escaper */
+/** @var ReCaptcha $recaptcha|null */
+
+$formId = 'contact';
+/** @var ContactHelper $contactHelper */
+$contactHelper = $this->helper(ContactHelper::class);
+
+// Do not replace this with $viewModels->require(ReCaptcha::class); that would break the dependency
+// on the Magento_ReCaptchaContact module
+$recaptcha = $block->getData('viewModelRecaptcha');
+?>
+<div class="contactus">
+        <?php
+        echo $this->getLayout()
+        ->createBlock('Magento\Cms\Block\Block')
+        ->setBlockId('contactform')
+        ->toHtml();
+        ?>
+
+</div>

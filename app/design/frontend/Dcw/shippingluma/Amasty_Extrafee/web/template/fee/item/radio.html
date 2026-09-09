@@ -1,0 +1,12 @@
+<each args="data: getOptions(), as: '$item'">
+    <div class="amexfee_content flex item-center w-full">
+        <input type="radio"
+               class="amexfee-input"
+               ko-checked="$parent.value"
+               attr="value: $item.index, id: $parent.uid + '_' + $item.index, name: $parent.name + '.extrafee'">
+        <label class="amexfee-label" attr="for: $parent.uid + '_' + $item.index">
+            <text args="$item.label"></text>
+            <text args="$parent.taxUtils.getPrice($data)"></text>
+        </label>
+    </div>
+</each>

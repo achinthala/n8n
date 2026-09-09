@@ -1,0 +1,141 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Magento\Swatches\ViewModel\Product\Renderer\Configurable as ConfigurableViewModel;
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/**
+ * @var Template $block
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ * @var ConfigurableViewModel $configurableViewModel
+ */
+$configurableViewModel = $viewModels->require(ConfigurableViewModel::class);
+
+$productId = (int)$block->getProductId();
+
+$attributeId = (int)$block->getAttributeId();
+
+if (!$productId || !$attributeId) {
+    return '';
+}
+
+/** @var Data $blockObj */
+$blockObj = $viewModels->require(Data::class);
+
+$product =  $blockObj->getLoadProduct($productId);
+
+$attr = $blockObj->getAttributeById($attributeId);
+
+$attributeCode = $attr->getAttributeCode();
+$swatchSection = (string) ($block->getData('swatch_section') ?? 'normal');
+$shipRegionUi = (bool) $block->getData('ship_region_ui');
+$shipRegionHideExpr = $shipRegionUi
+    ? "!shipRegionShowInSection('" . $escaper->escapeJs($swatchSection) . "', '" . $attributeCode . "', " . $attributeId . ", item.id)"
+    : 'false';
+$optionEnabledExpr = 'optionIsEnabled(' . $attributeId . ', item.id)';
+$optionInactiveExpr = '!optionIsActive(' . $attributeId . ', item.id)';
+
+$getCustomSwatchData = $blockObj->getSwatchProducts($product);
+$getCustomSwatchDataDecode = json_decode($getCustomSwatchData, true);
+$swatchImageUrl = "";
+
+if (isset($getCustomSwatchData) && is_array($getCustomSwatchDataDecode)) {
+    $swatchImageUrl = json_encode($getCustomSwatchDataDecode['swatchUrl']);
+}
+?>
+<div class="selectOptionColor" :class="{
+    'hidden': <?= in_array($swatchSection, ['normal', 'legacy_normal'], true) ? "quickShipValidation('" . $attributeCode . "', " . $attributeId . ", item.id) == 1" : 'false' ?>
+        || <?= /* @noEscape */ $shipRegionHideExpr ?>
+        || !<?= /* @noEscape */ $optionEnabledExpr ?>
+}">
+    <template x-if="<?= /* @noEscape */ $optionEnabledExpr ?>">
+        <div class="w-full">
+        <div
+            :class="{
+                'select_none relative border-2 cursor-pointer shadow-sm opacity-50 select-none border-container-darker swatch-option bg-container-lighter': <?= /* @noEscape */ $optionInactiveExpr ?>,
+                'w-6 h-6': (<?= /* @noEscape */ $optionInactiveExpr ?>) && !isTextSwatch(<?= $attributeId ?>, item.id) && '<?= $escaper->escapeJs($attributeCode) ?>' !== 'incstores_pim_color_axis'
+            }"
+            :style="(<?= /* @noEscape */ $optionInactiveExpr ?>) ? getSwatchBackgroundStyle(<?= $attributeId ?>, item.id) : null"
+        >
+        <label :id="'swatch-label-box-<?= $attributeId ?>-'+item.id"
+            :for="'attribute-option-<?= $productId ?>-'+item.id"
+            class="swatch-option relative cursor-pointer product-option-value-label <?php if ($attributeCode == 'incstores_pim_variant_axis') {echo ' one-linewrap ';}?>"
+            :class="{
+                'checked':
+                    (String(selectedValues[<?= $attributeId ?>]) === String(item.id)),
+                'border-container-darker':
+                    (String(selectedValues[<?= $attributeId ?>]) !== String(item.id)),
+                'w-6 h-6' : !isTextSwatch(<?= $attributeId ?>, item.id) && '<?= $escaper->escapeJs($attributeCode) ?>' !== 'incstores_pim_color_axis',
+                'border-container-lighter ring ring-primary/75' : focusedLabel === item.id,
+                'shadow-sm opacity-50 select-none': (<?= /* @noEscape */ $optionInactiveExpr ?>) && String(selectedValues[<?= $attributeId ?>]) !== String(item.id)
+            }"
+            :style="getSwatchBackgroundStyle(<?= $attributeId ?>, item.id)"
+            <?php if ($configurableViewModel->getShowSwatchTooltip()): ?>
+                @mouseenter.self="activeTooltipItem = {
+                    attribute: '<?= $attributeId ?>',
+                    item: item.id
+                }; tooltipPositionElement = $event.target;"
+                @mouseleave.self="activeTooltipItem = false"
+            <?php endif; ?>
+        >
+            <input
+                :id="'attribute-option-<?= $productId ?>-'+item.id"
+                :value="item.id"
+                name="super_attribute[<?= $attributeId ?>]"
+                type="radio"
+                class="inline-block absolute p-0 border-0 focus:border-0 focus:ring-0 product-option-value-input"
+                data-attributecode="<?= /* @noEscape */ $attributeCode?>"
+                :data-optionlabel="getSwatchText(<?= $attributeId ?>, item.id)"
+                style="z-index:-1"
+                :aria-label="'<?= $escaper->escapeJs($attr->getStoreLabel()) ?>: ' + getSwatchText(<?= $attributeId ?>, item.id)"
+                x-on:focus="focusLabel(item.id)"
+                x-on:blur="blurLabel()"
+                x-on:change="changeOption(<?= $attributeId ?>, $event.target.value)"
+                x-model="selectedValues[<?= $attributeId ?>]"
+                :required="getAllowedAttributeOptions(<?= $attributeId ?>).filter(
+                                                                    attributeOption => selectedValues[attributeOption]
+                                                                ).length === 0"
+            >
+            <span class="sr-only"
+                x-text="getSwatchText(<?= $attributeId ?>, item.id)">
+            </span>
+            <?php if ($attributeCode == 'incstores_pim_color_axis') { ?>
+            <div class="whitespace-normal selectOptionContent">
+                <div class="no-padding">
+                    <span x-html="getLegacyColorSwatchImageHtml(<?= $attributeId ?>, item.id)"
+                          :id="'child-color-<?= $attributeId ?>-'+item.id"></span>
+                </div>
+            </div>
+            <?php } else { ?>
+            <div class="whitespace-normal selectOptionContent" :class="{ 'sr-only' : !isTextSwatch(<?= $attributeId ?>, item.id) }">
+                <div class="no-padding">
+                        <span class="one-line-text one-line-full" x-html="getSwatchText(<?= $attributeId ?>, item.id)"></span>
+                    <?php if ($attributeCode == 'incstores_pim_variant_axis') {?>
+                        <span class="one-line-text" :id="'swatch-tiles-size-price-pertile-<?= $attributeId ?>-'+item.id"></span>
+                        <span class="one-line-text" :id="'swatch-tiles-size-price-<?= $attributeId ?>-'+item.id"></span>
+                    <?php }?>
+                    <?php if ($product->getAttributeText('product_floor_type') == 'Trailer Rolls' && $attributeCode == 'product_option') { //roll_length?>
+                        <span :class="getSwatchText(<?= $attributeId ?>, item.id).toLowerCase().replace(/\s/g, '')" :id="'swatch-tailer-roll-width-price-<?= $attributeId ?>-'+item.id"></span>
+                        <span :class="getSwatchText(<?= $attributeId ?>, item.id).toLowerCase().replace(/\s/g, '')" :id="'swatch-tailer-roll-length-price-<?= $attributeId ?>-'+item.id"></span>
+                    <?php }?>
+                </div>
+            </div>
+            <?php } ?>
+        </label>
+        </div>
+        </div>
+    </template>
+</div>

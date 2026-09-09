@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <!-- Product Buy Percentage Block -->
+            <block class="Dcw\RevenueRanking\Block\Product\RevenueRankingBlock" 
+                   name="product_buy_percentage_block" 
+                   template="Dcw_RevenueRanking::product-buy-percentage.phtml" 
+                   before="category.products"/>
+        </referenceContainer>
+    </body>
+</page>

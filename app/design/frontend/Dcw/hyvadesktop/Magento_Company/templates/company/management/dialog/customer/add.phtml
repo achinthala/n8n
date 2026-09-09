@@ -1,0 +1,256 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php
+/** @var Magento\Company\Block\Company\Management\Add $block */
+/** @var Magento\Company\ViewModel\Customer $viewModel */
+$viewModel = $block->getData('viewModel');
+?>
+<form class="form form-add-user" method="post" id="add-user-form" @submit.prevent="submitForm"
+      action="<?= $block->escapeUrl($block->getUrl('*/customer/manage')) ?>"
+      data-mage-init='{"validation":{}}'>
+    <input type="hidden" name="target_id" id="target_id"/>
+    <input type="hidden" name="customer_id" id="customer_id" />
+     <?= $block->getBlockHtml('formkey') ?>
+    <fieldset class="fieldset info">
+        <div class="field jobtitle required">
+            <label class="label" for="jobtitle">
+                <span><?= $block->escapeHtml(__('Job Title')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="extension_attributes[company_attributes][job_title]"
+                       id="jobtitle" value=""
+                       title="<?= $block->escapeHtmlAttr(__('Job Title')) ?>"
+                       class="input-text" x-model="jobititle" data-validate="{required:true}">
+            </div>
+        </div>
+        <div class="field role required">
+            <label class="label" for="jobtitle">
+                <span><?= $block->escapeHtml(__('User Role')) ?></span>
+            </label>
+            <div class="control">
+                <select data-role="role-select" name="role" id="role" x-model="role">
+                    <?php foreach ($block->getRoles() as $role): ?>
+                        <option value="<?= (int) $role->getId() ?>">
+                            <?= $block->escapeHtml($role->getRoleName()) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+        <?= $viewModel->getCustomerNameHtml(); ?>
+        <div class="field email required">
+            <label class="label" for="email" >
+                <span><?= $block->escapeHtml(__('Email')) ?></span>
+            </label>
+            <div class="control">
+                <input type="email" name="email" id="email" value=""
+                       title="<?= $block->escapeHtmlAttr(__('Email')) ?>"
+                       data-role="email" x-model="email"
+                       data-url-validate="<?= $block->escapeUrl($block->getUrl('*/customer/check')) ?>"
+                       class="input-text" data-validate="{required:true, 'validate-email':true}">
+            </div>
+        </div>
+        <div class="field telephone required">
+            <label class="label" for="telephone">
+                <span><?= $block->escapeHtml(__('Phone Number')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="extension_attributes[company_attributes][telephone]" id="telephone" value=""
+                       title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>"
+                       class="input-text" data-validate="{required:true}" x-model="mobile">
+            </div>
+        </div>
+        <div class="field status">
+            <label class="label" for="status">
+                <span><?= $block->escapeHtml(__('Status')) ?></span>
+            </label>
+            <div class="control">
+                <select data-role="status-select" x-model="status" 
+                name="extension_attributes[company_attributes][status]" id="status">
+                    <option value="1"><?= $block->escapeHtml(__('Active')) ?></option>
+                    <option value="0"><?= $block->escapeHtml(__('Inactive')) ?></option>
+                </select>
+            </div>
+        </div>
+    </fieldset>
+    <div id="additional_fields_create" data-role="create-additional-fields" class="_hidden additional-fields">
+        <?= $block->getChildHtml('customer_form_user_attributes_create') ?>
+    </div>
+    
+    
+        <button class="btn btn-primary">
+            <?= $escaper->escapeHtml(__('Submit')) ?>
+        </button>
+</form>
+<script>
+  function submitForm() {
+      const postUrl = BASE_URL + 'company/customer/manage/';
+      
+      const formKey = hyva.getFormKey();
+                  let jobtitle = document.getElementById('jobtitle').value;
+                 let role = document.getElementById('role').value;
+                  let firstname = document.getElementById('firstname').value;
+                  let lastname = document.getElementById('lastname').value;
+                  let email = document.getElementById('email').value;
+                  let telephone = document.getElementById('telephone').value;
+                  let status = document.getElementById('status').value;
+                  let target_id = document.getElementById('target_id').value;
+                  let customer_id = document.getElementById('customer_id').value;
+                  
+    const form = document.getElementById('add-user-form');
+    const formData = new FormData(form);
+      
+    
+    
+    fetch(postUrl, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    },
+                    "body": "form_key=" + formKey + 
+                    "&extension_attributes[company_attributes][job_title]=" + jobtitle+ 
+                    "&role=" + role+ "&firstname=" + firstname+ 
+                    "&lastname=" + lastname+ "&email=" + encodeURIComponent(email)+ 
+                    "&extension_attributes[company_attributes][telephone]=" + telephone+ 
+                    "&target_id=" + target_id+ "&customer_id=" + customer_id+ 
+                    "&extension_attributes[company_attributes][status]=" + status,
+                   // "body": formData,
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include"
+                }).then(response => {
+                    location.reload();
+                    console.log(response);
+                    //this.isLoading = false;
+                   //window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                   //fetchHtmlContent(mainproduct);
+                }).then(result => {console.log(result);
+                    //this.isLoading = false;
+                    //window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                    //fetchHtmlContent(mainproduct);
+                    
+                });
+    
+    
+    
+  }
+
+  
+</script>
+
+
+<script>
+
+
+
+function addtimeblank(){
+    console.log('pk');
+    let customer_id = document.getElementById('customer_id');
+                  customer_id.value = '';
+
+                   let jobtitle = document.getElementById('jobtitle');
+                  jobtitle.value = '';
+                  
+                  let role = document.getElementById('role');
+                   role.value='';
+                  let firstname = document.getElementById('firstname');
+                  firstname.value='';
+                  let lastname = document.getElementById('lastname');
+                  lastname.value='';
+                  let email = document.getElementById('email');
+                  email.value='';
+                  let telephone = document.getElementById('telephone');
+                  telephone.value='';
+                  let status = document.getElementById('status');
+                  status.value='1';
+  
+}
+
+
+
+  function fetchuserfromContent(userid) {console.log('asasass');
+  
+  
+  
+  
+  
+                    let customer_id = document.getElementById('customer_id');
+                  customer_id.value = '';
+
+                   let jobtitle = document.getElementById('jobtitle');
+                  jobtitle.value = '';
+                  
+                  let role = document.getElementById('role');
+                   role.value='';
+                  let firstname = document.getElementById('firstname');
+                  firstname.value='';
+                  let lastname = document.getElementById('lastname');
+                  lastname.value='';
+                  let email = document.getElementById('email');
+                  email.value='';
+                  let telephone = document.getElementById('telephone');
+                  telephone.value='';
+                  let status = document.getElementById('status');
+                  status.value='1';
+  
+  
+  
+    const formKey = hyva.getFormKey();
+                const postUrl = BASE_URL + 'company/customer/get/?customer_id='+userid+'&_='+formKey;
+    fetch(postUrl, {
+                method: "GET",
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    
+                    
+
+  
+                    
+                    console.log(data.data.extension_attributes);
+                    //console.log(data.data.extension_attributes[company_attributes][job_title]);
+                    
+                    let customer_id = document.getElementById('customer_id');
+                  customer_id.value = data.data.id;;
+                   //console.log(data.data);
+                   //console.log(data.data.extension_attributes);
+                  // console.log(data.data.extension_attributes.company_attributes.telephone);
+                  // console.log(data.data.extension_attributes.[company_attributes].[job_title]);
+                   let jobtitle = document.getElementById('jobtitle');
+                  jobtitle.value = 'new value';//extension_attributes[company_attributes][job_title]
+                  //jobtitle.value = data.data.extension_attributes[company_attributes][job_title];
+                  
+                  let role = document.getElementById('role');
+                   role.value=data.data.role;
+                  let firstname = document.getElementById('firstname');
+                  firstname.value=data.data.firstname;
+                  let lastname = document.getElementById('lastname');
+                  lastname.value=data.data.lastname;
+                  let email = document.getElementById('email');
+                  email.value=data.data.email;
+                  let telephone = document.getElementById('telephone');
+                  telephone.value='9898989898';
+                  let status = document.getElementById('status');
+                  status.value='1';
+
+                }
+            }).catch(error => {
+        console.error(error);
+      });
+      
+      
+      
+      
+      
+      
+      
+  }
+</script>

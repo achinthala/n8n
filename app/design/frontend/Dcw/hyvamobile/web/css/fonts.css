@@ -1,0 +1,40 @@
+@font-face {
+    font-family: 'rockwell_stdbold';
+    src: url('../fonts/RockwellStd-Bold/rockwellstd-bold.woff2') format('woff2'),
+         url('../fonts/RockwellStd-Bold/rockwellstd-bold.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Yearbook Solid';
+    src: url('../fonts/Yearbook Solid/YearbookSolid.woff2') format('woff2'),
+        url('../fonts/Yearbook Solid/YearbookSolid.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Machine';
+    src: url('../fonts/Machine Regular/machine_regular.woff2') format('woff2'),
+         url('../fonts/Machine Regular/machine_regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'PrincetownSHOP-Regular';
+    src: url('../fonts/PrincetownITC-Normal/princetownitc-normal.woff2') format('woff2'),
+         url('../fonts/PrincetownITC-Normal/princetownitc-normal.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Impact';
+    src: url('../fonts/Impact/impact.woff2') format('woff2'),
+         url('../fonts/Impact/impact.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
