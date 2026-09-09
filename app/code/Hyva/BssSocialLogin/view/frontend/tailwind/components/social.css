@@ -1,0 +1,114 @@
+.showmore-button {
+    @apply bg-no-repeat cursor-pointer h-6 text-sm leading-7 py-0 pr-0 pl-6 text-center max-w-[100px];
+    background-image: url(../../../../../frontend/Magento/blank/en_US/Bss_SocialLogin/images/plus-more-icon.png);
+    color: rgba(134, 131, 131, 1);
+    background-size: 25px;
+}
+
+.showmore-button-text {
+    @apply ml-2;
+    color: rgba(134, 131, 131, 1);
+}
+.sociallogin-button-auto {
+    @apply inline-block;
+}
+
+.sociallogin-button-icon {
+    @apply box-border block float-left h-8 m-0 p-0 w-8;
+}
+
+.sociallogin-button-text {
+    @apply bg-white box-border font-medium inline-block
+    text-xs leading-9 py-0 px-2 text-left text-white capitalize align-top min-w-[165px] bg-[#ffffff33];
+}
+
+.facebook {
+    .sociallogin-button-auto {
+        @apply bg-[#1e4389];
+    }
+}
+
+.twitter {
+    .sociallogin-button-auto {
+        @apply bg-[#28a9e2];
+    }
+    .sociallogin-button-icon {
+        background-position: -34px 0;
+    }
+}
+
+.linkedin {
+    .sociallogin-button-auto {
+        @apply bg-[#11669c];
+    }
+    .sociallogin-button-icon {
+        background-position: -168px 0;
+    }
+}
+
+.yahoo {
+    .sociallogin-button-auto {
+        @apply bg-[#85228f];
+    }
+    .sociallogin-button-icon {
+        background-position: -204px 0;
+    }
+}
+
+.vkontakte {
+    .sociallogin-button-auto {
+        @apply bg-[#3f658c];
+    }
+    .sociallogin-button-icon {
+        background-position: -68px 0;
+    }
+}
+
+.googleplus {
+    .sociallogin-button-auto {
+        @apply bg-[#df4b38];
+    }
+    .sociallogin-button-icon {
+        background-position: -135px 0;
+    }
+}
+
+.hotmail {
+    .sociallogin-button-auto {
+        @apply bg-[#f67d20];
+    }
+    .sociallogin-button-icon {
+        background-position: 0 -34px;
+    }
+}
+
+.live {
+    .sociallogin-button-auto {
+        @apply bg-[#0cb3ee];
+    }
+    .sociallogin-button-icon {
+        background-position: -35px -205px;
+    }
+}
+
+.pinterest {
+    .sociallogin-button-auto {
+        @apply bg-[#cb2028];
+    }
+    .sociallogin-button-icon {
+        background-position: -34px -34px;
+    }
+}
+
+.instagram {
+    .sociallogin-button-auto {
+        @apply bg-[#9a6e51];
+    }
+    .sociallogin-button-icon {
+        background-position: -168px -34px;
+    }
+}
+
+.message-error {
+    @apply w-[auto] bg-[#f84440] mb-[-10px];
+}

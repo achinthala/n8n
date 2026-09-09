@@ -1,0 +1,122 @@
+<?php
+$helperdata = $this->helper('Dcw\FlooringCalculation\Helper\Data');
+$mobile_limit = $helperdata->getMobileLimitFeature();
+if (empty($mobile_limit)) {
+    $mobile_limit = 7;
+}
+$place_holder_img = $helperdata->getPlaceHolderImage();
+$place_holder_img_src =  $helperdata->getImageUrl($place_holder_img);
+$categoryCollection = $helperdata->getCategoryCollection('featured_partner');
+$no_of_item = $categoryCollection->count();
+?>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('css/swiper-bundle.min.css') ?>" media="print" onload="this.media='all'"/>
+<script async src="<?= $block->getViewFileUrl('js/swiper-bundle.min.js') ?>"></script>
+<div x-data="{swiper: null}"
+  x-init="swiper = new Swiper($refs.container, {
+     initialSlide: 0,
+      activeIndex: 0, 
+      grabCursor: true,
+      slidesPerView:2 ,
+      spaceBetween: 10,
+      observer: true,
+      observeParents: true,
+      slidesPerGroup: 2 ,
+      parallax:true,
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+    },
+      autoplay: {
+        delay: 3000,
+      },
+      breakpoints: {
+        640: {
+          slidesPerView: 2,
+          spaceBetween: 0,
+        },
+        768: {
+          slidesPerView: 2,
+          spaceBetween: 0,
+        },
+        1024: {
+          slidesPerView: 2,
+          spaceBetween: 0,
+        },
+      },
+    })"
+  class="relative w-full mx-auto"
+>
+
+<?php if($no_of_item > 7 ){?>
+  <?php if($this->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('featured_partner_heading')->toHtml() != ''): ?>
+    <?php echo $this->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('featured_partner_heading')->toHtml(); ?>
+  <?php endif; ?>
+   <button class="swiper-button-prev" aria-label="Previous slide"></button>
+		<div class="swiper-container w-full" x-ref="container">
+			<div class="swiper-wrapper" x-data="featuredPartnerAjaxCall()" x-init="initFeaturedPartnerFunc()">
+				<template x-for="item in categories.items">
+					<div class="swiper-slide">
+						<div class="flex flex-col rounded overflow-hidden">
+							<div class="flex-shrink-0">
+								<a x-bind:href="BASE_URL+item.url_path+item.url_suffix" rel="nofollow">
+									<img x-show="item.image" x-bind:src="item.image+'?width=155'" x-bind:alt="item.name" x-bind:title="item.name" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async"/>   
+									<img x-show="!item.image" src="<?= /* @noEscape */ $place_holder_img_src;?>" x-bind:alt="item.name" x-bind:title="item.name" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async"/>
+								</a>
+							</div>
+						</div>
+					</div>
+				</template>
+			</div>
+		</div>
+		<button class="swiper-button-next" aria-label="Next slide"></button>
+  <?php }else if($no_of_item > 0){ ?>
+    <div class="heading_fe_part">Featured Partners</div>
+		<div class="swiper-container w-full" x-ref="container">
+			<div class="swiper-wrapper" x-data="featuredPartnerAjaxCall()" x-init="initFeaturedPartnerFunc()">
+			<template x-for="item in categories.items">
+					<div class="swiper-slide">
+						<div class="flex flex-col rounded overflow-hidden">
+							<div class="flex-shrink-0">
+								<a x-bind:href="BASE_URL+item.url_path+item.url_suffix">
+									<img x-show="item.image" x-bind:src="item.image+'?width=155'" loading="lazy" alt="Shop by category" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async"/>
+									<img x-show="!item.image" src="<?= /* @noEscape */ $place_holder_img_src;?>" loading="lazy" alt="Shop by category" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async"/>
+								</a>
+							</div>
+						</div>
+					</div>
+				</template>
+			</div>
+  	</div>
+<?php } ?>
+</div>
+<?php
+$body_data = '{categories(filters: {featured_partner: {eq:1}} pageSize:'.$mobile_limit.')'.
+'{items{name image url_path url_suffix sort_by_featured_partner featured_partner}}}';
+
+?>
+<script>
+  function featuredPartnerAjaxCall() {
+    return {
+        categories:'',
+        initFeaturedPartnerFunc: function () {
+            fetch(BASE_URL+'graphql?form_key=' + hyva.getFormKey(), {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query:'<?= /* @noEscape */ $body_data?>'}),
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                  this.categories = data.data.categories;
+                  }
+            })
+        }
+    }
+  }
+</script>
+<style>
+      .featured_partners{min-height: 134px;}
+</style>

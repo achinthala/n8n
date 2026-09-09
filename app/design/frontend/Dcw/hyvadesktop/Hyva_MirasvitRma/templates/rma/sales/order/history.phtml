@@ -1,0 +1,142 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\Escaper;
+use Magento\Sales\Block\Order\History;
+
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundHelper
+
+/** @var History $block */
+/** @var Escaper $escaper */
+
+?>
+<?php
+$orders = $block->getOrders();
+$shipmentCount = 0;
+?>
+<div class="text-2xl mb-6 hidden"><?= $escaper->escapeHtml(__('My Orders')) ?></div>
+<?= $block->getChildHtml('info') ?>
+<?php if ($orders && count($orders)): ?>
+    <div class="order_rma_history">
+    <div class="card grid grid-cols-3 lg:grid-cols-6 mb-4">
+        <div class="parent_items_heading text-sm text-secondary p-2"><?= $escaper->escapeHtml(__('Order #')) ?></div>
+        <div class="parent_items_heading text-sm lg:block text-secondary p-2"><?= $escaper->escapeHtml(__('Date')) ?></div>
+        <div class="parent_items_heading text-sm hidden text-secondary"><?= $block->getChildHtml('extra.column.header') ?></div>
+        <div class="parent_items_heading text-sm text-secondary p-2"><?= $escaper->escapeHtml(__('Ship To')) ?></div>
+        <div class="parent_items_heading text-sm lg:block text-secondary p-2"><?= $escaper->escapeHtml(__('Order Total')) ?></div>
+        <div class="parent_items_heading text-sm lg:block text-secondary p-2"><?= $escaper->escapeHtml(__('Status')) ?></div>
+        <div class="parent_items_heading product_actions text-sm text-secondary p-2 text-center"><?= $escaper->escapeHtml(__('Action')) ?>
+            <?php if ($this->helper(\Magento\Sales\Helper\Reorder::class)->isAllow()): ?>
+                <?= $escaper->escapeHtml(__(' ')) ?>
+            <?php endif; ?>
+        </div> 
+        <?php $i = 0; ?>
+        <?php foreach ($orders as $order): ?>
+            <?php
+                $trackLink = "";
+                foreach ($order->getShipmentsCollection() as $shipment):
+                    $shipments = $shipment->getTracksCollection();
+                    if ($shipments->count() > 0) {
+                        $trackLink = $this->getUrl('sales/order/shipment/order_id/'.$order->getId());
+                    }
+                endforeach;
+            ?>
+            <?php $i++; ?>
+            <div class="parent_items_content product_name p-2 flex items-center <?= $i % 2 === 0 ? '' : ' ' ?>">
+                <?= $escaper->escapeHtml($order->getRealOrderId()) ?>
+                <p class="lg:hidden text-sm hidden"><?= $escaper->escapeHtml($block->formatDate($order->getCreatedAt())) ?></p>
+            </div>
+            <div class="parent_items_content product_date p-2 lg:flex items-center <?= $i % 2 === 0 ? '' : ' ' ?>">
+                <?= $escaper->escapeHtml($block->formatDate($order->getCreatedAt())) ?>
+            </div>
+            <div class="parent_items_content product_rma p-2 hidden items-center <?= $i % 2 === 0 ? '' : ' ' ?>">
+            <?php $extra = $block->getChildBlock('extra.container'); ?>
+            <?php if ($extra) : ?>
+                <?php $extra->setOrder($order); $extra->setData('counter', $i); ?>
+                <?= $extra->getChildHtml() ?>
+            <?php endif; ?>
+            </div>
+            <div class="parent_items_content product_ship p-2 flex items-center <?= $i % 2 === 0 ? '' : ' ' ?>">
+                <?= $order->getBillingAddress()
+                    ? $escaper->escapeHtml($order->getBillingAddress()->getCompany())
+                    : "&nbsp;"
+                ?>
+            </div>
+            <div class="parent_items_content product_total p-2 lg:flex items-center <?= $i % 2 === 0 ? '' : ' ' ?>">
+                <?= /* @noEscape */$order->formatPrice($order->getGrandTotal()) ?>
+            </div>
+            <div class="parent_items_content product_status p-2 lg:flex items-center <?= $i % 2 === 0 ? ''
+                : ' ' ?>">
+                <?= $escaper->escapeHtml($order->getStatusLabel()) ?>
+            </div>
+            <div class="parent_items_content product_actions p-2 flex items-center justify-evenly<?= $i % 2 === 0 ? '' : ' ' ?>">
+                <?php if ($trackLink) { ?>
+                    <a href="<?= $trackLink;?>" 
+                    class="inline-block  underline text-sm underline text-secondary-darker"
+                    title="<?= $escaper->escapeHtmlAttr(__('Track Order')) ?>">Track</a>
+                    <span>|</span>
+                <?php } ?> 
+
+                <a href="<?= $escaper->escapeUrl($block->getViewUrl($order)) ?>"
+                   class="inline-block  underline text-sm underline text-secondary-darker"
+                   title="<?= $escaper->escapeHtmlAttr(__('View Order')) ?>">
+                   <?= $escaper->escapeHtml(__('View')) ?>
+                    <svg class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor" width="24" height="24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064
+                                 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </a>
+                <span>|</span>
+                <?php if ($this->helper(\Magento\Sales\Helper\Reorder::class)->canReorder($order->getEntityId())): ?>
+                    <?php $formData = json_decode(
+                        $this->helper(\Magento\Framework\Data\Helper\PostHelper::class)->getPostData(
+                            $block->getReorderUrl($order)
+                        ),
+                        true
+                    ) ?>
+                    <form action="<?= /* @noEscape */ $formData['action'] ?>" method="post"
+                          class="inline-flex items-center">
+                        <?= $block->getBlockHtml('formkey'); ?>
+                        <input type="hidden" name="data"
+                               value="<?= $escaper->escapeHtmlAttr(json_encode($formData['data'])) ?>"
+                        />
+                        <button title="<?= $escaper->escapeHtmlAttr(__('Reorder')) ?>"
+                                type="submit"
+                                class="inline-block underline text-sm underline text-secondary-darker">
+                                <?= $escaper->escapeHtml(__('Reorder')) ?>
+                            <svg class="hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor" width="24" height="24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003
+                                         8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+                    </form>
+                <?php endif ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    </div>
+    <?php if ($block->getPagerHtml()): ?>
+        <div class="order-products-toolbar toolbar bottom"><?= $block->getPagerHtml() ?></div>
+    <?php endif ?>
+    <div class="order_history_content my-4 pt-4">
+        <?php
+            echo $this->getLayout()
+            ->createBlock('Magento\Cms\Block\Block')
+            ->setBlockId('my_orders_content')
+            ->toHtml();
+        ?>
+    </div>
+<?php else: ?>
+    <div class="message info empty"><span><?= $escaper->escapeHtml($block->getEmptyOrdersMessage()) ?></span></div>
+<?php endif ?>

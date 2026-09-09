@@ -1,0 +1,82 @@
+<?php
+/**
+ * TEST FILE - Created for testing BccEmailExtension - Safe to delete
+ * Template for the email test form
+ *
+ * @var $block Incstores\BccEmailExtension\Block\Adminhtml\Test\Form
+ */
+?>
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= __('BCC Email Extension Test Form (TEST)') ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <div class="messages">
+            <div class="message message-notice">
+                <div><?= __('This is a test interface for the BCC Email Extension. All files related to this test are marked with TEST comments.') ?></div>
+            </div>
+        </div>
+
+        <form id="bcc-email-test-form" action="<?= $block->escapeUrl($block->getSubmitUrl()) ?>" method="post">
+            <?= $block->getBlockHtml('formkey') ?>
+
+            <fieldset class="admin__fieldset">
+                <legend class="admin__legend"><span><?= __('Email Test Parameters') ?></span></legend>
+
+                <div class="admin__field field-email _required">
+                    <label class="admin__field-label" for="to_email">
+                        <span><?= __('To Email Address') ?></span>
+                    </label>
+                    <div class="admin__field-control">
+                        <input type="email"
+                               id="to_email"
+                               name="to_email"
+                               class="admin__control-text"
+                               required="required"
+                               placeholder="recipient@example.com"/>
+                    </div>
+                </div>
+
+                <div class="admin__field field-message _required">
+                    <label class="admin__field-label" for="message">
+                        <span><?= __('Test Message') ?></span>
+                    </label>
+                    <div class="admin__field-control">
+                        <textarea id="message"
+                                  name="message"
+                                  class="admin__control-textarea"
+                                  rows="5"
+                                  required="required"
+                                  placeholder="Enter your test message here..."></textarea>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="admin__page-section-item-actions">
+                <button type="submit" class="action-primary" title="<?= __('Send Test Email') ?>">
+                    <span><?= __('Send Test Email') ?></span>
+                </button>
+            </div>
+        </form>
+
+        <?php if ($block->hasData('result_message')): ?>
+            <div class="messages" style="margin-top: 20px;">
+                <?php if ($block->getData('result_success')): ?>
+                    <div class="message message-success success">
+                        <div><?= $block->escapeHtml($block->getData('result_message')) ?></div>
+                    </div>
+                <?php else: ?>
+                    <div class="message message-error error">
+                        <div><strong><?= __('Error:') ?></strong> <?= $block->escapeHtml($block->getData('result_message')) ?></div>
+                        <?php if ($block->getData('result_details')): ?>
+                            <div style="margin-top: 10px;">
+                                <strong><?= __('Details:') ?></strong>
+                                <pre style="background: #f5f5f5; padding: 10px; margin-top: 5px; overflow-x: auto;"><?= $block->escapeHtml($block->getData('result_details')) ?></pre>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>

@@ -1,0 +1,40 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/* @var $block \Amasty\RequestQuote\Block\Email\Quote */
+?>
+
+<?php
+$collection = $block->getQuoteCollection();
+if ($collection && $collection->getSize()): ?>
+    <table cellpadding="5" cellspacing="2" border="1">
+        <tr>
+            <th scope="col" class="col id"><?= /* @noEscape */ __('Quote #') ?></th>
+            <th scope="col" class="col date"><?= /* @noEscape */ __('Date') ?></th>
+            <th scope="col" class="col total"><?= /* @noEscape */ __('Quote Total') ?></th>
+            <th scope="col" class="col status"><?= /* @noEscape */ __('Status') ?></th>
+            <th scope="col" class="col customer"><?= /* @noEscape */ __('Customer Email') ?></th>
+        </tr>
+        <?php /** @var \Amasty\RequestQuote\Model\Quote $quote */ ?>
+        <?php foreach ($collection as $quote): ?>
+            <tr>
+                <td data-th="<?= $escaper->escapeHtml(__('Quote #')) ?>" class="col id"><?= /* @noEscape */ $quote->getIncrementId() ?></td>
+                <td data-th="<?= $escaper->escapeHtml(__('Date')) ?>" class="col date"><?= /* @noEscape */ $block->formatDate($quote->getSubmitedDate()) ?></td>
+                <td data-th="<?= $escaper->escapeHtml(__('Quote Total')) ?>" class="col total"><?= /* @noEscape */ $quote->formatPrice($quote->getGrandTotal()) ?></td>
+                <td data-th="<?= $escaper->escapeHtml(__('Status')) ?>" class="col status"><?= /* @noEscape */ $quote->getStatusLabel() ?></td>
+                <td data-th="<?= $escaper->escapeHtml(__('Customer Email')) ?>" class="col customer"><?= /* @noEscape */ $block->getCustomerEmail($quote) ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+	<?php $quotehelper = $this->helper('Dcw\RequestQuote\Helper\Data');
+		  $adminusername = $quotehelper->getAdminIdLoggedAsCustomer();
+		  if($adminusername!=""){?>
+			<p>Sales Rep User Name: <?php echo $adminusername;?></p>
+		 <?php } ?>
+<?php else: ?>
+    <p><?= /* @noEscape */ __('There are no quote requests.') ?></p>
+<?php endif; ?>
+<!-- git blank -->

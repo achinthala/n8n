@@ -1,0 +1,320 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\CurrentCategory;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Magento\Catalog\Block\Product\ListProduct;
+use Magento\Framework\Escaper;
+
+/** @var ListProduct $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var ProductPage $productViewModel */
+/** @var CurrentCategory $currentCategoryViewModel */
+
+$productViewModel         = $viewModels->require(ProductPage::class);
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+$currentCategoryViewModel = $viewModels->require(CurrentCategory::class);
+
+$hideRatingSummary = (bool) $block->getData('hide_rating_summary');
+$hideDetails = (bool) $block->getData('hideDetails');
+$eagerLoadImagesCount = (int) ($block->getData('eager_load_images_count') ?? 3);
+
+$productCollection = $block->getLoadedProductCollection();
+
+$categoryId = null;
+
+try {
+    $category = $currentCategoryViewModel->get();
+    $categoryId = $category ? $category->getId() : null;
+} catch (\RuntimeException $e) {
+    // No category is set, e.g., on search page
+    $categoryId = null;
+}
+?>
+<?php if (!$productCollection->count()): ?>
+    <div class="message info empty">
+        <div>
+            <?= $escaper->escapeHtml(__('We can\'t find products matching the selection.')) ?>
+        </div>
+    </div>
+<?php else: ?>
+    <section>
+        <?= $block->getToolbarHtml() ?>
+        <?= $block->getAdditionalHtml() ?>
+        <?php
+        //if ($block->getMode() == 'grid') {
+        if (0) {
+            $viewMode         = 'grid';
+            $imageDisplayArea = 'category_page_grid';
+            $showDescription  = false;
+            $templateType     = \Magento\Catalog\Block\Product\ReviewRendererInterface::SHORT_VIEW;
+        } else {
+            $viewMode         = 'list';
+            $imageDisplayArea = 'category_page_list';
+            $showDescription  = true;
+            $templateType     = \Magento\Catalog\Block\Product\ReviewRendererInterface::FULL_VIEW;
+        }
+        /**
+         * Position for actions regarding image size changing in vde if needed
+         */
+        $pos = $block->getPositioned();
+        ?>
+        <h1 class="text-primary text-md text-xl md:text-2xl font-semibold capitalize">
+                <?= $block->getLayer()->getCurrentCategory()->getName() ?>
+        </h1>
+        <div categoryid="<?php echo $categoryId; ?>" class="products wrapper mode-<?= /* @noEscape */$viewMode ?> products-<?= /* @noEscape */$viewMode ?>">
+            <div class="mx-auto pt-4 pb-12 grid gap-4 grid-cols-1 <?= /* @noEscape */$viewMode === 'grid'
+                ? 'sm:grid-cols-2 xl:grid-cols-3'
+                : '' ?>"
+                x-data='{
+                compareproducts: [],
+                removeFromCompare: function(productId) {
+                    const formKey = hyva.getFormKey();
+                    const postUrl = BASE_URL + "catalog/product_compare/remove/";
+                    const confirmMessage = "Are you sure you want to remove this item from your Compare Products list?";
+                    if (!window.confirm(confirmMessage)) return;
+                    const postHeaders = {
+                        "headers": {
+                            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        },
+                        "body": "form_key=" + formKey + "&product=" + productId + "&uenc=" + hyva.getUenc(),
+                        "method": "POST",
+                        "mode": "cors",
+                        "credentials": "include"
+                    };
+
+                    compareSidebarFetchHandler(postUrl, postHeaders);
+                }
+                }' x-init="getSelectedCompare();"
+            >
+                <?php
+                /** @var \Magento\Catalog\Model\Product $product */
+                $best_seller_number = 0;
+                foreach (array_values($productCollection->getItems()) as $i => $product) {
+                    if ($i < $eagerLoadImagesCount) {
+                        $product->setData('image_custom_attributes', ['loading' => 'eager', 'fetchpriority' => 'high']);
+                    }
+                    if ($product->getIsBestseller() == 1) {
+                        $best_seller_number++;
+                        $product->setData('best_seller_number', $best_seller_number);
+                    }
+                    echo $productListItemViewModel->getItemHtml(
+                        $product,
+                        $block,
+                        $viewMode,
+                        $templateType,
+                        $imageDisplayArea,
+                        $showDescription
+                    );
+                } ?>
+            </div>
+        </div>
+        <?= $block->getChildBlock('toolbar')->setIsBottom(true)->toHtml() ?>
+    </section>
+<?php endif; ?>
+<script>
+    //var checkedArray = [];
+    var prodArray = [];
+    //var checkedArray = [];
+    var prodArray = [];
+    var compare_list = '';
+    if (document.getElementById("compare-list")) {
+        compare_list = document.getElementById("compare-list").value;
+        prodArray = compare_list.split(",").map(Number);
+    }
+    
+
+    function remove(list, value, separator) {
+        separator = separator || ",";
+        var values = list.split(separator);
+        for(var i = 0 ; i < values.length ; i++) {
+            if(values[i] == value) {
+            values.splice(i, 1);
+            return values.join(separator);
+            }
+        }
+
+        return list;
+    }
+
+    function getSelectedCompare(){
+       
+
+        prodArray.forEach(function (product_id) {
+            if(document.getElementById('compare_checkbox_'+product_id)) {
+                document.getElementById('compare_checkbox_'+product_id).checked = true;
+            }
+        });
+    }
+
+    function addToCompareList(product_id) {
+        //checkedArray = [];
+        var error_message=document.getElementById('error-message');
+
+        prodArray = prodArray.filter(function(productId) {
+            return productId !== 0;
+        });
+        if(prodArray.length>=4){
+           
+            document.getElementById('compare_checkbox_'+product_id).checked = false;
+            error_message.style.display='block';  
+        } else {
+            if(prodArray.indexOf(product_id) == -1) {
+                prodArray.push(product_id);
+            }
+            document.getElementById("compare-list").value=prodArray;
+            
+
+            var product_id=document.getElementById('product_id_'+product_id).value;
+            var name=document.getElementById('product_name_'+product_id).value;
+            var url=document.getElementById('product_url_'+product_id).value;
+            var imageUrl=document.getElementById('image_url_'+product_id).value;
+            var comparelist= document.getElementById("compare-list").value;
+            compareListHtml(product_id,name,url,imageUrl);
+
+        }
+
+        var sidebar=document.getElementById('compare-widget');
+        var comparebtn=document.getElementById('compare-btn');
+
+        if(prodArray.length>1){
+            comparebtn.style.display='block'; 
+        } else {
+            comparebtn.style.display='none'; 
+        }
+        
+        if(prodArray.length>0){
+            sidebar.style.display='block';
+        } else {
+            sidebar.style.display='none';
+        }
+
+    }   
+
+    function compareListHtml(product_id,name,url,imageUrl){
+        var exsistHtml=document.getElementById("imagelist").innerHTML;
+        html='<li class="flex items-start relative" id="sidebar_image_'+product_id+'" <a href="'+url+'"';
+        html+= ' class="block w-full" title="'+name+'"> ';;
+        html+= '<img class="w-full" src="'+imageUrl+'" alt="'+name+'"></a>';    
+        html+= '<button @click.prevent="removeFromCompareList('+product_id+')" aria-label="<?= $escaper->escapeHtmlAttr(__('Remove Product')) ?>" class="absolute" title="<?= $escaper->escapeHtmlAttr(__('Remove Product')) ?>"></button></li>';
+        exsistHtml+=html;
+        document.getElementById("imagelist").innerHTML=exsistHtml;
+    }
+
+    function removeFromCompareList(product_id)
+    {
+        const index = prodArray.indexOf(product_id);
+        var error_message=document.getElementById('error-message');
+        var style = window.getComputedStyle(error_message); 
+        if(document.getElementById('compare_checkbox_'+product_id)) {
+            document.getElementById('compare_checkbox_'+product_id).checked = false;
+        }
+        if (prodArray !== -1) { 
+            prodArray.splice(index, 1); // 2nd parameter means remove one item only
+        }
+        document.getElementById("compare-list").value=prodArray;
+        
+        if(style.display === 'block') {
+            error_message.style.display='none';               
+        }
+               
+        //var comparelist= document.getElementById("compare-list").value;
+        const element = document.getElementById("sidebar_image_"+product_id);
+        element.remove();
+        var comparebtn=document.getElementById('compare-btn');
+
+        
+        if(prodArray.length>1){
+            comparebtn.style.display='block'; 
+        } else {
+            comparebtn.style.display='none'; 
+        }
+        if(prodArray.length==0){
+            var sidebar=document.getElementById('compare-widget');
+            sidebar.style.display='none'; 
+        }        
+    }
+</script>
+
+
+
+
+
+<script>
+function makeMessagesSticky1() {
+  var header2 = document.querySelector('#header');
+  var messages2 = document.querySelector('.page.messages #messages');
+  var page2 = document.querySelector('.page.messages');
+  var breadcrumbs2 = document.querySelector('.breadcrumbs');
+
+  var headerRect2 = header2.getBoundingClientRect();
+  var messagesRect2 = messages2.getBoundingClientRect();
+  var pageRect2 = page2.getBoundingClientRect();
+  var breadcrumbsRect2 = breadcrumbs2.getBoundingClientRect();
+
+  var bodyElement2 = document.querySelector('body');
+  var isSticky2 = bodyElement2.classList.contains('sticki');
+
+  
+
+  if (isSticky2) {
+    if (pageRect2.top <= headerRect2.bottom) {
+        document.querySelector('.catalog-category-view .page.messages #messages').style.position = 'fixed';
+        document.querySelector('.catalog-category-view .page.messages #messages').style.top = `${headerRect2.bottom}px`;
+        document.querySelector('.catalog-category-view .page.messages #messages').style.width = '100%';
+    } 
+    else {
+        document.querySelector('.catalog-category-view .page.messages #messages').style.position = 'static';
+        document.querySelector('.catalog-category-view .page.messages #messages').style.top = 'auto';
+    }
+  } 
+  else {
+    if (breadcrumbsRect2.bottom <= 0) {
+      document.querySelector('.catalog-category-view .page.messages #messages').style.position = 'fixed';
+      document.querySelector('.catalog-category-view .page.messages #messages').style.top = '0';
+      document.querySelector('.catalog-category-view .page.messages #messages').style.width = '100%';
+    } else {
+      document.querySelector('.catalog-category-view .page.messages #messages').style.position = 'static';
+      document.querySelector('.catalog-category-view .page.messages #messages').style.top = 'auto';
+    }
+
+}
+}
+window.addEventListener("scroll", function() {
+    makeMessagesSticky1();
+});
+
+function successMsgSticky(){
+    var headerHeight2 = jQuery('header.page-header').height();
+    var breadcrumbsHeight2 = jQuery('.breadcrumbs').height();
+    var hHgt2 = headerHeight2 + breadcrumbsHeight2;
+    var mesgs2 = document.querySelector('.page.messages #messages');
+    var scrollTop = jQuery(window).scrollTop();
+
+
+    if (scrollTop >= hHgt2) {
+        jQuery('body').addClass('scroll-reached-hHgt');
+    } 
+    else {
+        jQuery('body').removeClass('scroll-reached-hHgt');
+    }
+}
+window.addEventListener("resize load", function() {
+    successMsgSticky();
+});
+
+</script>    
+<style>
+    @media(max-width:1024px){
+        .catalog-category-view.scroll-reached-hHgt .page.messages .messages.container{position: static !important;}
+        .catalog-category-view.scroll-reached-hHgt .page.messages #messages{position: fixed !important;top: 0px !important;width: 100% !important;}
+    }
+</style>

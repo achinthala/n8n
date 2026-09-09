@@ -1,0 +1,383 @@
+<?php
+/**
+ * Related products list - vertical layout (PDP sidebar + popup)
+ * Same Figma design in both places.
+ */
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Magento\Catalog\Block\Product\ReviewRendererInterface as ProductReviewRenderer;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var ViewModelRegistry $viewModels */
+
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+
+// Popup: items from block (getSliderForItems). PDP: from current product.
+$items = $block->getItems() ?? [];
+if (is_object($items) && $items instanceof \Iterator) {
+    $items = iterator_to_array($items);
+}
+if (empty($items)) {
+    $productViewModel = $viewModels->require(ProductPage::class);
+    $product = $productViewModel->getProduct();
+    if ($product) {
+        $collection = $product->getRelatedProductCollection()
+            ->addAttributeToSelect('*')
+            ->addAttributeToFilter('status', ['eq' => 1])
+            ->addAttributeToFilter('visibility', ['neq' => 1])
+			->setPositionOrder();
+        $items = $collection instanceof \Iterator ? iterator_to_array($collection) : $collection;
+    }
+}
+
+$relatedProducts = $items;
+$totalCount = count($relatedProducts);
+$initialDisplayCount = 5;
+$hasMore = $totalCount > $initialDisplayCount;
+$isPopup = !empty($block->getItems()); // Popup gets items from block; needs id="the-label" for modal
+$sliderId = 'related-slider-' . uniqid();
+
+if ($totalCount === 0) {
+    return '';
+}
+
+$itemRenderer = $block->getLayout()->getBlock('product_list_item');
+if (!$itemRenderer) {
+    $itemRenderer = $block->getLayout()->createBlock(\Magento\Catalog\Block\Product\AbstractProduct::class);
+}
+if (!$itemRenderer) {
+    return '';
+}
+$originalTemplate = $itemRenderer->getTemplate();
+$itemRenderer->setTemplate('Magento_Catalog::product/list/item-related.phtml');
+$itemRenderer->setData('cache_key_info', array_merge(
+    (array)$itemRenderer->getData('cache_key_info'),
+    ['theme' => $block->getThemeCacheKey()]
+));
+$viewMode = 'grid';
+$imageDisplayArea = 'category_page_grid';
+$showDescription = false;
+?>
+<div <?= $isPopup ? 'id="the-label" ' : '' ?>class="related-products-pdp-section" data-related-view-more data-related-view-more-increment="<?= (int)$initialDisplayCount ?>">
+    <h5>You May Also Need</h5>
+    <div class="related-products-list related_products_list_view" data-content-type="recommended-products1"
+        role="region"
+        aria-label="Related products carousel"
+        aria-roledescription="carousel"
+        tabindex="0"
+        @keydown.arrow-right.prevent="$refs.next.click()"
+        @keydown.arrow-left.prevent="$refs.prev.click()"
+        x-defer="intersect"
+    >
+        <div class="sr-only" aria-live="polite">
+            Showing <?= (int)$totalCount ?> related products
+        </div>
+        <div id="<?= $sliderId ?>" class="" data-role="glider-recommended1">
+            <?php $index = 0; foreach ($relatedProducts as $relatedProduct): ?>
+                <div role="group" aria-label="Related product <?= $index + 1 ?>" class="related_products_list_view_content related-product-item<?= $hasMore && $index >= $initialDisplayCount ? ' related-product-item--more' : '' ?>">
+                    <?= /** @noEscape */ $productListItemViewModel->getItemHtmlWithRenderer(
+                        $itemRenderer,
+                        $relatedProduct,
+                        $block,
+                        $viewMode,
+                        ProductReviewRenderer::SHORT_VIEW,
+                        $imageDisplayArea,
+                        $showDescription
+                    ) ?>
+                </div>
+            <?php $index++; endforeach; ?>      
+        </div>  
+        <div class="carousel-nav flex items-center justify-center">
+            <button aria-controls="<?= $sliderId ?>" aria-label="Previous" x-ref="prev" class="glider-prev2"></button> 
+            <button aria-controls="<?= $sliderId ?>" aria-label="Next" x-ref="next" class="glider-next2"></button>
+        </div>
+    </div>    
+    <div class="related-products-no-thanks text-center w-full mt-4">
+        <button type="button" class="related-products-no-thanks-btn text-[14px] leading-normal font-medium text-[#296497] underline cursor-pointer hover:no-underline" data-related-view-more-trigger>
+            No Thanks
+        </button>
+    </div>    
+</div>
+<?php
+if (!empty($originalTemplate)) {
+    $itemRenderer->setTemplate($originalTemplate);
+}
+?>
+<script>
+function updateRelatedPrice(productId, sourceOrContainer) {
+    var container = (sourceOrContainer && sourceOrContainer.closest && sourceOrContainer.closest('.configurable-options-related')) || document.querySelector('.configurable-options-related[data-product-id="' + productId + '"]');
+    if (!container) return;
+    var configStr = container.dataset.optionConfig || container.getAttribute('data-option-config');
+    if (!configStr) return;
+    try {
+        var optionConfig = JSON.parse(configStr);
+    } catch (e) { return; }
+    var selectedValues = {};
+    container.querySelectorAll('.super-attribute-select').forEach(function(sel) {
+        var attrId = sel.dataset.attrId || sel.getAttribute('data-attr-id');
+        var val = sel.value;
+        if (attrId && val) selectedValues[attrId] = val;
+    });
+    var productIndex = null;
+    var index = optionConfig.index || {};
+    var productIndexIds = Object.keys(index);
+    Object.keys(optionConfig.attributes || {}).forEach(function(attrId) {
+        var matchVal = selectedValues[attrId];
+        if (!matchVal) return;
+        var matching = productIndexIds.filter(function(idx) {
+            return String(index[idx][attrId] || '') === String(matchVal);
+        });
+        if (matching.length) productIndexIds = matching;
+    });
+    if (productIndexIds.length) {
+        var prices = optionConfig.optionPrices || {};
+        productIndex = productIndexIds.reduce(function(best, idx) {
+            var p = prices[idx];
+            var amt = (p && (p.finalPrice || p.customPrice)) ? (p.finalPrice || p.customPrice).amount : Infinity;
+            var bestAmt = (prices[best] && (prices[best].finalPrice || prices[best].customPrice)) ? (prices[best].finalPrice || prices[best].customPrice).amount : Infinity;
+            return amt < bestAmt ? idx : best;
+        }, productIndexIds[0]);
+    }
+    var priceData = productIndex && optionConfig.optionPrices && optionConfig.optionPrices[productIndex]
+        ? optionConfig.optionPrices[productIndex]
+        : (optionConfig.prices || {});
+    var finalPrice = priceData.finalPrice || priceData.customPrice;
+    if (!finalPrice || typeof finalPrice.amount === 'undefined') return;
+    var payload = {
+        finalPrice: finalPrice,
+        oldPrice: priceData.oldPrice || { amount: finalPrice.amount },
+        basePrice: priceData.basePrice || { amount: finalPrice.amount }
+    };
+    if (productIndex && optionConfig.coverage_per_case) {
+        payload.getIncstoresPimCoverage = optionConfig.coverage_per_case[productIndex] || '';
+    }
+    if (productIndex && optionConfig.calculator_type) {
+        payload.calculatorType = optionConfig.calculator_type[productIndex] || '';
+    }
+    if (productIndex && optionConfig.exact_width) {
+        payload.exactWidth = optionConfig.exact_width[productIndex] || 0;
+    }
+    if (productIndex && optionConfig.exact_length) {
+        payload.exactLength = optionConfig.exact_length[productIndex] || 0;
+    }
+    window.dispatchEvent(new CustomEvent('update-prices-' + productId, { detail: payload }));
+}
+function updateRelatedAddToCartVisibility(productId, sourceOrContainer) {
+    var container = (sourceOrContainer && sourceOrContainer.closest && sourceOrContainer.closest('.configurable-options-related')) || document.querySelector('.configurable-options-related[data-product-id="' + productId + '"]');
+    if (!container) return;
+    var calcMap = container.dataset.childCalculatorMap || container.getAttribute('data-child-calculator-map');
+    if (!calcMap) return;
+    var map = JSON.parse(calcMap);
+    var saleableMap = {};
+    try {
+        var sm = container.dataset.childSaleableMap || container.getAttribute('data-child-saleable-map');
+        if (sm) saleableMap = JSON.parse(sm);
+    } catch (e) {}
+    var keyParts = [];
+    container.querySelectorAll('.super-attribute-select').forEach(function(sel) {
+        var attrId = sel.dataset.attrId || sel.getAttribute('data-attr-id');
+        var val = sel.value;
+        if (attrId && val) keyParts.push(attrId + '_' + val);
+    });
+    keyParts.sort();
+    var mapKey = keyParts.join('|');
+    var calculatorType = map[mapKey] || '';
+    var isSaleable = (mapKey in saleableMap) ? !!saleableMap[mapKey] : false;
+    var showAddToCart = isSaleable && (calculatorType === 'none' || calculatorType === 'case' || calculatorType === 'sqft' || calculatorType === 'pre_cut_roll');
+    var productScope = container.closest('.related-product-item') || container.closest('.product-info') || container.closest('form.product_addtocart_form') || container.closest('.product-item');
+    var addToCartBlock = productScope ? productScope.querySelector('[id="related-addtocart-block-' + productId + '"]') : null;
+    var viewBlock = productScope ? productScope.querySelector('[id="related-view-block-' + productId + '"]') : null;
+    if (addToCartBlock) addToCartBlock.style.display = showAddToCart ? '' : 'none';
+    if (viewBlock) viewBlock.style.display = showAddToCart ? 'none' : '';
+}
+function initRelatedAddToCartVisibility() {
+    var els = document.querySelectorAll('.related-products-pdp-section .configurable-options-related[data-product-id]');
+    els.forEach(function(el) {
+        var pid = el.dataset.productId;
+        if (pid) {
+            if (typeof updateRelatedAddToCartVisibility === 'function') {
+                updateRelatedAddToCartVisibility(parseInt(pid), el);
+            }
+            if (typeof updateRelatedPrice === 'function') {
+                updateRelatedPrice(parseInt(pid), el);
+            }
+        }
+    });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRelatedAddToCartVisibility);
+} else {
+    initRelatedAddToCartVisibility();
+}
+window.addEventListener('hyva-modal-show', function(e) {
+    if (e.detail && e.detail.dialog === 'related-product-slider-dialog' && typeof initRelatedAddToCartVisibility === 'function') {
+        setTimeout(initRelatedAddToCartVisibility, 150);
+    }
+});
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("click", function (e) {
+            if (e.target.closest(".related-products-no-thanks-btn")) {
+                let closeBtn = document.querySelector(".btn.close-x");
+                if (closeBtn) {
+                    closeBtn.click();
+                }
+            }
+        });
+    });
+</script>
+<script>
+    'use strict';
+    (() => {
+        const initCarousels = (elements) => {
+            if (typeof Glider === 'undefined') {
+                console.error("Glider.js is not loaded.");
+                return;
+            }
+
+            elements.forEach((carousel) => {
+                const gliderElement = carousel.querySelector('[data-role="glider-recommended1"]');
+                if (!gliderElement) {
+                    console.warn("Glider element not found.");
+                    return;
+                }
+
+                const gliderPrev = carousel.querySelector('.glider-prev2');
+                const gliderNext = carousel.querySelector('.glider-next2');
+
+                const totalSlides = gliderElement.querySelectorAll('.js_slide').length;
+
+                // Hide arrows if slides are 6 or less
+                if (totalSlides <= 6) {
+                    if (gliderPrev) gliderPrev.style.display = 'none';
+                    if (gliderNext) gliderNext.style.display = 'none';
+                } else {
+                    if (gliderPrev) gliderPrev.style.display = '';
+                    if (gliderNext) gliderNext.style.display = '';
+                }
+                // Initialize Glider
+                const glider = new Glider(gliderElement, {
+                    slidesToShow: 1,
+                    slidesToScroll: 1,
+                    scrollLock: false,
+                    draggable: true,
+                    dragVelocity: 1,
+                    arrows: {
+                        prev: gliderPrev,
+                        next: gliderNext,
+                    }
+                });
+            
+                const preventDraggingOnInputs = (gliderElement) => {
+                    gliderElement.querySelectorAll('select, input').forEach((el) => {
+                        el.addEventListener('mousedown', (event) => {                        
+                            event.stopPropagation(); // Prevent Glider drag from starting
+                        });
+
+                        el.addEventListener('touchstart', (event) => {
+                            event.stopPropagation(); // Prevent drag on touch devices
+                        });
+                    });
+                };
+
+                // Call this inside initCarousels after Glider initialization
+                preventDraggingOnInputs(gliderElement);
+                
+                // Add event listener to handle the disabled class
+                gliderElement.addEventListener('glider-refresh', () => {
+                    requestAnimationFrame(() => {
+                        const hasNext = gliderElement.scrollWidth - gliderElement.scrollLeft > gliderElement.clientWidth;
+                        const hasPrev = gliderElement.scrollLeft > 0;
+
+                        gliderNext.classList.toggle('disabled', !hasNext);
+                        gliderPrev.classList.toggle('disabled', !hasPrev);
+                    });
+                });
+
+                // Force a refresh to ensure state is accurate on initialization
+                glider.refresh();
+            });
+        };
+
+        const loadGliderScript = (callback) => {
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = "<?php echo $block->getViewFileUrl('Magento_PageBuilder::js/glider.min.js')?>";
+            script.addEventListener('load', callback);
+            document.head.appendChild(script);
+        };
+
+        const observeCarousels = () => {
+            const observer = new MutationObserver((mutationsList) => {
+                let found = false;
+
+                for (const mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    for (const node of mutation.addedNodes) {
+                    if (node.nodeType === 1) {
+                        const carousels = node.querySelectorAll?.('[data-content-type="recommended-products1"]');
+                        if (carousels.length) {
+                        found = true;
+                        requestAnimationFrame(() => {
+                            observer.disconnect();
+                            initCarousels(carousels);
+                        });
+                        break;
+                        }
+                    }
+                    }
+                }
+                if (found) break;
+                }
+            });
+
+            observer.observe(document.body, { childList: true, subtree: true });
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadGliderScript(() => {
+                // Check if carousels are already in the DOM
+                const carouselElements = document.querySelectorAll('[data-content-type="recommended-products1"]');
+                if (carouselElements.length > 0) {
+                    initCarousels(carouselElements);
+                } else {
+                    // Use MutationObserver to wait for dynamic content
+                    observeCarousels();                
+                }
+            });
+        });
+    })();
+</script>
+<script>
+window.addEventListener('hyva-modal-show', function(e) {
+    if (e.detail && e.detail.dialog === 'related-product-slider-dialog') {
+        // existing logic
+        if (typeof initRelatedAddToCartVisibility === 'function') {
+            setTimeout(initRelatedAddToCartVisibility, 150);
+        }
+        // FIX: refresh glider after popup opens
+        setTimeout(() => {
+            document.querySelectorAll('[data-role="glider-recommended1"]').forEach(el => {
+                if (el._glider) {
+                    el._glider.refresh(true);
+                } else if (typeof Glider !== 'undefined') {
+                    new Glider(el, {
+                        slidesToShow: 1,
+                        slidesToScroll: 1,
+                        draggable: true,
+                        arrows: {
+                            prev: el.closest('[data-content-type]').querySelector('.glider-prev2'),
+                            next: el.closest('[data-content-type]').querySelector('.glider-next2'),
+                        }
+                    });
+                }
+            });
+        }, 200); // wait for popup render
+    }
+});
+</script>

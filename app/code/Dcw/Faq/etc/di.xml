@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Global plugin configuration for FAQ CAPTCHA validation
+ * GraphQL resolvers run globally, so this needs to be in global di.xml
+ *
+ * @author DCW
+ * @package Dcw_Faq
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Amasty\Faq\Block\Widgets\Categories" type="Dcw\Faq\Block\Widgets\Categories"/>
+    <preference for="Amasty\Faq\Block\Forms\Search" type="Dcw\Faq\Block\Forms\Search"/>
+    <preference for="Amasty\Faq\Controller\Search\Suggest" type="Dcw\Faq\Controller\Search\Suggest"/>
+    <preference for="Amasty\Faq\Model\Search\Autocomplete\DataProvider" type="Dcw\Faq\Model\Search\Autocomplete\DataProvider"/>
+    <preference for="Amasty\Faq\Block\Lists\QuestionsList" type="Dcw\Faq\Block\Lists\QuestionsList"/>
+    <!-- CAPTCHA validation for FAQ rating GraphQL mutation -->
+    <type name="Amasty\FaqGraphQl\Model\Resolver\Question\RateQuestion">
+        <plugin name="dcw_faq_captcha_validation" type="Dcw\Faq\Plugin\GraphQl\RateQuestionPlugin" sortOrder="10"/>
+    </type>
+</config>

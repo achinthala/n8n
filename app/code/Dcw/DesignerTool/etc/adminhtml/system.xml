@@ -1,0 +1,143 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_designer_tool" translate="label" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Designer Tool</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_DesignerTool::config</resource>
+            
+            <group id="custom_size" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Custom Size</label>
+                <field id="width" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Width (ft)</label>
+                    <validate>validate-number validate-number-range number-range-1-150</validate>
+                    <comment>Limitation of Width(ft) 150</comment>
+                </field>
+                <field id="length" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Length (ft)</label>
+                    <validate>validate-number validate-number-range number-range-1-150</validate>
+                    <comment>Limitation of Length(ft) 150</comment>
+                </field>
+            </group>
+            
+            <group id="common_size" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Common Sizes</label>
+                <field id="garage_category_id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Category Id</label>
+                </field>
+                <field id="car_garage_1" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage 1</label>
+                </field>
+                <field id="car_garage_size_1" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Size 1</label>
+                </field>
+                <field id="car_garage_image_1" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Image 1</label>
+                    <!--<backend_model>Dcw\DesignerTool\Model\Config\Backend\Image</backend_model>-->
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="car_garage_2" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage 2</label>
+                </field>
+                <field id="car_garage_size_2" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Size 2</label>
+                </field>
+                <field id="car_garage_image_2" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Image 2</label>
+                    <!--<backend_model>Dcw\DesignerTool\Model\Config\Backend\Image</backend_model>-->
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="car_garage_3" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage 3</label>
+                </field>
+                <field id="car_garage_size_3" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Size 3</label>
+                </field>
+                <field id="car_garage_image_3" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Image 3</label>
+                    <!--<backend_model>Dcw\DesignerTool\Model\Config\Backend\Image</backend_model>-->
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="car_garage_4" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage 4</label>
+                </field>
+                <field id="car_garage_size_4" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Size 4</label>
+                </field>
+                <field id="car_garage_image_4" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Car Garage Image 4</label>
+                    <!--<backend_model>Dcw\DesignerTool\Model\Config\Backend\Image</backend_model>-->
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+            </group>
+            
+            <group id="pattern" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Choose Pattern</label>
+                <field id="floor_pattern_1" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern 1</label>
+                </field>
+                <field id="floor_pattern_image_1" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern Image 1</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="floor_pattern_2" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern 2</label>
+                </field>
+                <field id="floor_pattern_image_2" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern Image 2</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="floor_pattern_3" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern 3</label>
+                </field>
+                <field id="floor_pattern_image_3" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern Image 3</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="floor_pattern_4" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern 4</label>
+                </field>
+                <field id="floor_pattern_image_4" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern Image 4</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+                
+                <field id="floor_pattern_5" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern 5</label>
+                </field>
+                <field id="floor_pattern_image_5" translate="label" type="image"  sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Floor Pattern Image 5</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Image</backend_model>
+                    <upload_dir config="media" scope_info="1">upload</upload_dir>
+                    <base_url type="media">upload</base_url>
+                </field>
+            </group>
+            
+            
+            
+        </section>
+    </system>
+</config>

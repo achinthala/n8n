@@ -1,0 +1,62 @@
+<?php
+/**
+ * @var \Dcw\PurchaseOrderReview\Block\Form\PoGateway $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
+ */
+
+use Dcw\PurchaseOrderReview\Model\PaymentMethod;
+
+$code = $block->getMethodCode();
+$methodCodeAttr = $escaper->escapeHtmlAttr($code);
+$info = $block->getMethod()->getInfoInstance();
+$name = $info ? (string) $info->getAdditionalInformation(PaymentMethod::INFO_CONTACT_NAME) : '';
+$phone = $info ? (string) $info->getAdditionalInformation(PaymentMethod::INFO_CONTACT_PHONE) : '';
+$email = $info ? (string) $info->getAdditionalInformation(PaymentMethod::INFO_CONTACT_EMAIL) : '';
+?>
+<fieldset class="admin__fieldset payment-method" id="payment_form_<?= $escaper->escapeHtmlAttr($code) ?>">
+    <div class="admin__field _required">
+        <label class="admin__field-label" for="<?= $methodCodeAttr ?>_po_contact_name">
+            <span><?= $escaper->escapeHtml(__('Name')) ?></span>
+        </label>
+        <div class="admin__field-control">
+            <input type="text"
+                   id="<?= $methodCodeAttr ?>_po_contact_name"
+                   name="payment[<?= $escaper->escapeHtmlAttr(PaymentMethod::INFO_CONTACT_NAME) ?>]"
+                   title="<?= $escaper->escapeHtmlAttr(__('Name')) ?>"
+                   class="required-entry admin__control-text"
+                   value="<?= $escaper->escapeHtmlAttr($name) ?>"/>
+        </div>
+    </div>
+    <div class="admin__field _required">
+        <label class="admin__field-label" for="<?= $methodCodeAttr ?>_po_contact_phone">
+            <span><?= $escaper->escapeHtml(__('Phone number (10 digits)')) ?></span>
+        </label>
+        <div class="admin__field-control">
+            <input type="text"
+                   id="<?= $methodCodeAttr ?>_po_contact_phone"
+                   name="payment[<?= $escaper->escapeHtmlAttr(PaymentMethod::INFO_CONTACT_PHONE) ?>]"
+                   title="<?= $escaper->escapeHtmlAttr(__('Phone number')) ?>"
+                   class="required-entry validate-digits validate-length maximum-length-10 minimum-length-10 admin__control-text"
+                   maxlength="10"
+                   value="<?= $escaper->escapeHtmlAttr($phone) ?>"/>
+        </div>
+    </div>
+    <div class="admin__field _required">
+        <label class="admin__field-label" for="<?= $methodCodeAttr ?>_po_contact_email">
+            <span><?= $escaper->escapeHtml(__('Email')) ?></span>
+        </label>
+        <div class="admin__field-control">
+            <input type="email"
+                   id="<?= $methodCodeAttr ?>_po_contact_email"
+                   name="payment[<?= $escaper->escapeHtmlAttr(PaymentMethod::INFO_CONTACT_EMAIL) ?>]"
+                   title="<?= $escaper->escapeHtmlAttr(__('Email')) ?>"
+                   class="required-entry validate-email admin__control-text"
+                   value="<?= $escaper->escapeHtmlAttr($email) ?>"/>
+        </div>
+    </div>
+</fieldset>
+<?= /* @noEscape */ $secureRenderer->renderStyleAsTag(
+    'display:none',
+    'fieldset#payment_form_' . $block->escapeJs($code)
+) ?>

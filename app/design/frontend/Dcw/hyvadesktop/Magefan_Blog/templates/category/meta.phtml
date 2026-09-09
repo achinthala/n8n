@@ -1,0 +1,20 @@
+<?php 
+$currentCategory = \Magento\Framework\App\ObjectManager::getInstance()
+    ->get(\Magento\Framework\Registry::class)
+    ->registry('current_blog_category');
+?>
+<meta property="og:locale" content="en_US" />
+<meta property="og:site_name" content="Flooring Inc." />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="<?= $block->escapeHtml($currentCategory->getTitle()); ?>" />
+<meta property="og:description" content="<?= $block->escapeHtml($currentCategory->getContent()); ?>" />
+<meta property="og:url" content="<?= $block->escapeHtml($currentCategory->getCategoryUrl()); ?>" />
+<script type="application/ld+json">
+{ "@context": "https://schema.org", 
+ "@type": "BlogPosting",
+ "headline": "<?= $block->escapeHtml($currentCategory->getTitle()); ?>",
+ "alternativeHeadline": "<?= $block->escapeHtml($currentCategory->getTitle()); ?>",
+ "url": "<?= $block->escapeHtml($currentCategory->getCategoryUrl()); ?>",
+ "description": "<?= $block->escapeHtml($currentCategory->getContent()); ?>"
+ }
+</script>

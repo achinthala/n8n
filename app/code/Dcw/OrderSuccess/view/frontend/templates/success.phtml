@@ -1,0 +1,498 @@
+<?php
+
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\IncstoreShipping\ViewModel\Data as IncstoreShippingViewModelData;
+use Dcw\Checkout\ViewModel\Data as CheckoutViewModel;
+use Magento\Catalog\Block\Product\AbstractProduct;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var IncstoreShippingViewModelData $incstoreShippingViewModelData */
+/** @var CheckoutViewModel $checkoutViewModel */
+
+$incstoreShippingViewModelData = $viewModels->require(IncstoreShippingViewModelData::class);
+$checkoutViewModel = $viewModels->require(CheckoutViewModel::class);
+?>
+<?php /** @var $block \Dcw\OrderSuccess\Block\Onepage\Success */
+/** @var $blockObject \Magento\Catalog\Block\Product\AbstractProduct */
+$order = $block->getOrderDetail();
+$blockObject = $block->getLayout()->createBlock(AbstractProduct::class);
+$orderId = $block->getOrderId();
+?>
+
+<div class="checkout-success mx-auto px-[15px] max-w-[1200px]">
+    <div class="checkout-success-content flex flex-col md:flex-row md:justify-between gap-9">
+        <div class="checkout-success-content_left w-full md:max-w-[538px] flex-shrink text-center md:pt-12 2xl:pt-24">
+            <img src="<?php echo $this->getViewFileUrl('images/success.png'); ?>" alt="" title="" width="237" height="234" loading="eager" class="block mx-auto max-w-[175px] lg:max-w-full mb-6">
+            <?php if ($orderId) : ?>
+                <?php if ($block->getCanViewOrder()) : ?>
+                    <h3 class="text-[#299752] text-[28px] lg:text-[36px] font-semibold leading-default mb-2 md:mb-4">
+                        <?= $block->escapeHtml(__('You nailed it!')) ?>
+                    </h3>
+                    <p class="inline-block py-3 px-7 bg-[#DBF1E3] border border-[#DDE5EC] text-black text-base font-normal leading-default mb-3 md:mb-4 w-full sm:w-auto">
+                        <?= $block->escapeHtml(__('Order #%1', sprintf('[<a href="%s" class="order-number text-themeColor underline font-medium hover:text-black transition-all ease-in-out duration-500">%s</a>] is confirmed. Your top-tier flooring is already in motion.', $block->escapeUrl($block->getViewOrderUrl()), $block->getOrderId())), ['a', 'strong']) ?>
+                    </p>
+                <?php else : ?>
+                    <h3 class="text-[#299752] text-[28px] lg:text-[36px] font-semibold leading-default mb-2 md:mb-4">
+                        <?= $block->escapeHtml(__('You nailed it!')) ?>
+                    </h3>
+                    <p class="inline-block py-3 px-7 bg-[#DBF1E3] border border-[#DDE5EC] text-black text-base font-normal leading-default mb-3 md:mb-4 w-full sm:w-auto">
+                        <?= $block->escapeHtml(__('Order #')) ?>
+                        <span class="order-number text-themeColor underline font-medium cursor-default">
+                            <?= $block->escapeHtml($orderId) ?>
+                        </span>
+                        <?= $block->escapeHtml(__(' is confirmed. Your top-tier flooring is already in motion.')) ?>
+                    </p>
+                <?php endif; ?>
+                <div class="bullet-section">
+                    <ul class="mb-4 list-disc bullet-list text-left pl-0 ml-auto mr-auto">
+                        <li class="mb-1 text-black text-base font-normal leading-default">
+                            <?= $block->escapeHtml(__('Designed for durability.')) ?>
+                        </li>
+                        <li class="mb-1 text-black text-base font-normal leading-default">
+                            <?= $block->escapeHtml(__('Priced for savvy buyers.')) ?>
+                        </li>
+                        <li class="mb-1 text-black text-base font-normal leading-default">
+                            <?= $block->escapeHtml(__('Trusted by professionals.')) ?>
+                        </li>
+                    </ul>
+                </div>
+                <div class="tracking-info text-black text-base leading-default font-normal mb-3 md:mb-4 flex gap-1 flex-nowrap">
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 512 479.16" width="20" height="20">
+                          <path fill="#C28F60" d="m0 431.82 366 47.34 139.66-90.53L507.59 44 184.93 0 0 83.91z"/>
+                          <path fill="#AA7950" d="m507.59 44-142.87 89.47L0 83.91 184.93 0z"/>
+                          <path fill="#D2A06D" d="m366.06 479.16-1.34-345.69L507.59 44 512 389.98z"/>
+                          <path fill="#65472F" d="m249.76 8.84 105.69 14.41-151.29 90.4-.09 156.47-53.83-36.66-53.84 30.43 6.72-164.29z"/>
+                        </svg>
+                    </div>
+                    <?= $block->escapeHtml(__('We will send tracking information and updates directly to your email inbox.')) ?>
+                </div>
+                <strong class="block mb-4">
+                    <?= $block->escapeHtml(__("You're in good hands. Thank you once again for choosing us!")) ?>
+                </strong>
+            <?php endif; ?>
+
+            <?= $block->getAdditionalInfoHtml() ?>
+
+            <div class="md:pt-4 text-center">
+                <a class="action primary continue inline-block bg-themeColor py-3 px-5 text-white uppercase text-base leading-default font-medium transition-all ease-in-out duration-500 hover:bg-black" href="<?= $block->escapeUrl($block->getContinueUrl()) ?>">
+                    <?= $block->escapeHtml(__('Continue Shopping')) ?>
+                </a>
+            </div>
+            <div class="weather-advisory mt-8">
+            <?php 
+                echo $this->getLayout()
+                ->createBlock('Magento\Cms\Block\Block')
+                ->setBlockId('weather_advisory')
+                ->toHtml();
+            ?>
+        </div>
+        </div>
+        <div class="checkout-success-content_right w-full md:max-w-[50%] lg:max-w-[455px] flex-shrink-0" x-data="{ open: true }">
+            <div class="order-summary p-6 lg:p-[42px] bg-white shadow-[0_4px_24px_0_rgba(0,0,0,0.15)] -mx-4 md:mx-0">
+                <h2 class="text-[28px] leading-default font-medium text-252525 border-b border-black mb-8 pb-2.5">
+                    <?= $block->escapeHtml(__('Order Summary')) ?>
+                </h2>
+                <h3 class="text-252525 text-base leading-default font-semibold pb-2 border-b border-black border-opacity-25 flex items-center justify-between gap-3 cursor-pointer" @click="open = ! open">
+                    <?= (int)$order->getTotalQtyOrdered() ?> <?= $block->escapeHtml(__('Item(s)')) ?>
+                    <span :class="!open ? 'rotate-180' : 'rotate-90 md:rotate-0'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="7" viewBox="0 0 13 7" fill="none">
+                            <path d="M11.0078 6.68955L6.49394 2.56473L1.98007 6.68955C1.87237 6.78798 1.7445 6.86605 1.60378 6.91932C1.46305 6.97258 1.31222 7 1.1599 7C1.00758 7 0.856752 6.97258 0.716026 6.91932C0.575301 6.86605 0.447434 6.78798 0.339727 6.68955C0.232021 6.59113 0.146583 6.47428 0.0882924 6.34569C0.030002 6.21709 -1.13487e-09 6.07926 0 5.94007C1.13488e-09 5.80088 0.030002 5.66305 0.0882924 5.53445C0.146583 5.40585 0.232021 5.28901 0.339727 5.19058L5.67958 0.310956C6.13329 -0.103652 6.86621 -0.103652 7.31993 0.310956L12.6598 5.19058C12.7676 5.28893 12.8532 5.40576 12.9116 5.53436C12.9699 5.66297 13 5.80084 13 5.94007C13 6.0793 12.9699 6.21717 12.9116 6.34577C12.8532 6.47438 12.7676 6.5912 12.6598 6.68955C12.2061 7.09353 11.4615 7.10416 11.0078 6.68955Z" fill="#252525" />
+                        </svg>
+                    </span>
+                </h3>
+                <div class="items max-h-[525px] overflow-auto" x-show="open">
+                    <?php
+                    $getCbcProducData = $checkoutViewModel->getCbcProducData();
+                    $totalCbcBasePrice = $totalBasePrice = 0;
+
+                    foreach ($getCbcProducData as $cbcFullData => $cbcItems) {
+                        foreach ($cbcItems as $key => $cbcItem) {
+                            $totalCbcBasePrice += $cbcItem['rowBaseTotal'] - $cbcItem['rowTotal'];
+                        }
+                    }
+
+                    $items = $order->getItemsCollection();
+                    foreach ($items as $item) {
+                        if ($item->getParentItem()) {
+                            continue;
+                        }
+                        if (!$checkoutViewModel->checkIsCBC($item->getSku())) {
+                            $loadProduct = $incstoreShippingViewModelData->loadProductBySku($item->getSku());
+
+                            $getCalculatorType = $loadProduct->getAttributeText('incstores_pim_calculator_type');
+                            $productPrice = (float)$loadProduct->getFinalPrice();
+                            $productTierPrice = (float)$loadProduct->getFinalPrice(1);
+                            $width = $loadProduct->getData('incstores_pim_exact_width_inches');
+                            $length = $loadProduct->getData('incstores_pim_exact_length_inches');
+                            $coverageArea = $loadProduct->getIncstoresPimCoverage();
+
+                            $basePriceCalculate = $incstoreShippingViewModelData->basePriceCalculate($coverageArea, $width, $length, $getCalculatorType, $productPrice);
+                            $tierPriceCalculate = $incstoreShippingViewModelData->basePriceCalculate($coverageArea, $width, $length, $getCalculatorType, $productTierPrice);
+
+                            if ($basePriceCalculate > 0) {
+                                $savePercent = round((($basePriceCalculate - $tierPriceCalculate) / ($basePriceCalculate)) * 100);
+                                $cutPrice = $item->getRowTotal() / (1 - ($savePercent / 100));
+                                $getRowTotal = $item->getRowTotal();
+                                $totalBasePrice += $cutPrice - $getRowTotal;
+                            }
+                        }
+                    ?>
+                        <div class="item mt-4 pb-10 border-b border-black border-opacity-25 relative">
+                            <?php
+                            $quoteItem = $item;
+                            $getPdpLineItem = $quoteItem->getPdpLineItem();
+                            $shippingEstimate = "";
+                            if ($getPdpLineItem) {
+                                $getPdpLineItem = json_decode($getPdpLineItem, true);
+                                $shippingEstimate = $getPdpLineItem['shipping_estimate'] ?? '';
+                            }
+                            $loadChildProduct = $incstoreShippingViewModelData->loadProductBySku($quoteItem->getSku());
+                            $getCalculatorType = $loadChildProduct->getAttributeText('incstores_pim_calculator_type');
+
+                            $isCbcProduct = $checkoutViewModel->checkIsCBC($quoteItem->getSku());
+                            $totalCbcWeight = $totalCbcPrice = $totalCbcBasePrice = $totalCbcSavePercent = 0;
+                            $parentCbcProductLoad = "";
+                            $cbcProductMatch = "";
+
+                            if ($isCbcProduct) {
+                                // Find the position of the first underscore
+                                $underscorePos = strpos($quoteItem->getSku(), "_");
+
+                                if ($underscorePos !== false) {
+                                    $parentCbcProduct = substr($quoteItem->getSku(), 0, $underscorePos);
+                                    $parentCbcProductLoad = $incstoreShippingViewModelData->loadProductBySku($parentCbcProduct);
+                                }
+
+                                $lastUnderscorePos = strrpos($quoteItem->getSku(), "_");
+                                $cbcProductMatch = substr($quoteItem->getSku(), 0, $lastUnderscorePos);
+                                $cartCbcData = $checkoutViewModel->getCbcProducData();
+                                $cbcProductCount = 0;
+
+                                foreach ($cartCbcData as $cbcFullData => $cbcItems) {
+                                    foreach ($cbcItems as $key => $cbcItem) {
+                                        if ($cbcProductMatch == $cbcFullData) {
+                                            $totalCbcWeight += $cbcItem['weight'];
+                                            $totalCbcPrice += $cbcItem['rowTotal'];
+                                            $totalCbcBasePrice += $cbcItem['rowBaseTotal'];
+                                            $totalCbcSavePercent += $cbcItem['savePercent'];
+                                            $cbcProductCount++;
+                                        }
+                                    }
+                                }
+                            }
+
+                            $getProductWeight = 0;
+                            $items = $quoteItem;
+                            if (!$isCbcProduct && $getCalculatorType == 'roll') {
+                                $unitWeight = $incstoreShippingViewModelData->calculateUnitWeight($items);
+
+                                if ($unitWeight === false) {
+                                    $unitWeight = 0;
+                                }
+
+                                $getProductWeight = $unitWeight * $items->getQty();
+                            }
+
+                            if (!$getProductWeight) {
+                                $getProductWeight = $items->getWeight() * $item->getQtyOrdered();
+                            }
+
+                            if ($isCbcProduct && $totalCbcWeight > 0) {
+                                $getProductWeight = $totalCbcWeight;
+                            }
+
+                            $getProductWeightHtml = "";
+
+                            if ($getProductWeight > 0) {
+                                $getProductWeightHtml = " ($getProductWeight lbs)";
+                            }
+
+
+                            $productPrice = (float)$loadChildProduct->getPrice();
+                            $productTierPrice = (float)$loadChildProduct->getFinalPrice(1);
+                            $width = $loadChildProduct->getData('incstores_pim_exact_width_inches');
+                            $length = $loadChildProduct->getData('incstores_pim_exact_length_inches');
+                            $coverageArea = $loadChildProduct->getIncstoresPimCoverage();
+
+                            $basePriceCalculate = $incstoreShippingViewModelData->basePriceCalculate($coverageArea, $width, $length, $getCalculatorType, $productPrice);
+                            $tierPriceCalculate = $incstoreShippingViewModelData->basePriceCalculate($coverageArea, $width, $length, $getCalculatorType, $productTierPrice);
+                            $savePercentHtml = $cutPrice = "";
+                            $productCalculatedPrice = 0;
+
+                            if ($basePriceCalculate > 0) {
+                                $savePercent = round((($basePriceCalculate - $tierPriceCalculate) / ($basePriceCalculate)) * 100);
+                                if ($savePercent > 0) {
+                                    $savePercentHtml = 'Save ' . $savePercent . '%';
+                                }
+
+                                $cutPrice = $items->getRowTotal() / (1 - ($savePercent / 100));
+                                $cutPrice = $incstoreShippingViewModelData->formatedPrice($cutPrice);
+
+                                $productCalculatedPrice = $incstoreShippingViewModelData->formatedPrice($tierPriceCalculate);
+                            }
+
+                            if ($totalCbcSavePercent > 0) {
+                                $savePercent = $totalCbcSavePercent / $cbcProductCount;
+                                if ($savePercent > 0) {
+                                    $savePercentHtml = 'Save ' . $savePercent . '%';
+                                }
+                            }
+
+                            if ($totalCbcBasePrice > 0) {
+                                $cutPrice = $incstoreShippingViewModelData->formatedPrice($totalCbcBasePrice);
+                            }
+                            $floorCalculatorArray = ['case', 'roll', 'sqft'];
+                            $calculatorType = '';
+
+                            if (isset($getCalculatorType) && in_array($getCalculatorType, $floorCalculatorArray)) {
+                                $calculatorType = ' /sqft';
+                            }
+
+                            if (isset($getCalculatorType) && $getCalculatorType == 'pre_cut_roll') {
+                                $altUnitMeasure = $loadChildProduct->getAttributeText('incstores_pim_alt_unit_of_measure');
+                                if ($altUnitMeasure) {
+                                    $calculatorType = ' /' . $altUnitMeasure;
+                                } else {
+                                    $calculatorType = ' /sqft';
+                                }
+                            }
+
+                            $imageDisplayArea = $blockObject->getData('image_display_area') ?? 'new_products_content_widget_grid';
+                            $imageCustomAttributes = $loadChildProduct->getData('image_custom_attributes')
+                                ?? $blockObject->getData('image_custom_attributes')
+                                ?? [];
+                            ?>
+                            <div class="item-image absolute left-0 top-0 max-w-[107px]">
+                                <?= $blockObject->getImage($loadChildProduct, $imageDisplayArea)
+                                    ->setTemplate('Magento_Catalog::product/list/image.phtml')
+                                    ->setData('custom_attributes', $imageCustomAttributes)
+                                    ->setData('class', 'object-cover h-[104px] !w-[107px]')
+                                    ->setData('override_class', true)
+                                    ->setProductId($loadChildProduct->getId())
+                                    ->toHtml(); ?>
+                                <p class="uppercase text-black text-[10px] leading-default mt-[2px]">
+                                    <?= __('Qty:') ?> <?= (int)$item->getQtyOrdered() ?>
+                                </p>
+                            </div>
+                            <div class="item-details pl-[120px] min-h-[120px]">
+                                <div class="flex gap-6 justify-between">
+                                    <div class="w-full">
+                                        <p class="text-black font-semibold leading-default mb-2.5">
+                                            <?= $item->getName() ?>
+                                        </p>
+                                        <p class="order-sku hidden mb-1.5"><?= "SKU " . $item->getSku() ?></p>
+                                        <?php
+                                        $options = $block->getItemOptions($item);
+                                        if ($options) {
+                                            usort($options, function ($a, $b) {
+                                                return strcmp($b['label'], $a['label']);
+                                            });
+
+                                            $skipLabels = [
+                                                'Configurable Product Id',
+                                                'Configurable Product Url',
+                                                'Configurable Product Image',
+                                                'Main Configurable Product Image',
+                                                'Product Name',
+                                                'Configurable Product SKU',
+                                                'Configurable Product Category',
+                                                'Configurable Product Name',
+                                                'Color Display Name'
+                                            ];
+
+                                            foreach ($options as $option) {
+
+                                                if (in_array($option['label'], $skipLabels)) {
+                                                    continue;
+                                                }
+
+                                                if ($option['label'] != "Configurable Product Image" && $option['label'] != "Roll Width" && $option['label'] != "Roll Length") { ?>
+                                                    <?php if ($option['label'] != 'Select An Option'): ?>
+                                                        <p class="text-[10px] text-black leading-default mb-1.5">
+                                                            <span class="font-semibold"><?= $option['label'] ?> :</span>
+                                                            <?= $option['value'] ?>
+                                                        </p>
+                                                    <?php endif; ?>
+                                                    <?php if ($option['label'] == 'Select An Option'): ?>
+                                                        <div class="text-[10px] text-black leading-default mb-1.5">
+                                                            <span class="product-weight">
+                                                                <?= $option['value'] ?><?= $getProductWeightHtml ?>
+                                                                <span class="product-square-feet-price pl-0.5">
+                                                                    <?= $productCalculatedPrice . $calculatorType; ?>
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    <?php endif; ?>
+                                        <?php }
+                                            }
+                                        }
+                                        ?>
+                                    </div>
+                                    <div class="flex-shrink-0 text-right">
+                                        <span class="block text-black leading-default text-base font-semibold mb-1 pr-2 md:pr-1">
+                                            <?= $block->formatPrice(number_format($item->getRowTotal(), 2)) ?>
+                                        </span>
+                                        <?php if ($block->formatPrice(number_format($item->getRowTotal(), 2)) != $cutPrice): ?>
+                                            <span class="block text-[#949494] font-semibold leading-default text-[10px] line-through mb-0.5">
+                                                <?= $cutPrice; ?>
+                                            </span>
+                                        <?php endif; ?>
+                                        <span class="block text-3F8342 text-[10px] font-semibold leading-default">
+                                            <?= $savePercentHtml; ?>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php } ?>
+                </div>
+                <div class="summary pt-1">
+                    <div class="grid grid-cols-2 gap-3 items-center">
+                        <p class="py-1 text-252525 text-left text-base font-semibold leading-default">
+                            <?= __('Cart Subtotal') ?>
+                        </p>
+                        <span class="py-1 text-right text-252525 text-sm font-normal leading-default">
+                            <?= $block->formatPrice(number_format($order->getSubtotal(), 2)) ?>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 items-center">
+                        <p class="py-1 text-252525 text-left text-base font-semibold leading-default">
+                            <?= __('Shipping') ?>
+                        </p>
+                        <?php if ((float)$order->getShippingAmount() == 0.00): ?>
+                            <span class="py-1 text-right text-3F8342 text-sm font-semibold leading-default">
+                                <?= __('FREE SHIPPING') ?>
+                            </span>
+                        <?php else: ?>
+                        <span class="py-1 text-right text-black text-sm font-normal leading-default">
+                            <?= $block->formatPrice(number_format($order->getShippingAmount(), 2)) ?>
+                        </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($order->getTaxAmount() > 0): ?>
+                        <div class="grid grid-cols-2 gap-3 items-center">
+                            <p class="py-1 text-252525 text-left text-base font-semibold leading-default">
+                                <?= __('Sales Tax') ?>
+                            </p>
+                            <span class="py-1 text-right text-252525 text-sm font-normal leading-default">
+                                <?= $block->formatPrice(number_format($order->getTaxAmount(), 2)) ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php
+                        $totalSavings = (float)$totalCbcBasePrice + (float)$totalBasePrice;
+                        if ($totalSavings > 0):
+                    ?>
+                    <div class="grid grid-cols-2 gap-3 items-center saving">
+                        <p class="py-1 text-[#299752] text-left text-base font-semibold leading-default">
+                            <?= __('Product Savings') ?>
+                        </p>
+                        <span class="py-1 text-right text-[#299752] text-sm font-semibold leading-default">
+                            <?= $block->formatPrice(number_format($totalCbcBasePrice + $totalBasePrice, 2)) ?>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($order->getCouponCode()): ?>
+                        <div class="grid grid-cols-2 gap-3 promo">
+                            <p class="py-1 text-[#299752] text-left text-base font-semibold leading-default">
+                                <?= __('Promo Code') ?>
+                                <span class="code block text-xs font-normal text-252525 leading-default">
+                                    <?= $order->getCouponCode() ?>
+                                </span>
+                            </p>
+                            <span class="py-1 text-right text-[#299752] text-sm font-semibold leading-default">
+                                <?= $block->formatPrice(number_format(abs($order->getDiscountAmount()), 2)) ?>
+                            </span>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="grid grid-cols-2 gap-3 items-center pt-5 border-t border-252525 mt-1.5 total">
+                        <p class="text-252525 text-left text-lg font-semibold leading-default">
+                            <?= __('Order Total') ?>
+                        </p>
+                        <span class="text-right text-252525 text-lg font-semibold leading-default">
+                            <?= $block->formatPrice(number_format($order->getGrandTotal(), 2)) ?>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 md:px-4">
+                <?= $block->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('got_a_question')->toHtml(); ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- begin ShareASale.com affiliate tracking -->
+<?php
+    $merchantid     = '94345';
+    $objectManager  =  \Magento\Framework\App\ObjectManager::getInstance();
+    $subtotal       = $order->getSubtotal();
+    $discount       = $order->getDiscountAmount();
+    $affiliateTotal = ($subtotal + $discount);
+    $ordered_items = $order->getAllVisibleItems();
+    $skulist = '';
+    $pricelist = '';
+    $quantitylist = '';
+    $last_index = array_search(end($ordered_items), $ordered_items, true);
+    foreach ($ordered_items as $index => $item) {
+        $delimiter    = $index === $last_index ? '' : ',';
+        $skulist      .= $item->getSku() . $delimiter;
+        $quantitylist .= ceil($item->getQtyOrdered()) . $delimiter;
+        $pricelist    .= ($item->getProduct()->getFinalPrice() - ($item->getDiscountAmount() / $item->getQtyOrdered())) . $delimiter;
+    }
+    $couponcodes = $order->getCouponCode();
+    $newcustomer = '';
+    $customer = $order->getCustomerId();
+    if ($customer) {
+        $orderCount =
+            $objectManager
+            ->create('\Magento\Sales\Model\ResourceModel\Order\CollectionFactory')
+            ->create()
+            ->addFieldToSelect('*')
+            ->addFieldToFilter('customer_id', $customer)
+            ->setOrder('created_at', 'desc')
+            ->count();
+        $newcustomer = ($orderCount > 1 ? 0 : 1);
+    }
+    $currency = $order->getOrderCurrencyCode();
+?>
+<img id='_SHRSL_img_1' src='https://shareasale.com/sale.cfm?tracking=<?php echo $orderId ?>&amp;amount=<?php echo $affiliateTotal ?>&amp;transtype=sale&amp;merchantID=<?php echo $merchantid ?>&amp;couponcode=<?php echo $couponcodes ?>&amp;skulist=<?php echo $skulist ?>&amp;quantitylist=<?php echo $quantitylist ?>&amp;pricelist=<?php echo $pricelist ?>&amp;newcustomer=<?php echo $newcustomer ?>&amp;currency=<?php echo $currency ?>&amp;v=Magento2.1' width='1' height='1'>
+<!-- end ShareASale.com affiliate tracking -->
+<style>
+    .bullet-list{
+        list-style-position: inside;
+        width: auto;
+        margin: 0 auto 16px;
+        max-width: max-content;
+    }
+</style>
+<!-- Shopper Approved Tracking Code -->
+<?php
+    $customerName = $order->getCustomerName() ?? '';
+    $customerEmail = $order->getCustomerEmail() ?? '';
+?>
+<script type="text/javascript">
+    var sa_values = {
+        "site":9691,
+        "token":"5d314",
+        'orderid':'<?php echo $orderId ?>',
+        'name':'<?php echo $customerName ?>',
+        'email':'<?php echo $customerEmail ?>'
+    };
+    function saLoadScript(src) {
+        var js = window.document.createElement("script");
+        js.src = src; js.type = "text/javascript";
+        document.getElementsByTagName("head")[0].appendChild(js);
+    }
+    saLoadScript("https://www.shopperapproved.com/thankyou/rate/9691.js");
+</script>
+<!-- End Shopper Approved Tracking Code -->

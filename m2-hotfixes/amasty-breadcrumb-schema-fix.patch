@@ -1,0 +1,137 @@
+diff --git a/vendor/amasty/module-google-rich-snippets/Model/JsonLd/Processor/Breadcrumbs.php b/vendor/amasty/module-google-rich-snippets/Model/JsonLd/Processor/Breadcrumbs.php
+index 0000000..1111111 100644
+--- a/vendor/amasty/module-google-rich-snippets/Model/JsonLd/Processor/Breadcrumbs.php
++++ b/vendor/amasty/module-google-rich-snippets/Model/JsonLd/Processor/Breadcrumbs.php
+@@ -49,20 +49,64 @@ class Breadcrumbs implements ProcessorInterface
+         if (is_array($breadcrumbs)) {
+             $items = [];
+             $position = 0;
++
++            // List of invalid properties that should never appear in breadcrumb items
++            // These are product/review-specific and not valid for WebPage/Thing in breadcrumbs
++            $invalidProperties = [
++                'aggregateRating',
++                'review',
++                'itemReviewed',
++                'reviewRating',
++                'author',
++                'dateCreated',
++                'datePublished',
++                'headline',
++                'reviewBody',
++                'ratingValue',
++                'reviewCount',
++                'bestRating',
++                '@type' // We'll set this explicitly to WebPage
++            ];
++
+             foreach ($breadcrumbs as $key => $breadcrumb) {
++                // Ensure breadcrumb is an array and clean it
++                if (!is_array($breadcrumb)) {
++                    continue;
++                }
++
+                 $link = $this->resolveBreadcrumbLink($key, $breadcrumb);
+
+                 if (!$link) {
+                     continue;
+                 }
+
++                // Build the item array with only valid breadcrumb properties
++                // Start with a clean array to avoid any contamination from source data
++                $item = [
++                    '@type' => 'WebPage',
++                    '@id' => $link,
++                    'name' => $breadcrumb['label'] ?? ''
++                ];
++
++                // Remove any invalid properties that might have been in the breadcrumb data
++                foreach ($invalidProperties as $prop) {
++                    if (isset($item[$prop])) {
++                        unset($item[$prop]);
++                    }
++                }
++
++                // Also check if breadcrumb array itself has nested invalid data and clean it
++                foreach ($breadcrumb as $breadcrumbKey => $breadcrumbValue) {
++                    if (in_array($breadcrumbKey, $invalidProperties)) {
++                        // Skip invalid properties from source breadcrumb data
++                        continue;
++                    }
++                }
++
+                 $items[] = [
+                     '@type' => 'ListItem',
+                     'position' => ++$position,
+-                    'item' => [
+-                        '@id' => $link,
+-                        'name' => $breadcrumb['label']
+-                    ]
++                    'item' => $item
+                 ];
+             }
+
+@@ -74,6 +118,9 @@ class Breadcrumbs implements ProcessorInterface
+                     }
+                 }
+
++                // Final cleanup: ensure no invalid properties made it through
++                $items = $this->cleanBreadcrumbItems($items);
++
+                 $data['breadcrumbs'] = [
+                     '@context' => 'https://schema.org',
+                     '@type' => 'BreadcrumbList',
+@@ -118,4 +165,53 @@ class Breadcrumbs implements ProcessorInterface
+
+         return $link ?? null;
+     }
++
++    /**
++     * Clean breadcrumb items to remove any invalid properties
++     *
++     * @param array $items
++     * @return array
++     */
++    private function cleanBreadcrumbItems(array $items): array
++    {
++        $invalidProperties = [
++            'aggregateRating',
++            'review',
++            'itemReviewed',
++            'reviewRating',
++            'author',
++            'dateCreated',
++            'datePublished',
++            'headline',
++            'reviewBody',
++            'ratingValue',
++            'reviewCount',
++            'bestRating'
++        ];
++
++        foreach ($items as &$item) {
++            // Clean the ListItem itself
++            foreach ($invalidProperties as $prop) {
++                if (isset($item[$prop])) {
++                    unset($item[$prop]);
++                }
++            }
++
++            // Clean the nested item (WebPage)
++            if (isset($item['item']) && is_array($item['item'])) {
++                foreach ($invalidProperties as $prop) {
++                    if (isset($item['item'][$prop])) {
++                        unset($item['item'][$prop]);
++                    }
++                }
++
++                // Ensure @type is set correctly
++                if (!isset($item['item']['@type']) || $item['item']['@type'] !== 'WebPage') {
++                    $item['item']['@type'] = 'WebPage';
++                }
++            }
++        }
++
++        return $items;
++    }
+ }

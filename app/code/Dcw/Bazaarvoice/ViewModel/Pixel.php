@@ -1,0 +1,364 @@
+<?php
+/**
+ * Copyright © Bazaarvoice, Inc. All rights reserved.
+ * See LICENSE.md for license details.
+ */
+
+declare(strict_types=1);
+
+namespace Dcw\Bazaarvoice\ViewModel;
+
+use Bazaarvoice\Connector\Api\ConfigProviderInterface;
+use Bazaarvoice\Connector\Api\StringFormatterInterface;
+use Bazaarvoice\Connector\Model\Source\Environment;
+use Exception;
+use Magento\Catalog\Model\Product\Media\ConfigFactory;
+use Magento\Catalog\Model\Product\Visibility;
+use Magento\Catalog\Model\ProductRepository;
+use Magento\Checkout\Model\Session;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
+use Magento\Directory\Model\Region;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Framework\View\Element\Block\ArgumentInterface;
+use Magento\Tax\Model\Config;
+use Dcw\BazaarvoiceConnector\Model\Config as SampleFeedConfig;
+
+/**
+ * Class Pixel
+ *
+ * @package Bazaarvoice\Connector\ViewModel
+ */
+class Pixel implements ArgumentInterface
+{
+
+    /**
+     * A sample product SKU starts with "S" (same rule as the purchase feed sample removal).
+     */
+    private const SAMPLE_SKU_PATTERN = '/^S/i';
+
+    /**
+     * Attribute set for samples
+     */
+    private const ATTRIBUTE_SET_ID_FOR_SAMPLES = 455;
+
+    /**
+     * @var \Magento\Checkout\Model\Session
+     */
+    private $checkoutSession;
+    /**
+     * @var \Magento\Directory\Model\Region
+     */
+    private $region;
+    /**
+     * @var \Magento\Catalog\Model\ProductRepository
+     */
+    private $productRepository;
+    /**
+     * @var
+     */
+    private $orderDetails;
+    /**
+     * @var ConfigProviderInterface
+     */
+    private $configProvider;
+    /**
+     * @var StringFormatterInterface
+     */
+    private $stringFormatter;
+    /**
+     * @var \Magento\Catalog\Model\Product\Media\ConfigFactory
+     */
+    private $mediaConfigFactory;
+    /**
+     * @var \Magento\Tax\Model\Config
+     */
+    private $taxConfig;
+    /**
+     * @var SampleFeedConfig
+     */
+    private $sampleFeedConfig;
+
+    /**
+     * Pixel constructor.
+     *
+     * @param ConfigProviderInterface                            $configProvider
+     * @param StringFormatterInterface                           $stringFormatter
+     * @param \Magento\Checkout\Model\Session                    $checkoutSession
+     * @param \Magento\Directory\Model\Region                    $region
+     * @param \Magento\Catalog\Model\ProductRepository           $productRepository
+     * @param \Magento\Catalog\Model\Product\Media\ConfigFactory $mediaConfigFactory
+     * @param \Magento\Tax\Model\Config                          $taxConfig
+     * @param SampleFeedConfig                                   $sampleFeedConfig
+     */
+    public function __construct(
+        ConfigProviderInterface $configProvider,
+        StringFormatterInterface $stringFormatter,
+        Session $checkoutSession,
+        Region $region,
+        ProductRepository $productRepository,
+        ConfigFactory $mediaConfigFactory,
+        Config $taxConfig,
+        SampleFeedConfig $sampleFeedConfig
+    ) {
+        $this->checkoutSession = $checkoutSession;
+        $this->region = $region;
+        $this->productRepository = $productRepository;
+        $this->configProvider = $configProvider;
+        $this->stringFormatter = $stringFormatter;
+        $this->mediaConfigFactory = $mediaConfigFactory;
+        $this->taxConfig = $taxConfig;
+        $this->sampleFeedConfig = $sampleFeedConfig;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getBvPixelEnabled()
+    {
+        if (!$this->configProvider->isBvPixelEnabled()) {
+            return false;
+        }
+
+        // Suppress the pixel entirely when the order has no reviewable items left
+        // (e.g. sample-only orders), so Bazaarvoice receives no transaction to solicit.
+        $order = $this->checkoutSession->getLastRealOrder();
+        if ($order && $order->getId()) {
+            $orderDetails = $this->getOrderDetails();
+            if (empty($orderDetails['items'])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return false|string
+     */
+    public function getJsonOrderDetails()
+    {
+        return json_encode($this->getOrderDetails(), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getOrderDetails()
+    {
+        /**
+         * @var \Magento\Sales\Model\Order $order 
+         */
+        $order = $this->checkoutSession->getLastRealOrder();
+
+        if ($this->orderDetails) {
+            return $this->orderDetails;
+        }
+
+        $address = $order->getBillingAddress();
+
+        $this->orderDetails['currency'] = $order->getOrderCurrencyCode();
+        $this->orderDetails['orderId'] = $order->getIncrementId();
+
+        $total = $order->getGrandTotal() - $order->getTaxAmount() - $order->getShippingAmount();
+        $this->orderDetails['total'] = number_format((float)$total, 2, '.', '');
+        $this->orderDetails['tax'] = number_format((float)$order->getTaxAmount() ?? 0.0, 2, '.', '');
+        $this->orderDetails['shipping'] = number_format((float)$order->getShippingAmount() ?? 0.0, 2, '.', '');
+        if (!$this->taxConfig->discountTax()) {
+            $orderDiscountAmount=$order->getDiscountAmount();
+            if (is_int($orderDiscountAmount) || is_float($orderDiscountAmount)) {
+                $this->orderDetails['discount'] = number_format((float)abs($orderDiscountAmount) ?? 0.0, 2, '.', '');
+            } else {
+                $this->orderDetails['discount'] = number_format((float)$orderDiscountAmount ?? 0.0, 2, '.', '');
+            }
+           
+        } else {
+            //when discount is applied to products "including tax" - extract tax compensation amount from "discount".
+            $this->orderDetails['discount'] = number_format(
+                (float)abs($order->getDiscountAmount()) - (float)abs($order->getDiscountTaxCompensationAmount()) ?? 0.0, 2, '.', ''
+            );
+        }
+
+        if ($address) {
+            $this->orderDetails['city'] = $address->getCity();
+            $this->orderDetails['state'] = $this->region->load($address->getRegionId())->getCode();
+            $this->orderDetails['country'] = $address->getCountryId();
+        }
+
+        $this->orderDetails['items'] = [];
+        /**
+         * if families are enabled, get all items 
+         */
+        if ($this->configProvider->isFamiliesEnabled()) {
+            $items = $order->getAllItems();
+        } else {
+            $items = $order->getAllVisibleItems();
+        }
+        foreach ($items as $itemId => $item) {
+            // Sample order items must not reach Bazaarvoice, so the pixel does not
+            // trigger review request emails for them (same rule as the purchase feed).
+            if ($this->isSampleOrderItem($item)) {
+                continue;
+            }
+
+            try {
+                $product = $this->getReviewableProductFromOrderItem($item);
+            } catch (NoSuchEntityException $e) {
+                continue;
+            }
+            /**
+             * skip configurable items if families are enabled 
+             */
+            if ($this->configProvider->isFamiliesEnabled()
+                && $product->getTypeId() == Configurable::TYPE_CODE
+            ) {
+                continue;
+            }
+
+            $itemDetails = [];
+            $itemDetails['productId'] = $this->stringFormatter->getFormattedProductSku($product);
+
+            $itemDetails['name'] = $item->getName();
+            /**
+             * 'category' is not included.
+             * Mage products can be in 0 - many categories.
+             * Should we try to include it?
+             */
+            $itemDetails['price'] = number_format((float)$item->getPrice(), 2, '.', '');
+            $itemDetails['quantity'] = number_format((float)$item->getQtyOrdered(), 0);
+            $itemDetails['imageURL'] = $this->mediaConfigFactory->create()->getMediaUrl($product->getSmallImage());
+
+            if ($this->configProvider->isFamiliesEnabled() && $item->getParentItem()) {
+                if (strpos($itemDetails['imageURL'], 'placeholder/image.jpg') !== false) {
+                    /**
+                     * if product families are enabled and product has no image, use configurable image 
+                     */
+                    $parentId = $item->getParentItem()->getProductId();
+                    try {
+                        $parent = $this->productRepository->getById($parentId);
+                        $itemDetails['imageURL'] = $this->mediaConfigFactory->create()->getMediaUrl($parent->getSmallImage());
+                    } catch (NoSuchEntityException $e) {
+                    }
+                }
+                /**
+                 * also get price from parent item 
+                 */
+                $itemDetails['price'] = number_format((float)$item->getParentItem()->getPrice(), 2, '.', '');
+            }
+
+            array_push($this->orderDetails['items'], $itemDetails);
+        }
+        if ($order->getCustomerId()) {
+            $userId = $order->getCustomerId();
+        } elseif ($order->getCustomerEmail()) {
+            $userId = hash('sha256', $order->getCustomerEmail());
+        }
+        if (!empty($userId)) {
+            $this->orderDetails['userId'] = $userId;
+        }
+        $this->orderDetails['email'] = $order->getCustomerEmail();
+        $this->orderDetails['nickname'] = $order->getCustomerFirstname()
+            ? $order->getCustomerFirstname()
+            : ($order->getBillingAddress() ? $order->getBillingAddress()->getFirstname() : '');
+        /**
+         * There is no 'deliveryDate' yet 
+         */
+        $this->orderDetails['locale'] = $this->configProvider->getLocale($order->getStoreId());
+
+        /**
+         * Add partnerSource field 
+         */
+        $this->orderDetails['source'] = 'Magento_BV_Extension';
+        $this->orderDetails['partnerVersion'] = $this->configProvider->getExtensionVersion();
+        $this->orderDetails['partnerSource'] = 'Magento Extension r'.$this->configProvider->getExtensionVersion();
+        $this->orderDetails['deploymentZone'] = strtolower(
+            str_replace(
+                ' ',
+                '_',
+                $this->configProvider->getDeploymentZone()
+            )
+        );
+
+        return $this->orderDetails;
+    }
+
+    /**
+     * Checks if an order item is a sample product: the SKU starts with "S" and the
+     * product uses the samples attribute set. Honors the same admin toggle as the
+     * purchase feed sample removal (bazaarvoice/feeds/remove_samples).
+     *
+     * @param \Magento\Sales\Model\Order\Item $item
+     *
+     * @return bool
+     */
+    public function isSampleOrderItem($item)
+    {
+        if (!$this->sampleFeedConfig->isRemoveSamplesEnabled()) {
+            return false;
+        }
+
+        if (!preg_match(self::SAMPLE_SKU_PATTERN, (string)$item->getSku())) {
+            return false;
+        }
+
+        try {
+            $product = $this->productRepository->getById($item->getProductId());
+        } catch (NoSuchEntityException $e) {
+            return false;
+        }
+
+        return (int)$product->getAttributeSetId() === self::ATTRIBUTE_SET_ID_FOR_SAMPLES;
+    }
+
+    /**
+     * Returns the product unless the product visibility is
+     * set to not visible.  In this case, it will try and pull
+     * the parent/associated product from the order item.
+     *
+     * @param \Magento\Sales\Model\Order\Item $item
+     *
+     * @return \Magento\Catalog\Model\Product
+     * @throws NoSuchEntityException
+     */
+    public function getReviewableProductFromOrderItem($item)
+    {
+        $product = $this->productRepository->getById($item->getProductId());
+        $product->setStoreId($item->getStoreId());
+
+        if ($product->getVisibility() == Visibility::VISIBILITY_NOT_VISIBLE) {
+            $options = $item->getProductOptions();
+            if (isset($options['super_product_config']['product_id'])) {
+                try {
+                    $parentId = $options['super_product_config']['product_id'];
+                    $product = $this->productRepository->getById($parentId);
+                } catch (Exception $ex) {
+                }
+            }
+        }
+
+        return $product;
+    }
+
+    /**
+     * @return bool
+     */
+    public function canShowDebugDetails()
+    {
+        return ($this->configProvider->getEnvironment() == Environment::STAGING);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getDebugDetails()
+    {
+        return print_r($this->getOrderDetails(), true);
+    }
+
+    /**
+     * @return string
+     */
+    public function getExtensionInjectionMessage()
+    {
+        return $this->configProvider->getExtensionInjectionMessage();
+    }
+}

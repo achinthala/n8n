@@ -1,0 +1,14 @@
+<?php
+$count = $block->getProductCollection();
+
+if($count > 0) {
+    $featuredProductsHeading = $this->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('featured_products_heading')->toHtml();
+?>
+    <?php if($featuredProductsHeading != ''): ?>
+        <div x-data x-defer="intersect">
+            <?php echo $featuredProductsHeading; ?>
+        </div>
+    <?php endif; ?>
+<?php
+}
+?>

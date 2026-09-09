@@ -1,0 +1,370 @@
+<div class="mobile-padding mat-designer">
+
+    <div class="fulloverlay hidden">
+        <div style="width:30px; height:30px; position:fixed; top:20px; right:20px; color:#FFF; background: #000000 url('https://assets.incstores.com/components/wrestlingMatDesigner/assets/close.png') no-repeat center center; z-index:150; cursor:pointer;"></div>
+    </div>
+        
+    <div id="container">
+        <div id="drawing" style="position: relative;">
+            <div style="background-color:#F6F6F6;">
+                <canvas id="a" width="500" height="500" style="display:block;"></canvas>
+            </div>
+            <div id="logohotspots" class="overlay logohotspots" style="position: absolute; left:0; right: 0; top: 0; bottom: 0;">
+                <div onclick="loadLogo(1);" class="hotspot top" style="top: 10px; left: 10px;" id="lhotspot1"></div>
+                <div onclick="loadLogo(3);" class="hotspot top" style="top: 10px; right: 10px;" id="lhotspot3"></div>
+                <div onclick="loadLogo(5);" class="hotspot" style="top: 50%; left: 50%; margin-top:-25px; margin-left:-25px;" id="lhotspot5"></div>
+                <div onclick="loadLogo(7);" class="hotspot bottom" style="bottom:10px; left:10px;" id="lhotspot7"></div>
+                <div onclick="loadLogo(9);" class="hotspot bottom" style="bottom:10px; right:10px;" id="lhotspot9"></div>
+            </div>
+            <div id="texthotspots" class="overlay texthotspots" style="position: absolute; left:0; right: 0; top: 0; bottom: 0;">
+                <div onclick="loadText(1);" class="hotspot top" style="top: 10px; left: 10px;" id="hotspot1"></div>
+                <div onclick="loadText(2);" class="hotspot top" style="top:10px; left: 50%; margin-left:-25px;" id="hotspot2"></div>
+                <div onclick="loadText(3);" class="hotspot top" style="top: 10px; right: 10px;" id="hotspot3"></div>
+                <div onclick="loadText(4);" class="hotspot" style="top:50%; left: 10px; margin-top:-25px;" id="hotspot4"></div>
+                <div onclick="loadText(5);" class="hotspot" style="top: 50%; left: 50%; margin-top:-25px; margin-left:-25px;" id="hotspot5"></div>
+                <div onclick="loadText(6);" class="hotspot" style="top: 50%; right: 10px; margin-top:-25px;" id="hotspot6"></div>
+                <div onclick="loadText(7);" class="hotspot bottom" style="bottom: 10px; left: 10px;" id="hotspot7"></div>
+                <div onclick="loadText(8);" class="hotspot bottom" style="bottom: 10px; left: 50%; margin-left:-25px;" id="hotspot8"></div>
+                <div onclick="loadText(9);" class="hotspot bottom" style="bottom: 10px; right: 10px;" id="hotspot9"></div>
+            </div>
+            <div id="matloading" class="overlay matloading selected" style="position: relative; margin-top:-500px; left:0; width: 500px; height: 500px;">
+                <div style="background-color:#FFF; width: 200px; position: absolute; top: 50%; left: 50%; margin-left: -120px; margin-top:-30px; padding:20px; text-align:center; box-shadow:0 0 10px #000;">Loading.. Please wait.</div>
+            </div>
+        </div>
+        <div id="rightcolumn">
+            <div id="nav" style="position:relative;">
+                <div><a class="active nav1" href="javascript:changeslide(1);">Size</a><img class="navarrow" src="https://assets.incstores.com/components/wrestlingMatDesigner/assets/navarrow.png" alt="arrow"><a class="nav2" href="javascript:changeslide(2);">Circles</a><img class="navarrow" src="https://assets.incstores.com/components/wrestlingMatDesigner/assets/navarrow.png" alt="arrow"><a class="nav3" href="javascript:changeslide(3);">Lettering</a><img class="navarrow" src="https://assets.incstores.com/components/wrestlingMatDesigner/assets/navarrow.png" alt="arrow"><a class="nav4" href="javascript:changeslide(4);">Logos</a></div>
+                <div id="navfinished" class="hidden" style="position:absolute; width:455px; top:0; left:0; background-color:#FFF; color:#b70000;">Save Design &amp; Request a Quote</div>
+                <div id="navviewmode" class="hidden" style="position:absolute; width:455px; top:0; left:0; background-color:#FFF; color:#b70000;">Viewing Saved Mat Design</div>
+            </div>
+            <div id="properties">
+                <div id="slidecontainer" style="width:2300px; height:558px;">
+                    <div id="propview" class="slide1">
+                        <div class="padding">
+                            <h1 style="margin-top:0;">Mat Details</h1>
+                                                    </div>
+                        <div class="buttonbar">
+                            
+                            <a class="right" href="javascript:exitviewmode();">Edit Design</a>
+                        </div>
+                    </div>
+                    <div id="propsize" class="slide1">
+                        <div class="padding">
+                            <h1 style="margin-top:0;">Select Mat Size</h1>
+                            <table>
+                                <tbody><tr><td style="vertical-align:top;"><input type="radio" id="matsize42" name="matsize" value="a42x42" checked="checked" onclick="setSizing('a42x42');"></td><td><label for="matsize42">42' x 42'<br><span class="sublabel">Seven sections @ 6' x 42' each</span></label></td></tr>
+                                <tr><td style="vertical-align:top;"><input type="radio" id="matsize40" name="matsize" value="a42x40" onclick="setSizing('a42x40');"></td><td><label for="matsize40">42' x 40'<br><span class="sublabel">Seven sections @ 6' x 40' each</span></label></td></tr>
+                                <tr><td style="vertical-align:top;"><input type="radio" id="matsize38" name="matsize" value="a42x38" onclick="setSizing('a42x38');"></td><td><label for="matsize38">42' x 38'<br><span class="sublabel">Seven sections @ 6' x 38' each; 28' competition circle</span></label></td></tr>
+                                <tr><td style="vertical-align:top;"><input type="radio" id="matsize36" name="matsize" value="a36x36" onclick="setSizing('a36x36');"></td><td><label for="matsize36">36' x 36'<br><span class="sublabel">Six sections @ 6' x 36' each; 28' competition circle</span></label><br></td></tr>
+                            </tbody></table>
+                            <h1>Select Mat Thickness</h1>
+                            <table>
+                                <tbody><tr><td style="vertical-align:top;"><input type="radio" id="matthick158" value="1-5/8" name="matthick" checked="checked" onclick="mat['thickness'] = '1-5/8';"></td><td><label for="matthick158">1-5/8"<br><span class="sublabel">Standard for high school and college competition</span></label></td></tr>
+                                <tr><td style="vertical-align:top;"><input type="radio" id="matthick2" value="2" name="matthick" onclick="mat['thickness'] = '2';"></td><td><label for="matthick2">2"<br><span class="sublabel">Increased protection; required for international competition</span></label></td></tr>
+                            </tbody></table>
+                            <h1>Select Mat Color</h1>
+                            <div id="matcolors">
+                                <a class="paintbox royalblue selected" href="javascript:changeMatColor('#0047c1');">Royal Blue</a>
+                                <a class="paintbox black" href="javascript:changeMatColor('#000000');">Black</a>
+                                <a class="paintbox gold" href="javascript:changeMatColor('#ffc000');">Gold</a>
+                                <a class="paintbox gray" href="javascript:changeMatColor('#bdbdbd');">Gray</a>
+                                <a class="paintbox green" href="javascript:changeMatColor('#024933');">Green</a>
+                                <a class="paintbox maroon" href="javascript:changeMatColor('#802f4d');">Maroon</a>
+                                <a class="paintbox navyblue" href="javascript:changeMatColor('#013666');">Navy Blue</a>
+                                <a class="paintbox purple" href="javascript:changeMatColor('#56409a');">Purple</a>
+                                <a class="paintbox red" href="javascript:changeMatColor('#f63336');">Red</a>
+                            </div>
+                        </div>
+                        <div class="buttonbar">
+                            
+                            <a class="right" href="javascript:changeslide(2);">Circles</a>
+                        </div>
+                    </div>
+                    <div id="propcircles" class="slide2">
+                        <div class="padding">        
+                            <h1 style="margin-top:0;">Competition Circle Size</h1>
+                            <table style="margin-bottom:1em;">
+                                <tbody><tr><td><input type="radio" id="circlesize28" name="circlesize" value="28" onclick="setcirclesize(28);"></td><td><label class="circlesize28" for="circlesize28">28' - <span class="sublabel">Required for 36' x 36' and 42' x 38' mats</span></label></td></tr>
+                                <tr><td><input type="radio" id="circlesize30" name="circlesize" value="30" checked="checked" onclick="setcirclesize(30);"></td><td><label class="circlesize30" for="circlesize30">30' - <span class="sublabel">Standard for 42' x 42' and 42' x 40' mats</span></label></td></tr>
+                                <tr><td><input type="radio" id="circlesize32" name="circlesize" value="32" onclick="setcirclesize(32);"></td><td><label class="circlesize32" for="circlesize32">32' - <span class="sublabel">Required for NCAA competition</span></label></td></tr>
+                            </tbody></table>
+                            <input type="checkbox" value="true" name="startlines" id="startlines" checked="checked" onclick="setstartlines(this.checked);"> <label for="startlines">Starting Lines</label>
+                            <h1>Circle/Fill Colors </h1>
+                            <div id="circletypes" style="float:left; width:190px;">
+                                <div class="switcher active circlelines" id="color" onclick="setcircletype('lines');">Circle Lines
+                                    <div class="circlethumb"></div>
+                                </div>
+                                <div class="switcher circleten" id="tencolor" onclick="setcircletype('ten');">10' Circle Fill <span style="color:#D93C22; font-size:10px;">($)</span>
+                                    <div class="circlethumb" style="background-position: -62px 0;"></div>
+                                </div>
+                                <div class="switcher circletenthirty" id="tenthirtycolor" onclick="setcircletype('tenthirty');">Wrestling Area Fill <span style="color:#D93C22; font-size:10px;">($)</span>
+                                    <div class="circlethumb" style="background-position: -124px 0;"></div>
+                                </div>
+                                <div class="switcher circleoutside" id="outsidecolor" onclick="setcircletype('outside');">Safety Area Fill <span style="color:#D93C22; font-size:10px;">($)</span>
+                                    <div class="circlethumb" style="background-position: -186px 0;"></div>
+                                </div>
+                                <div class="switcher circlepractice" id="practicecolor" onclick="setcircletype('practice');">Practice Circles <span style="color:#D93C22; font-size:10px;">($)</span>
+                                    <div class="circlethumb" style="background-position: -248px 0;"></div>
+                                </div>
+                            </div>
+                            <div id="circlecolors" style="width: 156px; padding: 4px 1px 4px 4px; border:1px solid #C4C4C4; position:absolute; right:14px; overflow:hidden;">
+                                <div id="switcherflash" style="position:absolute; width:208px; height:100%; display:none; background-color:#FBFBFB;"></div>
+                                <a href="javascript:editcircle('lighter');" class="pcircles paintbox lighter hidden">Mat (Lighter)</a>
+                                <a href="javascript:editcircle('darker');" class="pcircles paintbox darker hidden">Mat (Darker)</a>
+                                <a href="javascript:editcircle('#ffffff');" class="paintbox white selected">White</a>
+                                <a href="javascript:editcircle('#b3b3b3');" class="paintbox lightgray">Light Gray</a>
+                                <a href="javascript:editcircle('#6d7370');" class="paintbox darkgray">Dark Gray</a>                    
+                                <a href="javascript:editcircle('#000000');" class="paintbox black">Black</a>
+                                <a href="javascript:editcircle('#fbdd2e');" class="paintbox yellow">Yellow</a>
+                                <a href="javascript:editcircle('#ddb63e');" class="paintbox vegas">Vegas Gold A</a>
+                                <a href="javascript:editcircle('#9f7d23');" class="paintbox vegasb">Vegas Gold B</a>
+                                <a href="javascript:editcircle('#fcba28');" class="paintbox gold">Gold</a>
+                                <a href="javascript:editcircle('#e25120');" class="paintbox orange">Orange</a>
+                                <a href="javascript:editcircle('#a40000');" class="paintbox red">Red</a>
+                                <a href="javascript:editcircle('#632534');" class="paintbox maroon">Maroon</a>
+                                <a href="javascript:editcircle('#1e80d0');" class="paintbox lightblue">Light Blue</a>
+                                <a href="javascript:editcircle('#0a2473');" class="paintbox royalblue">Royal Blue</a>
+                                <a href="javascript:editcircle('#192b48');" class="paintbox navyblue">Navy Blue</a>
+                                <a href="javascript:editcircle('#444069');" class="paintbox purple">Purple</a>
+                                <a href="javascript:editcircle('#216421');" class="paintbox kellygreen">Kelly Green</a>
+                                <a href="javascript:editcircle('#154724');" class="paintbox forestgreen">Forest Green</a>
+
+                            
+                                <!--
+                                <a href="javascript:editcircle('#ffffff');" class="paintbox white selected">White</a>
+                                <a href="javascript:editcircle('#f9d700');" class="paintbox athleticgold">Athletic Gold</a>
+                                <a href="javascript:editcircle('#fffa00');" class="paintbox yellow">Yellow Gold</a>
+                                <a href="javascript:editcircle('#dfd576');" class="paintbox vegas">Vegas Gold</a>
+                                <a href="javascript:editcircle('#f8e4b0');" class="paintbox manilla">Manilla</a>
+                                <a href="javascript:editcircle('#ff9a00');" class="paintbox orange">Orange</a>
+                                <a href="javascript:editcircle('#ff2600');" class="paintbox brightred">Bright Red</a>
+                                <a href="javascript:editcircle('#d81d00');" class="paintbox scarlettred">Scarlet Red</a>
+                                <a href="javascript:editcircle('#84221f');" class="paintbox lightmaroon">Light Maroon</a>
+                                <a href="javascript:editcircle('#591b19');" class="paintbox darkmaroon">Dark Maroon</a>
+                                <a href="javascript:editcircle('#720086');" class="paintbox purple">Purple</a>
+                                <a href="javascript:editcircle('#21166d');" class="paintbox navyblue">Navy Blue</a>
+                                <a href="javascript:editcircle('#0002f8');" class="paintbox royalblue">Royal Blue</a>
+                                <a href="javascript:editcircle('#00c1ff');" class="paintbox lightblue">Light Blue</a>
+                                <a href="javascript:editcircle('#00cb00');" class="paintbox kellygreen">Kelly Green</a>
+                                <a href="javascript:editcircle('#1d3e10');" class="paintbox green">Green</a>    
+                                <a href="javascript:editcircle('#dbdbdb');" class="paintbox lightgray">Light Gray</a>
+                                <a href="javascript:editcircle('#8c8c8c');" class="paintbox darkgray">Dark Gray</a>
+                                <a href="javascript:editcircle('#8b4028');" class="paintbox brown">Brown</a>
+                                <a href="javascript:editcircle('#000000');" class="paintbox black">Black</a>
+                                -->
+                                <a href="javascript:editcircle('none');" class="paintbox none" 
+                                style="background-color:#FFFFFF; background: url('/static/frontend/Dcw/hyvamobile/en_US/images/logos/none.png') no-repeat left top;">
+                                    <span style="color: #333333;">None</span>
+                                </a><br style="clear:both;"><br>
+
+                            </div>
+                        </div>
+                        <br style="clear:both;">
+                        <div class="buttonbar">
+                            <a class="left" href="javascript:changeslide(1);">Size</a>
+                            
+                            <a class="right" href="javascript:changeslide(3);">Lettering</a>
+                        </div>
+                    </div>
+    
+                    <div id="proplettering" class="slide3">
+                        <div class="padding">
+                            <h1 style="margin-top:0;">Select a Location</h1>
+                            <div class="textnote">Click a hot spot on the mat (hover cursor over mat if hidden)</div>
+                            <div class="textnote hidden">To deselect the hot spot, click an empty space on the mat.</div>
+                            <h1>Enter Text</h1>
+                            <input style="font-size:15px; width:200px; padding:8px; margin-bottom:11px; margin-right:8px;" type="text" name="lettering" id="lettering" oninput="formText();" onkeydown="if (event.keyCode == 13) { document.getElementById('lettering').blur(); }" disabled="" value="Please select a text location first">
+                            <a href="javascript:clearText();" id="textclearbutton" class="disabled" style=" margin-right:8px;">Clear Text</a>
+                            <a href="javascript:rotateText();" id="textrotatebutton" class="disabled">Rotate Text</a>
+                            <!-- <a href="javascript:deselect("text");" id="textdeselect" class="disabled">Deselect Hotspot</a> -->
+                            <h1>Select a Font</h1>
+                            <div id="fontmenu">
+                                <div id="fontselect" style="line-height:23px; height:21px;">Current Font: <span class="arial">ARIAL</span></div>
+                                <div id="fontlist" class="hidden">
+                                    <div style="float:left; padding: 12px 12px 4px 12px;">
+                                        <a class="arial" href="javascript:updateFont('Arial');">ARIAL</a>
+                                        <a class="rockwell" href="javascript:updateFont('Rockwell');">ROCKWELL</a>
+                                        <a class="yearbook" href="javascript:updateFont('Yearbook');">YEARBOOK</a>
+                                        <a class="machine" href="javascript:updateFont('Machine');">MACHINE</a>
+                                        <a class="princetown" href="javascript:updateFont('Princetown');">PRINCETOWN <span class="muli" style="font-size:10px; color:#D93C22;">($)</span></a> 
+                                    </div>
+                                    <div style="float:left; padding: 12px 12px 4px 12px;">
+                                        <a class="robotocondensed" href="javascript:updateFont('Roboto Condensed');">CONDENSED</a>
+                                        <a class="quantico" href="javascript:updateFont('Quantico');">QUANTICO</a>
+                                        <a class="times" href="javascript:updateFont('Times New Roman');">TIMES NEW ROMAN</a>    
+                                        <a class="impact" href="javascript:updateFont('Impact');">IMPACT</a>
+                                    </div>
+                                    <br style="clear:both;">
+                                </div>
+                            </div>
+                            <input type="checkbox" value="false" name="textoutline" id="textoutline" onclick="settextoutline(this.checked);"> 
+                            <label for="textoutline">Outline Text <span style="font-size:10px; color:#D93C22;">($)</span></label>
+
+                            <h1>Select a Color</h1>
+                            <div id="letteringcolors">
+                                <a href="javascript:updateTextColor('#ffffff');" class="paintbox white selected">White</a>
+                                <a href="javascript:updateTextColor('#b3b3b3');" class="paintbox lightgray">Light Gray</a>
+                                <a href="javascript:updateTextColor('#6d7370');" class="paintbox darkgray">Dark Gray</a>                    
+                                <a href="javascript:updateTextColor('#000000');" class="paintbox black">Black</a>
+                                <a href="javascript:updateTextColor('#fbdd2e');" class="paintbox yellow">Yellow</a>
+                                <a href="javascript:updateTextColor('#ddb63e');" class="paintbox vegas">Vegas Gold A</a>
+                                <a href="javascript:updateTextColor('#9f7d23');" class="paintbox vegasb">Vegas Gold B</a>
+                                <a href="javascript:updateTextColor('#fcba28');" class="paintbox gold">Gold</a>
+                                <a href="javascript:updateTextColor('#e25120');" class="paintbox orange">Orange</a>
+                                <a href="javascript:updateTextColor('#a40000');" class="paintbox red">Red</a>
+                                <a href="javascript:updateTextColor('#632534');" class="paintbox maroon">Maroon</a>
+                                <a href="javascript:updateTextColor('#1e80d0');" class="paintbox lightblue">Light Blue</a>
+                                <a href="javascript:updateTextColor('#0a2473');" class="paintbox royalblue">Royal Blue</a>
+                                <a href="javascript:updateTextColor('#192b48');" class="paintbox navyblue">Navy Blue</a>
+                                <a href="javascript:updateTextColor('#444069');" class="paintbox purple">Purple</a>
+                                <a href="javascript:updateTextColor('#216421');" class="paintbox kellygreen">Kelly Green</a>
+                                <a href="javascript:updateTextColor('#154724');" class="paintbox forestgreen">Forest Green</a>
+                                <br style="clear:both;">
+                            </div>
+                        </div>
+                        <br style="clear:both;">
+                        <div id="textcoverup" style="width:450px; background-color:#FBFBFB; 
+                        opacity:0.9; bottom:65px; left:5px; position:absolute; height: 415px;"></div>
+                        <div class="buttonbar">
+                            <a class="left" href="javascript:changeslide(2);">Circles</a>
+                            
+                            <a class="right" href="javascript:changeslide(4);">Logos</a>
+                        </div>
+                    </div>
+                
+                    <div id="proplogos" class="slide4">
+                        <div class="padding">
+                            <h1 style="margin-top:0;">Select a Location</h1>
+                            <div class="logonote">Click a hot spot on the mat (hover cursor over mat if hidden)</div>
+                            <div class="logonote hidden">To deselect the hot spot, click an empty space on the mat.</div>
+                            <h1>Select a Logo:</h1>
+                            <div id="logomenu">
+                                <div id="logoselect">
+                                    <div id="currentlogo" style="padding:6px; background-color:#888; display:inline-block; margin-right:10px;"><img src="/static/frontend/Dcw/hyvamobile/en_US/images/logos/none.png" alt="current logo"></div><div id="currentlogoname" style="display:inline-block; vertical-align:top;">Current Logo:<br>none</div>
+                                </div>
+                                <div id="logolist" class="hidden">
+                                    <div style="background-color:#444; padding:8px; height:250px; overflow: auto;">
+                                        <div id="logos" style="margin-top:1em;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="javascript:clearLogo();" id="logoclearbutton" class="disabled" style=" margin-right:8px;margin-bottom:8px;">Clear Logo</a>
+                            <a href="javascript:rotateLogo();" id="logorotatebutton" class="disabled" 
+                            style=" margin-right:8px;margin-bottom:8px;">Rotate Logo</a>
+                            <a href="javascript:deselect('logo');" id="logodeselect" class="disabled">Deselect Hotspot</a>
+                            <h1>Select a Color:</h1>
+                            <div id="logocolors">
+                                <a href="javascript:changeLogoColor('#ffffff');" class="paintbox white selected">White</a>
+                                <a href="javascript:changeLogoColor('#b3b3b3');" class="paintbox lightgray">Light Gray</a>
+                                <a href="javascript:changeLogoColor('#6d7370');" class="paintbox darkgray">Dark Gray</a>                    
+                                <a href="javascript:changeLogoColor('#000000');" class="paintbox black">Black</a>
+                                <a href="javascript:changeLogoColor('#fbdd2e');" class="paintbox yellow">Yellow</a>
+                                <a href="javascript:changeLogoColor('#ddb63e');" class="paintbox vegas">Vegas Gold A</a>
+                                <a href="javascript:changeLogoColor('#9f7d23');" class="paintbox vegasb">Vegas Gold B</a>
+                                <a href="javascript:changeLogoColor('#fcba28');" class="paintbox gold">Gold</a>
+                                <a href="javascript:changeLogoColor('#e25120');" class="paintbox orange">Orange</a>
+                                <a href="javascript:changeLogoColor('#a40000');" class="paintbox red">Red</a>
+                                <a href="javascript:changeLogoColor('#632534');" class="paintbox maroon">Maroon</a>
+                                <a href="javascript:changeLogoColor('#1e80d0');" class="paintbox lightblue">Light Blue</a>
+                                <a href="javascript:changeLogoColor('#0a2473');" class="paintbox royalblue">Royal Blue</a>
+                                <a href="javascript:changeLogoColor('#192b48');" class="paintbox navyblue">Navy Blue</a>
+                                <a href="javascript:changeLogoColor('#444069');" class="paintbox purple">Purple</a>
+                                <a href="javascript:changeLogoColor('#216421');" class="paintbox kellygreen">Kelly Green</a>
+                                <a href="javascript:changeLogoColor('#154724');" class="paintbox forestgreen">Forest Green</a>
+                            </div>    
+                        </div>
+                        <br style="clear:both;">
+                        <div id="logocoverup" style="width:450px; background-color:#FBFBFB; 
+                        opacity:0.9; bottom:140px; left:5px; position:absolute; height: 415px;"></div>
+                        <div class="buttonbar">
+                            <a class="left" href="javascript:changeslide(3);">Lettering</a>
+                            
+                            <a class="right" href="javascript:changeslide(5);">Finish</a>
+                        </div>
+                    </div>
+            
+                    <div id="propfinish" class="slide5">
+                        <div id="finalform" class="padding">
+                            <h1 style="margin-top:0;">Almost Finished</h1>
+                            <div style="margin-bottom:1em;">
+                                Just complete the form below and we'll get back to you shortly with a customized quote for your mat design.
+                            </div>
+                            <form method="post" id="aspnetForm" 
+                            action="<?= /* @noEscape */ $block->getUrl('DesignerWrestlingMat/index/quote')?>">
+                                <?= /* @noEscape */ $block->getBlockHtml('formkey')?>
+                                <div id="popup">
+                                    <div id="popup-shadow" onclick="popup.close()"></div>
+                                    <div id="popup-box" role="dialog" aria-modal="true" aria-label="Content Popup">
+                                        <button aria-label="close popup" type="button" onclick="popup.close()" class="white aria-focusable">
+                                            close
+                                            <img src="https://assets.incstores.com/icons/close-white.svg" alt="Popup close button" />
+                                        </button>
+                                        <div id="popup-content"></div>
+                                        <div class="content-end" style="width: 0; height: 0;" tabindex="0" aria-label="end of popup content"></div>
+                                    </div>
+                                </div>
+
+                                <p>
+                                    <label for="name"><span style="color: #D43124;"> *</span> Name:</label>
+                                    <input class="required text" type="text" id="name" name="name" value="">
+                                </p>
+                                <p><label for="school">School:</label><input type="text" name="school" id="school" value=""></p>
+                                <p>
+                                    <label for="zip"><span style="color: #D43124;"> *</span> Zip Code:</label>
+                                    <input type="text" class="required zip" style="width:100px;" id="zip" name="zip" value="">
+                                </p>
+                            
+                                <p><label for="phone">Phone #:</label><input type="text" name="phone" id="phone" value=""></p>
+                                <p>
+                                    <label for="email"><span style="color: #D43124;"> *</span> Email:</label>
+                                    <input type="text" name="email" id="email" value="" class="required email">
+                                </p>
+                                <p>
+                                    <label for="howfound">How did you hear about us?</label>
+                                    <select name="howfound" id="howfound"> 
+                                        <option value="not selected" selected="selected">Please select...</option> 
+                                        <option value="Google">Google</option> 
+                                        <option value="Other Search Engine">Other Search Engine</option> 
+                                        <option value="Flo Wrestling">Flo Wrestling</option>
+                                        <option value="Trackwrestling">Trackwrestling</option>
+                                        <option value="Wrestling USA Magazine Ad">Wrestling USA Magazine Ad</option>
+                                        <option value="WIN Magazine Ad">WIN Magazine Ad</option>
+                                        <option value="Other Magazine Ad">Other Magazine Ad</option>
+                                        <option value="Flyer">Flyer</option> 
+                                        <option value="Word of Mouth">Word of Mouth</option> 
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </p>
+                                <!-- Make sure contact -->
+                                <div style="padding-top: 1em;">
+                                    <label for="comments" style="vertical-align:top;">Comments:</label>
+                                    <textarea name="comments" id="comments" style="width: 280px; height: 100px;" rows="3" cols="50"></textarea>
+                                    <div style="clear:both;"></div>
+                                </div>
+                                <div id="loading" style="z-index: 4; display:none;">Processing... Please wait.</div>
+                                <br style="clear:both;">
+                                <div id="finalcoverup" class="hidden" style="width:440px; background-color:#FBFBFB; 
+                                opacity:0.9; bottom:0px; left:5px; position:absolute; height: 49px; z-index:120;"></div>
+                                <div class="buttonbar">
+                                    <a class="left" href="javascript:changeslide(4);">Continue Editing</a>
+                                    
+                                    <input type="hidden" name="raw_designer_data" id="designerData">
+                                    <a id="submitdesign" class="right green" 
+                                    href="javascript:__doPostBack('ctl00$ctl00$MainContent$MainContent$submitdesign','')">Submit Design</a>
+                                </div>
+                            </form>
+                        </div><!-- end of finalform div -->
+                        <div id="finalresult" class="hidden padding">
+                    
+                        </div><!-- end of finalresult div -->
+                        <div id="finishflash" style="width:450px; display:none; background-color:#ffffff; 
+                        bottom:0px; left:2px; position:absolute; height: 550px;"></div>
+                    </div><!-- end of propfinish div -->
+                </div>
+            </div><!-- end of properties div -->    
+        </div><!-- end of rightcolumn div -->    
+    </div>
+
+    <?= /* @noEscape */ $block->getLayout()->createBlock(\Dcw\CircularDesignerTool\Block\Index::class)
+    ->setTemplate("Dcw_CircularDesignerTool::circulardesignertool_js.phtml")->toHtml();
+    ?>

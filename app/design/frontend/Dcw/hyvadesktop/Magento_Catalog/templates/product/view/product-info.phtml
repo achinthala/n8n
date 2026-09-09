@@ -1,0 +1,370 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductAttributes;
+use Hyva\Theme\ViewModel\ProductCompare;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Wishlist;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var ProductPage $productViewModel */
+/** @var \Hyva\Theme\ViewModel\Modal $modalViewModel */
+/** @var \Hyva\Theme\ViewModel\Slider $sliderViewModel */
+
+$productViewModel = $viewModels->require(ProductPage::class);
+/** @var ProductAttributes $attributesViewModel */
+$attributesViewModel = $viewModels->require(ProductAttributes::class);
+/** @var Product $product */
+$product = $productViewModel->getProduct();
+$final_price = $product->getPriceInfo()->getPrice('final_price')->getValue();
+$msrp = $product->getPriceInfo()->getPrice('regular_price')->getValue();
+$save_price = $msrp - $final_price;
+$percentage_discount = 0;
+if($save_price>0) {
+    $percentage_discount = round((float)number_format(($save_price*100)/$msrp, 2, ".", ""));
+}
+$getLayout = $block->getLayout();
+$sampleblock= $getLayout->createBlock(\Dcw\SampleProduct\Block\SampleData::class);
+$outputHelper = $block->getData('outputHelper');
+$attributesBlock = $getLayout->createBlock(\Magento\Catalog\Block\Product\View\Attributes::class);
+$attributes = $attributesBlock->getAdditionalData();
+$designerToolBlock= $getLayout->createBlock(\Dcw\DesignerTool\Block\Index::class);
+$_imagehelper = $designerToolBlock->imageHelper();
+$flooringCalculationBlock = $getLayout->createBlock(\Dcw\FlooringCalculation\Block\Index::class);
+$flooringCalculationHelper = $flooringCalculationBlock->flooringCalculationHelper();
+$productImageUrl = $_imagehelper->init($product, 'small_image', ['type'=>'image'])
+->keepAspectRatio(true)->keepFrame(true)->resize('202', '133')->getUrl();
+$brandLogoBlock= $getLayout->createBlock(\Dcw\BrandLogo\Block\Index::class);
+$quickShipBlock= $getLayout->createBlock(\Dcw\FlooringCalculation\Block\Quickship::class);
+$calculatorChildArray = $flooringCalculationBlock->getCalculaterType($product);
+$uniqueArray = array_unique($calculatorChildArray);
+
+//If combination product types have both square feet and case options, we need to load the case option first, then the square feet
+$sqftIndex = array_search('sqft', $uniqueArray);
+$caseIndex = array_search('case', $uniqueArray);
+
+if ($sqftIndex !== false && $caseIndex !== false && $sqftIndex < $caseIndex) {
+    // Swap the values
+    $temp = $uniqueArray[$sqftIndex];
+    $uniqueArray[$sqftIndex] = $uniqueArray[$caseIndex];
+    $uniqueArray[$caseIndex] = $temp;
+}
+//End
+
+$moveToFront = ['none', 'pre_cut_roll']; // values you want to move to the front in order
+
+foreach (array_reverse($moveToFront) as $value) {
+    $index = array_search($value, $uniqueArray);
+    if ($index !== false) {
+        unset($uniqueArray[$index]);
+        array_unshift($uniqueArray, $value);
+    }
+}
+/** START - Ram - 10th Aug 2024 */
+$flooringCalculationBlock = $getLayout->createBlock(\Dcw\FlooringCalculation\Block\Index::class);
+$affirm_mode = $flooringCalculationBlock->getConfigValue('payment/affirm_gateway/mode');
+$affirmReqUrl = 'https://www.affirm.com/api/promos/v2';
+$affirmReqKey = $flooringCalculationBlock->getConfigValue('affirm/affirm_aslowas/promo_id_value_default');
+$affirm_locale = $flooringCalculationBlock->getConfigValue('general/locale/code');
+$affirm_logo_color = $flooringCalculationBlock->getConfigValue('affirm/affirm_aslowas/logo');
+
+echo '<input type="hidden" id="affirm_mode" name="affirm_mode" value="'.$affirm_mode.'"  />';
+echo '<input type="hidden" id="affirmReqUrl" name="affirmReqUrl" value="'.$affirmReqUrl.'"  />';
+echo '<input type="hidden" id="affirmReqKey" name="affirmReqKey" value="'.$affirmReqKey.'" />';
+echo '<input type="hidden" id="affirm_locale" name="affirm_locale" value="'.$affirm_locale.'" />';
+echo '<input type="hidden" id="affirm_logo_color" name="affirm_logo_color" value="'.$affirm_logo_color.'" />';
+
+/** END - Ram - 10th Aug 2024 */
+?>
+<div class="order-2 w-full md:w-7/12 lg:w-1/2 pl-6 product-main-content relative" x-data="flooringCalcDetails()" x-init="updateTotalQtySqftPriceOnPageLoad()">
+    <div id="previewin"><div id="preview"></div></div>
+    <?php $brandLogo = $brandLogoBlock->getBrandLogo((int)$product->getId()); ?>
+    <?php if ($brandLogo) {?>
+       <div class="brand_logo_container"><?= /* @noEscape */ $brandLogo ?></div>
+
+    <?php }?>
+    <h1 class="hidden md:block text-size32 font-medium text-darkblack mb-1">
+        <strong class="text-[28px] font-medium text-darkblack"><?= $escaper->escapeHtml($product->getName()) ?></strong>
+    </h1>
+
+    <?php if (!$product->getProductDiscontinued()) { // ====== Product Discontinued  START ===========?>
+
+    <div class="my-0 mb-2 flex reviews flex-wrap">
+        <?= $block->getChildHtml('product.info.review') ?>
+        <?= $block->getChildHtml('bazaarvoice.reviews.summary.custom') ?>
+        <?= $block->getChildHtml('dcw.faq.product.questions.anchor') ?>
+    </div>
+    <div class="flex flex-col sm:flex-row justify-between">
+        <?php //echo $block->getChildHtml("product.info.stockstatus") ?>
+        <?= $block->getChildHtml("alert.urls") ?>
+    </div>
+    <?php /*<div id="product-details">
+        <?php foreach ($block->getAttributes() as $attributeConfig) {
+            $attribute = $attributesViewModel->getAttributeFromLayoutConfig($attributeConfig); ?>
+            <?php if ($value = $attribute['value'] ?? null) { ?>
+                <div class="flex border-t border-gray-300 py-2 last:mb-6 last:border-b
+                <?= $attribute['value'] ?: "" ?>">
+                    <span class="w-1/2 text-left text-gray-700 product-detail-label">
+                        <?= $escaper->escapeHtml($attribute['label']) ?>
+                    </span>
+                    <span class="w-1/2 ml-2 text-left text-gray-900 product-detail-value">
+                        <?= $escaper->escapeHtml($value) ?>
+                    </span>
+                </div>
+            <?php } ?>
+        <?php } ?>
+    </div>*/?>
+    <div class="price-details" <?= ($product->getTypeId()=='configurable')?
+    'x-data="initConfigurableSwatchOptions_'.(int) $product->getId().'()':''?>">
+        <?php
+        foreach($uniqueArray as $unique){
+            if($unique == 'sqft' && $product->getData('incstores_pim_has_corner_border_center') == 0){ ?>
+                <div class="sqft" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/price_tile.phtml')->toHtml(); ?>
+                </div>
+            <?php } else if($unique == 'sqft' && $product->getData('incstores_pim_has_corner_border_center') == 1){ ?>
+                <div class="cbc" style="display:none">
+                    <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                                ->setTemplate('Dcw_FlooringCalculation::product/view/price_cbc.phtml')->toHtml(); ?>
+                </div>
+           <?php } else if($unique == 'case'){ ?>
+            <div class="case" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/price_case.phtml')->toHtml(); ?>
+             </div>
+           <?php } else if($unique == 'roll'){ ?>
+            <div class="roll" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/price_linearfoot.phtml')->toHtml(); ?>
+             </div>
+           <?php } else if($unique == 'pre_cut_roll'){ ?>
+            <div class="pre_cut_roll" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/pre_cut_roll_price.phtml')->toHtml(); ?>
+             </div>
+           <?php } else if($unique == 'none'){ ?>
+            <div class="none" style="display:none">
+             <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/price.phtml')->toHtml(); ?>
+
+             </div>
+           <?php }
+           }
+        ?>
+    </div>
+
+    <?php if ($tierPriceBlock = $block->getChildHtml("product.price.tier")): ?>
+        <div class="my-2 tier-price-container border border-[#296497]">
+            <h2 class="pt-3 pb-[7px] pl-[9px] bg-[#0F3051] text-sm uppercase text-white "><span class="text-lg">Inc</span>redible pro savings</h2>
+            <?= /** @noEscape */ $tierPriceBlock ?>
+        </div>
+    <?php endif; ?>
+
+    <?php /*if ($shortDescription = $productViewModel->getShortDescription(true,false)) { ?>
+        <div class="mb-4 leading-relaxed product-description prose">
+        <?= $shortDescription ?>
+        </div>
+    <?php }*/ ?>
+    <div class="mb-4 leading-relaxed product-description prose pt-4" x-data="PdpFeatureData()" x-init="initPdpFeatureFunc()">
+        <ul class="pdp_feature_container" :class="{ 'pdp_feature_crossed': is_open == true}">
+            <?php
+            $pdp_feature_count = 0;
+            if (!empty($product->getIncstoresPimFeatureBullet1())) {
+                $pdp_feature_count++;
+                ?>
+                <li><?= /* @noEscape */ $product->getIncstoresPimFeatureBullet1();?></li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeatureBullet2())) {
+                $pdp_feature_count++;
+                ?>
+                <li><?= /* @noEscape */ $product->getIncstoresPimFeatureBullet2();?></li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeatureBullet3())) {
+                $pdp_feature_count++;
+                ?>
+                <li><?= /* @noEscape */ $product->getIncstoresPimFeatureBullet3();?></li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeatureBullet4())) {
+                $pdp_feature_count++;
+                ?>
+                <li><?= /* @noEscape */ $product->getIncstoresPimFeatureBullet4();?></li>
+            <?php }?>
+            <?php if (!empty($product->getIncstoresPimFeatureBullet5())) {
+                $pdp_feature_count++;
+                ?>
+                <li><?= /* @noEscape */ $product->getIncstoresPimFeatureBullet5();?></li>
+            <?php }?>
+            </ul>
+        <?php
+        if ($pdp_feature_count > 3) {?>
+        <a class="underline text-center text-size14 font-medium text-black w-full"
+        x-on:click="is_open = 1" x-show="is_open == 0">View All</a>
+        <?php }?>
+    </div>
+    <script>
+    function PdpFeatureData() {
+        return {
+            pdp_feature_count: 0,
+            is_open: 0,
+            initPdpFeatureFunc: function () {
+                this.pdp_feature_count = parseInt(<?= /* @noEscape */ $pdp_feature_count;?>);
+
+            }
+        }
+    }
+    </script>
+
+        <?php
+    if ($sampleblock->getsampleproductsku($product->getId())) {?>
+        <div class="order-free-sample-container mb-8" x-cloak
+        x-data="{showModal: false, htmlContent: '',pid: <?= /* @noEscape */ $product->getId()?>}">
+            <button class="order-free-sample-link text-size16 font-semibold text-custom-blue underline relative"
+            type="button" x-on:click="showModal = true,fetchHtmlContent(pid)">
+                <?= $escaper->escapeHtml(__('Order Free Sample')) ?>
+            </button>
+            <div class="modal order-free-sample-popup z-50" x-show="showModal">
+                    <div class="modal-overlay" x-on:click="showModal = false"></div>
+                    <button class="closemodal" type="button" x-on:click="showModal = false">Close X</button>
+                    <div class="modal-content">
+                        <div x-html="htmlContent" class="htmlcontent<?= /* @noEscape */ $product->getId()?>">
+                        </div>
+                    </div>
+            </div>
+
+         </div>
+        <?php
+    }
+    ?>
+    <?= $block->getChildHtml('dcw.ship.region.panel') ?>
+    <?= $block->getChildHtml('product.info.form') ?>
+    <input type="hidden" name="selected_option_child_id" value="" />
+    <div class="square_footage">
+        <div class="square_footage_in">
+            <?php if ($product->isSaleable()): ?>
+                <?php
+        foreach($uniqueArray as $unique){
+            if($unique == 'sqft' && $product->getData('incstores_pim_has_corner_border_center') == 0){ ?>
+                <div class="sqft" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/quantity_tile.phtml')->toHtml(); ?>
+                </div>
+            <?php } else if($unique == 'sqft' && $product->getData('incstores_pim_has_corner_border_center') == 1){ ?>
+                
+                <div class="cbc" style="display:none">
+                    <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                                ->setTemplate('Dcw_FlooringCalculation::product/view/quantity_cbc.phtml')->toHtml(); ?>
+                </div>
+            <?php } else if($unique == 'case'){ ?>
+                <div class="case" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/quantity_case.phtml')->toHtml(); ?>
+                </div>
+            <?php } else if($unique == 'roll'){ ?>
+            <div class="roll" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/quantity_linearfoot.phtml')->toHtml(); ?>
+             </div>
+           <?php } else if($unique == 'pre_cut_roll'){ ?>
+            <div class="pre_cut_roll" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/quantity_pre_cut_roll.phtml')->toHtml(); ?>
+             </div>
+           <?php } else if($unique == 'none'){ ?>
+            <div class="none" style="display:none">
+                <?php echo $getLayout->createBlock(Magento\Catalog\Block\Product\View::class)
+                            ->setTemplate('Dcw_FlooringCalculation::product/view/quantity.phtml')->toHtml(); ?>
+             </div>
+           <?php }
+           } ?>
+                <?= $block->getChildHtml("product.info.addtocart") ?>
+            <?php endif; ?>
+        </div>
+
+    </div>
+    <?php if ($product->isSaleable()): ?>
+        <div class="flex mt-4 justify-end hidden">
+            <?= $block->getChildHtml('addtocart.shortcut.buttons') ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="flex mt-4 justify-end hidden">
+        <?= $block->getChildHtml('product.info.addtowishlist'); ?>
+        <?= $block->getChildHtml('product.info.addtocompare'); ?>
+        <?= $block->getChildHtml('product.info.emailtofriend'); ?>
+        <?= $block->getChildHtml('product.info.additional.actions'); ?>
+    </div>
+
+    <?= $block->getChildHtml("product.info.additional") ?>
+
+    <?php
+    } else {
+    ?>
+        <div class="alert-url inline-flex border text-[#296497] text-sm font-medium mt-4 p-2.5 rounded-[3px] border-solid border-[#296497]">This product has been discontinued.</div>
+    <?php
+    }  // ====== Product Discontinued  END ===========
+    ?>
+
+    <div class="stickeyheader-show"></div>
+</div>
+
+<?php
+$related_products = $product->getRelatedProductCollection()->addAttributeToSelect('*')->addAttributeToFilter('status', ['eq' => 1])->addAttributeToFilter('visibility', ['neq' => 1])->setPositionOrder();
+if (count($related_products) > 0) {
+    $modalViewModel = $viewModels->require(\Hyva\Theme\ViewModel\Modal::class);
+    $sliderViewModel = $viewModels->require(\Hyva\Theme\ViewModel\Slider::class);
+    $itemTemplate = 'Magento_Catalog::product/list/item-related.phtml';
+    $containerTemplate = 'Magento_Catalog::product/list/related-slider.phtml';
+    $sliderHtml = $sliderViewModel->getSliderForItems($itemTemplate, $related_products, $containerTemplate)->toHtml();
+	$proceedToCheckoutHtml='<a class="related-close-btn btn btn-primary" href="'.$block->getUrl('checkout/cart').'">Close & Proceed to Cart</a>';
+    ?>
+    <div class="related-product-dialog-wrapper" x-data="hyva.modal()">
+    <?= $modalViewModel->createModal()->withDialogRefName('related-product-slider-dialog')->withContent(<<<END_OF_CONTENT
+    <div class="flex justify-end related-close-btn-in">
+        {$proceedToCheckoutHtml}
+    </div>
+    <button @click="hide" type="button" class="btn close-x">
+    X
+    </button>
+    <div class="">
+    {$sliderHtml}
+    </div>
+    END_OF_CONTENT
+    )
+    ->withAriaLabelledby('the-label')
+    ->addDialogClass('border', 'border-10', 'border-blue-800')
+    ?>
+    </div>
+<?php }?>
+
+<script>
+    var body1 = document.querySelector('body');
+    var divIconContainer = document.querySelector('div.pdp_icon_container');
+    var divCustomDesign = document.querySelector('div.pdp_custom_design');
+    if (divIconContainer && divCustomDesign) {
+      body1.classList.add('pdpTabs');
+    }
+    function triggerMiniCart() {
+        window.location.href = '<?= $block->getUrl('checkout/cart') ?>';
+    }
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('related-close-btn')) {
+            setTimeout(function() {
+                triggerMiniCart();
+            }, 0);
+        }
+    });
+</script>

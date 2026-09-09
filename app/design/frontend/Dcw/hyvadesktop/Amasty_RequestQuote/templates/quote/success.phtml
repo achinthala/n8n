@@ -1,0 +1,46 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2022 Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+?>
+<?php
+/** @var $block \Amasty\RequestQuote\Block\Quote\Success */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var baseUrl = window.BASE_URL || '';
+        var clearUrl = baseUrl + 'dcwrequestquote/quote/clearSessionOnSuccess?t=' + Date.now();
+        console.log('[ClearSessionOnSuccess] Fetching clear session:', clearUrl);
+        fetch(clearUrl)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.success === false) {
+                    console.error('[ClearSessionOnSuccess] Clear failed:', data.error);
+                    return;
+                }
+                console.log('[ClearSessionOnSuccess] active_cart_icon:', data.active_cart_icon, 'quotecart:', data.quotecart ? 'present' : 'empty');
+                window.dispatchEvent(new CustomEvent('private-content-loaded', { detail: { data: data } }));
+            })
+            .catch(function(err) {
+                console.error('[ClearSessionOnSuccess] Error:', err);
+            });
+    });
+</script>
+<div class="checkout-success">
+    <?php if ($block->getQuoteId()):?>
+	<h3><?= /* @noEscape */ __('Your cart has been saved to your account!') ?></h3>
+        <p class="quote-interest-message"><?= /* @noEscape */ __('Your saved cart is') ?></p>
+        <?php if ($block->getCanViewQuote()): ?>
+            <p><a href="<?=$escaper->escapeHtml($block->getViewQuoteUrl())?>" class="order-number inline-flex shrink-0 ml-auto xl:mt-0 btn"><strong><?=$escaper->escapeHtml($block->getQuoteId())?></strong></a></p>
+        <?php else: ?>
+            <p><?= /* @noEscape */ __('<span>%1</span>.', $escaper->escapeHtml($block->getQuoteId())) ?></p>
+        <?php endif;?>
+        <?php echo $this->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('checkout-later-success')->toHtml(); ?>
+    <?php endif;?>
+
+    <?= $block->getAdditionalInfoHtml() ?>
+
+</div>

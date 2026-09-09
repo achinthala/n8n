@@ -1,0 +1,114 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Company\Block\Company\CompanyProfile;
+use Magento\Framework\Escaper;
+
+/** @var CompanyProfile $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+/** @var HeroiconsOutline $heroicons */
+
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+$company = $block->getCustomerCompany();
+?>
+
+<?php if ($block->isViewAccountAllowed()): ?>
+    <div class="flex flex-wrap justify-between -m-4">
+        <div class="w-full p-4">
+            <div class="flex flex-col h-full p-8 card">
+                <h2 class="mb-3 text-lg font-medium text-gray-900 title-font">
+                    <?= $escaper->escapeHtml(__('Account Information')) ?>
+                </h2>
+                <?php $companyName = $escaper->escapeHtml($company->getCompanyName()) ?>
+                <?php $companyName .= (!empty($company->getLegalName())) ?
+                    ' (' . $escaper->escapeHtml($company->getLegalName()) . ')' : ''; ?>
+
+                <p><?= /* @noEscape */
+                    $companyName ?></p>
+
+                <?php if (!empty($company->getCompanyEmail())): ?>
+                    <p><?= $escaper->escapeHtml($company->getCompanyEmail()) ?></p>
+                <?php endif; ?>
+
+                <?php if (!empty($company->getVatTaxId())): ?>
+                    <p>
+                        <?= $escaper->escapeHtml(__('VAT/TAX ID: ')) . $escaper->escapeHtml($company->getVatTaxId()) ?>
+                    </p>
+                <?php endif; ?>
+
+                <?php if (!empty($company->getResellerId())): ?>
+                    <p>
+                        <?= $escaper->escapeHtml(__('Re-seller ID: ')) . $escaper->escapeHtml($company->getResellerId()) ?>
+                    </p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+<?php if ($block->isViewAddressAllowed()): ?>
+    <div class="flex flex-wrap justify-between -m-4">
+        <div class="w-full p-4">
+            <div class="flex flex-col h-full p-8 card">
+                <h2 class="mb-3 text-lg font-medium text-gray-900 title-font">
+                    <?= $escaper->escapeHtml(__('Legal Address')) ?>
+                </h2>
+                <address>
+                    <?php if (!$block->isCompanyAddressDisplayed($company)): ?>
+                        <p>
+                            <?= $escaper->escapeHtml(__('You have no other address entries in your address book.')) ?>
+                        </p>
+                    <?php else: ?>
+                        <p>
+                            <?php if (!empty($company->getStreet())): ?>
+                                <?= $escaper->escapeHtml($block->getCompanyStreetLabel($company)) ?><br/>
+                            <?php endif; ?>
+                            <?= $escaper->escapeHtml($block->getCompanyAddressString($company)) ?><br/>
+                            <?= $escaper->escapeHtml($block->getCompanyCountryLabel($company)) ?><br/>
+                            <?= $escaper->escapeHtml(__('T: %1', $company->getTelephone())) ?>
+                        </p>
+                    <?php endif; ?>
+                </address>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+<?php if ($block->isViewContactsAllowed()): ?>
+    <div class="mb-6 mt-6 text-2xl block-title"><?= $escaper->escapeHtml(__('Contacts')) ?></div>
+    <div class="flex flex-wrap justify-between -m-4">
+        <div class="w-full p-4 lg:w-1/2">
+            <div class="flex flex-col h-full p-8 card">
+                <h2 class="mb-3 text-lg font-medium text-gray-900 title-font">
+                    <?= $escaper->escapeHtml(__('Company Administrator')) ?>
+                </h2>
+                <p><?= $escaper->escapeHtml($block->getCompanyAdminName($company)) ?></p>
+
+                <?php $companyAdminJobTitle = $block->getCompanyAdminJobTitle($company) ?>
+                <?php if (!empty($companyAdminJobTitle)): ?>
+                    <p><?= $escaper->escapeHtml($companyAdminJobTitle) ?></p>
+                <?php endif; ?>
+
+                <p><?= $escaper->escapeHtml($block->getCompanyAdminEmail($company)) ?></p>
+            </div>
+        </div>
+        <div class="w-full p-4 lg:w-1/2">
+            <div class="flex flex-col h-full p-8 card">
+                <h2 class="mb-3 text-lg font-medium text-gray-900 title-font">
+                    <?= $escaper->escapeHtml(__('Sales Representative')) ?>
+                </h2>
+                <p><?= $escaper->escapeHtml($block->getSalesRepresentativeName($company)) ?></p>
+                <p><?= $escaper->escapeHtml($block->getSalesRepresentativeEmail($company)) ?></p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>

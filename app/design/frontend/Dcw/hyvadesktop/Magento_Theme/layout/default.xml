@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<page layout="1column" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="header.panel.wrapper">
+            <block class="Magento\Framework\View\Element\Template" name="header_notifications"
+                   template="Magento_Theme::html/header_notifications.phtml"/>
+        </referenceContainer>
+        <!--        <referenceBlock name="head.additional">
+                    <block class="Magento\Framework\View\Element\Template" name="preload" template="Magento_Theme::preload.phtml"/>
+                </referenceBlock>-->
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template" name="theme_custom_js"
+                   template="Magento_Theme::js/custom_js.phtml"/>
+        </referenceContainer>
+        <referenceContainer name="head.additional">
+            <block class="Magento\Cms\Block\Block" name="userway_script">
+                <action method="setBlockId">
+                    <argument name="block_id" xsi:type="string">userway_script</argument>
+                </action>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

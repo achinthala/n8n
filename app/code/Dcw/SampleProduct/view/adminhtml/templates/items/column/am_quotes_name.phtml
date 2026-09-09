@@ -1,0 +1,63 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/**
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Amasty\RequestQuote\Block\Adminhtml\Items\Column\Name $block
+ */
+
+// phpcs:ignoreFile
+?>
+<?php if ($item = $block->getItem()): 
+    $sampleProductBlock = $block->getLayout()->createBlock(\Dcw\SampleProduct\Block\SampleData::class);
+    ?>
+    <div id="order_item_<?= /* @noEscape */ $item->getId() ?>_title"
+         class="product-title">
+        <?= $escaper->escapeHtml($sampleProductBlock->getCartItemName($item)) ?>
+    </div>
+
+    <?php
+        $skus = $this->helper(\Magento\Catalog\Helper\Data::class)->splitSku($escaper->escapeHtml($block->getSku()));
+    ?>
+    <div class="product-sku-block">
+        <span><?= /* @noEscape */ __('SKU') ?>:</span>
+        <?= /* @noEscape */ implode('<br />', $skus) ?>
+    </div>
+
+    <?php if ($block->getOrderOptions()): ?>
+        <dl class="item-options">
+            <?php foreach ($block->getOrderOptions() as $option): 
+                if ($option['label']=="Configurable Product Id" || 
+                $option['label']== "Configurable Product Url" || 
+                $option['label']=="Configurable Product Image" || 
+                $option['label'] == "Product Name") {
+                    continue;
+                }
+            ?>
+                <dt><?= $escaper->escapeHtml($option['label']) ?>:</dt>
+                <dd>
+                    <?php if (isset($option['custom_view']) && $option['custom_view']): ?>
+                        <?= /* @noEscape */ $block->getCustomizedOptionValue($option) ?>
+                    <?php else: ?>
+                        <?php $option = $block->getFormattedOption($option['value']); ?>
+                        <?= /* @noEscape */ $option['value'] ?><?php if (isset($option['remainder']) && $option['remainder']): ?><span id="<?= /* @noEscape */ $_dots = 'dots' . uniqid() ?>"> ...</span><span id="<?= /* @noEscape */ $_id = 'id' . uniqid() ?>"><?= /* @noEscape */ $option['remainder'] ?></span>
+                            <script>
+                                require(['prototype'], function() {
+                                    $('<?= /* @noEscape */ $_id ?>').hide();
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseover', function(){$('<?= /* @noEscape */ $_id ?>').show();});
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseover', function(){$('<?= /* @noEscape */ $_dots ?>').hide();});
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseout',  function(){$('<?= /* @noEscape */ $_id ?>').hide();});
+                                    $('<?= /* @noEscape */ $_id ?>').up().observe('mouseout',  function(){$('<?= /* @noEscape */ $_dots ?>').show();});
+                                });
+                            </script>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </dd>
+            <?php endforeach; ?>
+        </dl>
+    <?php endif; ?>
+    <?= $escaper->escapeHtml($item->getDescription()) ?>
+<?php endif; ?>

@@ -1,0 +1,75 @@
+<?php
+/**
+ * Update Quote Lock Activity Controller (Frontend)
+ */
+
+namespace Dcw\RequestQuote\Controller\Quote\Lock;
+
+use Magento\Framework\App\Action\Action;
+use Magento\Framework\App\Action\Context;
+use Magento\Framework\Controller\Result\JsonFactory;
+use Dcw\RequestQuote\Service\QuoteLockService;
+use Magento\Framework\Session\SessionManagerInterface;
+
+class UpdateActivity extends Action
+{
+    /**
+     * @var JsonFactory
+     */
+    protected $resultJsonFactory;
+
+    /**
+     * @var QuoteLockService
+     */
+    protected $quoteLockService;
+
+    /**
+     * @var SessionManagerInterface
+     */
+    protected $sessionManager;
+
+    /**
+     * @param Context $context
+     * @param JsonFactory $resultJsonFactory
+     * @param QuoteLockService $quoteLockService
+     * @param SessionManagerInterface $sessionManager
+     */
+    public function __construct(
+        Context $context,
+        JsonFactory $resultJsonFactory,
+        QuoteLockService $quoteLockService,
+        SessionManagerInterface $sessionManager
+    ) {
+        parent::__construct($context);
+        $this->resultJsonFactory = $resultJsonFactory;
+        $this->quoteLockService = $quoteLockService;
+        $this->sessionManager = $sessionManager;
+    }
+
+    /**
+     * Execute action
+     *
+     * @return \Magento\Framework\Controller\Result\Json
+     */
+    public function execute()
+    {
+        $result = $this->resultJsonFactory->create();
+        $quoteId = (int) $this->getRequest()->getParam('quote_id');
+        
+        if (!$quoteId) {
+            $result->setData(['success' => false, 'message' => __('Quote ID is required.')]);
+            return $result;
+        }
+
+        $sessionId = $this->sessionManager->getSessionId();
+        $updated = $this->quoteLockService->updateActivity($quoteId, $sessionId);
+
+        $result->setData([
+            'success' => $updated,
+            'message' => $updated ? __('Activity updated.') : __('Lock not found.')
+        ]);
+
+        return $result;
+    }
+}
+

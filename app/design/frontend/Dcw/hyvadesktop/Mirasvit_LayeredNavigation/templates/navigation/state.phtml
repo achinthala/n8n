@@ -1,0 +1,99 @@
+<?php
+/**
+ * @var $block \Mirasvit\LayeredNavigation\Block\Navigation\State
+ */
+
+$filters = $block->getActiveFilters();
+$filter_counts = count($filters);
+?>
+<?php if (!empty($filters)): ?>
+    <div class="card filter-current px-0" data-mst-nav-part="state" x-data="initLabelRenderer()">
+        <strong class="title text-md md:text-lg font-semibold mb-4 block" role="heading" data-role="title" aria-level="2" data-count="<?= count($filters) ?>">
+            <?= __('Now Shopping by') ?>
+        </strong>
+		<?php $clearall = str_replace('product_list_order=revenue_ranking', 'product_list_order=position', $block->getClearUrl());
+		$clearall = str_replace('product_list_dir=desc', 'product_list_dir=asc', $clearall);
+		?>
+
+        <ol class="items">
+            <?php if ($block->isHorizontalFilter()): ?>
+                <li class="item block-actions filter-actions font-semibold" data-element="filter" @click="handleClick">
+                    <a href="<?= $clearall ?>" rel="nofollow" class="action clear filter-clear"><span><?= __('Clear All') ?></span></a>
+                </li>
+            <?php endif ?>
+
+            <?php foreach ($filters as $filter): ?>
+                <?php
+                $clearLinkUrl = $filter->getClearLinkUrl();
+				$cleanUrl = $filter->getRemoveUrl();
+				if($filter_counts==1){
+					$cleanUrl = str_replace('product_list_order=revenue_ranking', 'product_list_order=position', $filter->getRemoveUrl());
+					$cleanUrl = str_replace('product_list_dir=desc', 'product_list_dir=asc', $cleanUrl);
+				}
+                $filterName   = __($filter->getName());
+                $filterLabel  = __($block->stripTags($filter->getLabel()));
+                ?>
+                <li class="item mst-nav__state-filter" data-element="filter" @click="handleClick">
+                    <span class="filter-label font-semibold"><?= $filterName ?></span>
+                    <span class="filter-value"><?= $filterLabel ?></span>
+
+                    <?php if ($clearLinkUrl): ?>
+                        <a class="action previous" rel="nofollow" href="<?= $filter->getRemoveUrl() ?>" title="<?= __('Previous') ?>">
+                            <span>&#10005;</span>
+                        </a>
+
+                        <a class="action remove" rel="nofollow" title="<?= $block->escapeHtml($filter->getFilter()->getClearLinkText()) ?>" href="<?= $clearLinkUrl ?>">
+                            <span>&#10005;</span>
+                        </a>
+                    <?php else: ?>
+                        <a class="action remove" href="<?= $cleanUrl ?>" rel="nofollow" title="<?= __('Remove %1', $filterLabel) ?>">
+                            <span>&#10005;</span>
+                        </a>
+                    <?php endif ?>
+                </li>
+            <?php endforeach ?>
+
+            <?php if (!$block->isHorizontalFilter()): ?>
+                <li class="item block-actions filter-actions font-semibold" data-element="filter" @click="handleClick">
+                    <a href="<?= $clearall ?>" rel="nofollow" class="action clear filter-clear"><span><?= __('Clear All') ?></span></a>
+                </li>
+            <?php endif ?>
+        </ol>
+    </div>
+
+    <style>
+        .filter-current .mst-nav__state-filter {
+            cursor: pointer;
+            padding-left: 17px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .filter-current .mst-nav__state-filter .filter-label:after {
+            content: ': ';
+        }
+
+        <?php if (!$block->isHorizontalFilter()): ?>
+        .filter-current .mst-nav__state-filter .action.remove {
+            left: -2px;
+            position: absolute;
+            top: -1px;
+        }
+
+        .filter-current .items .item:last-child {
+            padding-top: 1rem;
+        }
+
+        <?php else: ?>
+        .filter-current {
+            margin: .5rem;
+            width: 100%;
+        }
+
+        .filter-current .items {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        <?php endif; ?>
+    </style>
+<?php endif ?>

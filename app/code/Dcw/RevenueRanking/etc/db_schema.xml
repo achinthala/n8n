@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+
+    <table name="custom_product_revenue_ranking" 
+           resource="default" 
+           engine="innodb" 
+           comment="Custom Product Revenue Ranking Table">
+
+        <!-- Auto-increment Primary Key -->
+        <column xsi:type="int" 
+                name="id" 
+                unsigned="true" 
+                nullable="false" 
+                identity="true" 
+                comment="ID"/>
+
+        <!-- Foreign key to catalog_product_entity -->
+        <column xsi:type="int" 
+                name="product_id" 
+                unsigned="true" 
+                nullable="false" 
+                comment="Product ID"/>
+
+        <!-- SKU for product reference -->
+        <column xsi:type="varchar" 
+                name="sku" 
+                nullable="true" 
+                length="255" 
+                comment="Product SKU"/>
+
+        <!-- Revenues -->
+        <column xsi:type="decimal" 
+                name="base_revenue" 
+                scale="4" 
+                precision="20" 
+                unsigned="false" 
+                nullable="false" 
+                default="0.0000" 
+                comment="Base Revenue"/>
+
+        <column xsi:type="decimal" 
+                name="adjusted_revenue" 
+                scale="4" 
+                precision="20" 
+                unsigned="false" 
+                nullable="false" 
+                default="0.0000" 
+                comment="Adjusted Revenue"/>
+
+        <column xsi:type="decimal" 
+                name="manual_adjustment" 
+                scale="4" 
+                precision="20" 
+                unsigned="false" 
+                nullable="true" 
+                comment="Manual Adjustment"/>
+
+        <!-- Timestamps -->
+        <column xsi:type="timestamp" 
+                name="last_updated" 
+                on_update="false" 
+                nullable="false" 
+                default="CURRENT_TIMESTAMP" 
+                comment="Last Updated"/>
+
+        <!-- Primary Key -->
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+
+        <!-- Unique constraint on product_id -->
+        <constraint xsi:type="unique" referenceId="CUSTOM_PRODUCT_REVENUE_RANKING_PRODUCT_ID">
+            <column name="product_id"/>
+        </constraint>
+
+        <!-- Foreign Key -->
+        <constraint xsi:type="foreign" 
+                    referenceId="CUSTOM_PRODUCT_REVENUE_RANKING_PRD_ID_CAT_PRD_ENTT_ENTT_ID" 
+                    table="custom_product_revenue_ranking" 
+                    column="product_id" 
+                    referenceTable="catalog_product_entity" 
+                    referenceColumn="entity_id" 
+                    onDelete="CASCADE"/>
+
+        <!-- Index on adjusted_revenue -->
+        <index referenceId="CUSTOM_PRD_REVENUE_RANKING_ADJUSTED_REVENUE" indexType="btree">
+            <column name="adjusted_revenue"/>
+        </index>
+
+    </table>
+</schema>

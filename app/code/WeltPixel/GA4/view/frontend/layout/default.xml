@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="head.additional">
+            <block ifconfig="weltpixel_ga4/general/enable" class="WeltPixel\GA4\Block\Core" name="weltpixel_gtmga4_head" before="-" template="WeltPixel_GA4::gtm_head.phtml"/>
+        </referenceBlock>
+        <referenceContainer name="after.body.start">
+            <block ifconfig="weltpixel_ga4/general/enable"
+                   name="gtmga4.nonjs.code"
+                   class="WeltPixel\GA4\Block\Core"
+                   template="WeltPixel_GA4::nonjs_code.phtml"
+                   before="-"
+            />
+        </referenceContainer>
+        <container name="ga4.before.body.end" as="ga4_before_body_end" label="Gtm Before Body End" after="before.body.end">
+            <block ifconfig="weltpixel_ga4/general/enable" class="WeltPixel\GA4\Block\Core" name="weltpixel_gtmga4_footer" after="-" template="WeltPixel_GA4::gtm_footer.phtml" />
+            <block ifconfig="weltpixel_ga4/meta_pixel_tracking/enable" class="WeltPixel\GA4\Block\MetaPixel\Common" name="weltpixel_ga4_metpixel_footer" after="-" template="WeltPixel_GA4::metapixel/footer.phtml" />
+        </container>
+        <!-- impressions -->
+        <referenceBlock name="category.products.list" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="search_result_list" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <!-- impressions -->
+        <!-- product clicks for cross, related, upsell -->
+        <referenceBlock name="checkout.cart.crosssell" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list/items.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="product.info.upsell" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list/items.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="catalog.product.related" >
+            <action method="setTemplate" ifconfig="weltpixel_ga4/general/product_click_tracking">
+                <argument name='template' xsi:type='string'>WeltPixel_GA4::product/list/items.phtml</argument>
+            </action>
+        </referenceBlock>
+        <!-- product clicks for cross, related, upsell -->
+        <referenceContainer name="before.body.end">
+            <block
+                ifconfig="weltpixel_ga4/serverside_measurement/enable"
+                class="WeltPixel\GA4\Block\Core"
+                name="weltpixel-ga4-server-product-click"
+                template="WeltPixel_GA4::serverside/product_click.phtml"
+            />
+        </referenceContainer>
+        <referenceContainer name="before.body.end">
+            <block
+                ifconfig="weltpixel_ga4/serverside_measurement/enable"
+                class="WeltPixel\GA4\Block\Core"
+                name="weltpixel-ga4-server-view-item-list"
+                template="WeltPixel_GA4::serverside/view_item_list.phtml"
+            />
+        </referenceContainer>
+        <!-- Meta Pixel Tracking -->
+        <referenceBlock name="head.additional">
+            <block ifconfig="weltpixel_ga4/meta_pixel_tracking/enable" class="WeltPixel\GA4\Block\MetaPixel\Common" name="weltpixel_ga4_metapixel_head" before="-" template="WeltPixel_GA4::metapixel/head.phtml"/>
+        </referenceBlock>
+        <!-- Meta Pixel Tracking -->
+        <referenceBlock name="head.additional">
+            <block class="WeltPixel\GA4\Block\Core" name="weltpixel_ga4_common_head" before="-" template="WeltPixel_GA4::common.phtml"/>
+        </referenceBlock>
+    </body>
+</page>

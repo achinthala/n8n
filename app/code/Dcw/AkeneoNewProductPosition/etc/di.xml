@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- Custom logger for AkeneoNewProductPosition -->
+    <virtualType name="AkeneoNewProductPositionLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">akeneo_new_product_position</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">AkeneoNewProductPositionLogHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="AkeneoNewProductPositionLogHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">var/log/akeneo_new_product_position.log</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- Logger for observers -->
+    <type name="Dcw\AkeneoNewProductPosition\Observer\ProductSaveAfter">
+        <arguments>
+            <argument name="logger" xsi:type="object">AkeneoNewProductPositionLogger</argument>
+        </arguments>
+    </type>
+</config>

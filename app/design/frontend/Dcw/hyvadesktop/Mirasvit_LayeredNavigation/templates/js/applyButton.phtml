@@ -1,0 +1,202 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * @var $block \Mirasvit\LayeredNavigation\Block\ApplyButton
+ */
+?>
+<?php if ($block->isApplyingMode()): ?>
+    <script>
+        function initApplyButton() {
+            return {
+                config:         getMstNavConfig(),
+                selector:       '[data-element="mst-nav__applyButton"]',
+                countSelector:  '[data-count]',
+                buttonSelector: '[data-apply]',
+                label1Selector: '[data-label-1]',
+                labelNSelector: '[data-label-n]',
+
+                $el: function () {
+                    return document.querySelector(this.selector);
+                },
+
+                $count: function () {
+                    return this.$el().querySelector(this.countSelector);
+                },
+
+                $button: function () {
+                    return this.$el().querySelector(this.buttonSelector);
+                },
+
+                clear: function () {
+                    this.$count().innerHTML = '';
+                    this.$button().dataset.apply = '';
+                },
+
+                show: function () {
+                    this.$el().classList.remove('hidden');
+                    this.$el().style.visibility = 'hidden';
+                },
+
+                hide: function () {
+                    //this.$el().classList.add('hidden');
+                },
+
+                showLoader: function () {
+                    this.$el().classList.add('_loading');
+                    document.querySelector('.show-result .mst-nav__apply-button .loader').classList.remove('hidden');
+                    document.querySelector('.show-result .mst-nav__apply-button').classList.add('disabled');
+                    document.querySelector('.show-result .mst-nav__apply-button button').disabled = true;
+                    //document.querySelector('#mob-navfilter-loader').style.display = 'block';
+                },
+
+                hideLoader: function () {
+                    this.$el().classList.remove('_loading');
+                    document.querySelector('.show-result .mst-nav__apply-button .loader').classList.add('hidden');
+                    document.querySelector('.show-result .mst-nav__apply-button').classList.remove('disabled');
+                    document.querySelector('.show-result .mst-nav__apply-button button').disabled = false;
+                    //document.querySelector('#mob-navfilter-loader').style.display = 'none';
+
+                },
+
+                move: function ($initiator) {
+                    let x = $initiator.getBoundingClientRect().left + parseFloat(window.getComputedStyle($initiator, null).width.replace("px", ""));
+
+                    let baseElement = this.getBaseElement($initiator);
+
+                    let y = baseElement.getBoundingClientRect().top
+                        - parseFloat(window.getComputedStyle(this.$el(), null).height.replace("px", "")) / 2
+                        + parseFloat(window.getComputedStyle(baseElement, null).height.replace("px", "")) / 2
+                        + window.scrollY;
+
+                    if (
+                        this.config.isConfirmOnMobile()
+                        && window.innerWidth <= this.config.getModeSwitchBreakpoint()) {
+                        this.$el().style.right = '10px'
+                    } else {
+                        this.$el().style.left = x + 'px';
+                    }
+
+                    this.$el().style.top  = y + 'px';
+                    this.$el().style.visibility = 'visible';
+                },
+
+                getBaseElement: function ($initiator) {
+                    let filterName = $initiator.closest('[data-mst-nav-filter]').dataset.mstNavFilter;
+
+                    if (filterName === 'price') {
+                        return $initiator.querySelector('[data-element="slider"]').firstChild;
+                    }
+
+                    return $initiator
+                },
+
+                update: function (result) {
+                    let productsHtml   = result['products'];
+                    let applyFilterUrl = result['url'];
+                    let productsCount  = result['products_count'];
+					
+					// Parameters you want to check
+					const paramString = "&product_list_dir=desc&product_list_order=revenue_ranking";
+
+					// Check if both parameters already exist
+					if (!applyFilterUrl.includes("product_list_dir=desc") || 
+						!applyFilterUrl.includes("product_list_order=revenue_ranking")) {
+
+						// If URL already has ?, use &, else use ?
+						if (applyFilterUrl.includes("?")) {
+							applyFilterUrl += paramString;
+						} else {
+							applyFilterUrl += "?" + paramString.substring(1); // remove first "&"
+						}
+					}
+
+                    this.$button().dataset.apply = applyFilterUrl;
+					console.log('applyFilterUrl='+applyFilterUrl);
+                    this.$count().innerHTML = productsCount;
+                    this.toggleLabel(productsCount);
+
+                    if (productsHtml.length > 0) {//todo what for?
+                        document.querySelector(this.config.getAjaxProductListWrapperId()).outerHtml = result['products'];
+
+                        let event = document.createEvent('HTMLEvents');
+                        event.initEvent('contentUpdated', true, false);
+                        document.querySelector(this.config.getAjaxProductListWrapperId()).dispatchEvent(event);
+                    }
+
+                    this.$button().addEventListener('click', function (e) {
+                        e.stopImmediatePropagation();
+
+                        document.querySelector('.show-result .mst-nav__apply-button .loader').classList.remove('hidden');
+                        document.querySelector('.show-result .mst-nav__apply-button').classList.add('disabled');
+                        document.querySelector('.show-result .mst-nav__apply-button button').disabled = true;
+                        //document.querySelector('#mob-navfilter-loader').style.display = 'block';
+
+                        const url = this.$button().dataset.apply;
+                        // this.filterApplier.apply(url);
+                        initApplier().apply(url);
+                        //window.location = url;
+                        //document.querySelector('#mob-navfilter-loader').style.display = 'none';
+                    }.bind(this))
+                },
+
+                load: function (url, cacheKey, force) {
+                    this.clear();
+                    cacheKey = 'applyingMode:' + url;
+                    let cachedData = mstNavCache.getData(cacheKey);
+                    if (cachedData) {
+                        this.update(cachedData);
+                    } else {
+                        this._request(url, force);
+                    }
+                },
+
+                _request: function (url, force) {
+                    this.showLoader();
+
+                    let data = {isAjax: true};
+                    if (force) {
+                        data.mstNavForceMode = 'by_button_click';
+                    }
+
+                    let queryParams = new URLSearchParams();
+
+                    for (const key in data) {
+                        queryParams.set(key, data[key]);
+                    }
+
+                    const separator = url.indexOf('?') > 0 ? '&' : '?';
+
+                    fetch(url + separator + queryParams.toString())
+                        .then(response => {
+                            if (! response.ok) console.warn('GET request failed');
+                            return response.json()
+                        })
+                        .then(function (result) {
+                            let cacheKey = 'applyingMode:' + url;
+                            mstNavCache.setData(cacheKey, result);
+
+                            this.update(result);
+                        }.bind(this))
+                        .catch(function (error) {
+                            console.log(error);
+                            // window.location = url;
+                        }.bind(this))
+                        .finally(function () {
+                            this.hideLoader();
+                        }.bind(this));
+                },
+
+                toggleLabel: function (number) {
+                    if (number === 1) {
+                        this.$el().querySelector(this.labelNSelector).classList.add('hidden');
+                        this.$el().querySelector(this.label1Selector).classList.remove('hidden');
+                    } else {
+                        this.$el().querySelector(this.labelNSelector).classList.remove('hidden');
+                        this.$el().querySelector(this.label1Selector).classList.add('hidden');
+                    }
+                }
+            }
+        }
+    </script>
+<?php endif ?>

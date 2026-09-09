@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="dcw_store_config" translate="label" sortOrder="10">
+            <label>DCW</label>
+        </tab>
+        <section id="dcw_home_page" translate="label" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Home page</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_ShopByCategory::config</resource>
+            <group id="shopbycategory" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Shop By Category</label>
+                <field id="desktop_limit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Desktop Limit Display</label>
+                </field>
+                <field id="mobile_limit" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Mobile Limit Display</label>
+                    <!--<comment>This text will display on the frontend.</comment>-->
+                </field>
+            </group>
+        </section>
+        <section id="dcw_menu_configaration" translate="label" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>menu-configaration</class>
+            <label>Menu Configuration</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_ShopByCategory::config</resource>
+            <group id="menulinkremovecattab" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Menu Configuration</label>
+                <field id="menulinkremovecat" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Menu Link Remove Category Id</label>
+					<comment>You can insert multiple category id separated by "|"(Ex.- 125|65).</comment>
+                </field>
+                <field id="all_category_id" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>All Category Id</label>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

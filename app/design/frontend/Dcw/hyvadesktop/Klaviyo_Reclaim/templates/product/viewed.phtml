@@ -1,0 +1,15 @@
+<?php
+/** @var Klaviyo\Reclaim\Block\Catalog\Product\ViewedProduct $block */
+?>
+<div x-data="initKlaviyoProductViewed()" x-init="trackKlaviyoProductView()" x-defer="interact"></div>
+<script>
+    function initKlaviyoProductViewed() {
+        return  {
+            trackKlaviyoProductView() {
+                var _learnq = window._learnq || [];
+                _learnq.push(['track', 'Viewed Product', <?= $block->getViewedProductJson() ?>]);
+                _learnq.push(['trackViewedItem', <?= $block->getViewedItemJson() ?>]);
+            }
+        }
+    }
+</script>

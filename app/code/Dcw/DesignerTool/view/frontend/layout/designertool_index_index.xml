@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <script src="Dcw_DesignerTool/js/jquery-3.6.4.min.js"/>
+    </head>
+    <body>
+	<referenceBlock name="page.main.title" remove="true"/>
+	<referenceBlock name="breadcrumbs">
+        <action method="addCrumb">
+            <argument name="crumbName" xsi:type="string">Home</argument>
+            <argument name="crumbInfo" xsi:type="array">
+                <item name="title" xsi:type="string">Home</item>
+                <item name="label" xsi:type="string">Home</item>
+                <item name="link" xsi:type="string">{{baseUrl}}</item>
+            </argument>
+        </action>
+        <action method="addCrumb">
+            <argument name="crumbName" xsi:type="string">Flooring designer</argument>
+            <argument name="crumbInfo" xsi:type="array">
+                <item name="title" xsi:type="string">Flooring designer</item>
+                <item name="label" xsi:type="string">Flooring designer</item>
+            </argument>
+        </action>
+    </referenceBlock>
+
+    <referenceContainer name="content">
+	    <block class="Dcw\DesignerTool\Block\Index" name="designertool" template="Dcw_DesignerTool::designertool.phtml" cacheable="false"></block>
+	</referenceContainer>
+      
+    </body>
+</page>

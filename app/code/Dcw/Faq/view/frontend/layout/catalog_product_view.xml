@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+      <referenceBlock name="amasty_faq_product_tab" remove="true"/>
+
+      <referenceBlock name="product.info">
+            <block class="Dcw\Faq\Block\Catalog\Product\QuestionsAnchorLink"
+                   name="dcw.faq.product.questions.anchor"
+                   template="Dcw_Faq::catalog/product/questions_anchor_link.phtml"
+                   after="bazaarvoice.reviews.summary.custom"/>
+      </referenceBlock>
+
+      <referenceBlock name="product.detail.page">
+            <block class="Amasty\Faq\Block\Catalog\Product\Tab" name="amasty_faq_product_custom" template="Dcw_Faq::pdp_questions_tab.phtml">
+                <block class="Amasty\Faq\Block\Lists\QuestionsList" name="amasty_faq_questions_custom" template="Dcw_Faq::pdp_questions.phtml">
+                    <block class="Amasty\Faq\Block\Rating\Rating" ifconfig="amastyfaq/rating/enabled" name="amasty_faq_rating" template="Amasty_FaqHyva::rating/rating.phtml"/>
+                    <block class="Amasty\Faq\Block\Lists\Pager" name="amasty_faq_pager"/>
+                    <block class="Amasty\Faq\Block\RichData\StructuredData" name="amasty_faq_structureddata" ifconfig="amastyfaq/seo/add_structureddata">
+                        <arguments>
+                            <argument name="pageType" xsi:type="string">FAQPage</argument>
+                        </arguments>
+                    </block>
+                </block>
+                <block class="Amasty\Faq\Block\Forms\AskQuestion" name="amasty_faq_ask_question_form" template="Amasty_FaqHyva::forms/askquestion.phtml"/>
+            </block>
+        </referenceBlock> 
+        
+    </body>
+</page>

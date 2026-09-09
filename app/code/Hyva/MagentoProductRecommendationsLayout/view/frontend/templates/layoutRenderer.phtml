@@ -1,0 +1,171 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Magento\Framework\Escaper;
+use Magento\ProductRecommendationsLayout\Block\Renderer;
+
+/* @var Renderer $block
+ * @var HeroiconsOutline $heroiconsOutline
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+
+$heroiconsOutline = $viewModels->require(HeroiconsOutline::class);
+$pagePlacement = $block->getData('pagePlacement');
+$pagePlacementId = str_replace('-', '_', $pagePlacement);
+?>
+
+<script>
+'use strict';
+    function recommendedProducts_<?= $pagePlacementId ?>() {
+        return {
+            banner: '',
+            pagePreconfiguredDeferred: {},
+            bannerPlacement: '<?= $pagePlacement ?>',
+			active: 0,
+            itemCount: 0,
+            getSlider() {
+                return this.$root.querySelector('.js_slides');
+            },
+            pageSize: 4,
+            pageFillers: 0,
+            initProductRecBlock: function (placement) {
+                let self = this;
+                window.magentoStorefrontEvents.subscribe.recsResponseReceived(function () {
+                    let recsData = window.magentoStorefrontEvents.context.getRecommendations();
+                    self.renderProductRecs(recsData);
+                });
+            },
+            renderProductRecs: function (recsData) {
+                var product_id_arr = [];
+                let self = this;
+                recsData.units.forEach(function (unit, index) {
+                    if (unit.pagePlacement === self.bannerPlacement) {
+                        self.banner = unit;
+
+                        product_id_arr = [];
+                        self.banner.products.forEach(function(product, index){
+                            product_id_arr.push(product.productId);
+                        });
+
+                        /** @todo move event outside of recsResponseReceived event **/
+                        window.magentoStorefrontEvents.publish.recsUnitRender(
+                            unit.unitId, magentoStorefrontEvents.context
+                        );
+                    }
+                });
+
+                if (product_id_arr) {
+                    fetch('<?= $block->getUrl()?>productrecomndatns/index/RelatedProductRecommendations?form_key=' + hyva.getFormKey(), {
+                        method: "POST",
+                        headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                        body: 'product_ids='+product_id_arr,
+                    })
+                    .then(response => {
+                        if (! response.ok) console.warn('GET request failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data) {
+                            if (data.success == 1) {
+                                document.querySelector('.related_product_recommendations').innerHTML = data.sliderHtml;
+                            } else {
+                                document.querySelector('.related_product_recommendations').innerHTML = '<div class="err_msg">'+data.message+'</div>';
+                                document.querySelector('.related_productrecomndatns_wrapper').style.display = 'none';
+                            }
+                            
+                        }
+                    });
+                }
+            },
+            addToCartRecsEvent: function (e, unitId, productId) {
+                // requires recommendationsContext to be set
+                magentoStorefrontEvents.publish.recsItemAddToCartClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => e.submit(), 500);
+            },
+            scrollViewEvent: function (unitId) {
+                magentoStorefrontEvents.publish.recsUnitView(
+                    unitId, magentoStorefrontEvents.context
+                );
+            },
+            recsClickEvent: function (unitId, productId, productUrl) {
+                magentoStorefrontEvents.publish.recsItemClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => window.location.href = productUrl, 500);
+            },
+            createAddToCartUrl: function (productId) {
+                const currentLocationUENC = encodeURIComponent(
+                    this.encodeUenc(BASE_URL),
+                );
+                return BASE_URL +
+                    "checkout/cart/add/uenc/" +
+                    currentLocationUENC +
+                    "/product/" +
+                    productId
+            },
+            encodeUenc: function (value) {
+                const regex = /=/gi;
+                return btoa(value).replace(regex, ",");
+            },
+			 calcPageSize() {
+                const slider = this.getSlider();
+                if (slider) {
+                    this.itemCount = slider.querySelectorAll('.js_slide').length;
+                    this.pageSize = Math.round(slider.clientWidth / slider.querySelector('.js_slide').clientWidth);
+                    this.pageFillers = (
+                        this.pageSize * Math.ceil(this.itemCount / this.pageSize)
+                    ) - this.itemCount;
+                }
+            },
+            calcActive() {
+                const slider = this.getSlider();
+                if (slider) {
+                    const sliderItems = this.itemCount + this.pageFillers;
+                    const calculatedActiveSlide = slider.scrollLeft / (slider.scrollWidth / sliderItems);
+                    this.active = Math.round(calculatedActiveSlide / this.pageSize) * this.pageSize;
+                }
+            },
+            scrollPrevious() {
+                this.scrollTo(this.active - this.pageSize);
+            },
+            scrollNext() {
+                this.scrollTo(this.active + this.pageSize);
+            },
+            scrollTo(idx) {
+                const slider = this.getSlider();
+                if (slider) {
+                    const slideWidth = slider.scrollWidth / (this.itemCount + this.pageFillers);
+                    slider.scrollLeft = Math.floor(slideWidth) * idx;
+                    this.active = idx;
+                }
+            }
+        }
+    }
+</script>
+
+
+<div x-data="recommendedProducts_<?= $pagePlacementId ?>()"
+     x-init="initProductRecBlock();" x-init="calcPageSize();" @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })"
+     class="related_productrecomndatns_wrapper container my-12" x-cloak>
+        <div class="relative">
+            <div class="recommendation-heading">
+                <h3 x-text='banner.storefrontLabel' class="text-2xl font-medium text-gray-900 title-font"></h3>
+            </div>
+            <div class="related_product_recommendations"></div>
+        </div>          
+</div>

@@ -1,0 +1,27 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/**
+ * @var Template $block
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+
+?>
+<div
+    x-data="cartQuoteTotals()"
+    @private-content-loaded.window="onPrivateContentLoaded(event.detail.data)"
+    >
+    <button x-on:click="submitQuote($event)" class="action submit primary w-full mt-4 btn btn-primary-large justify-center">
+        <span>Proceed to Checkout</span>
+    </button>
+</div>

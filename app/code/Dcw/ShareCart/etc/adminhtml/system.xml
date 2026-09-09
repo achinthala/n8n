@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_share_cart" translate="label" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Share Cart</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_ShareCart::config</resource>
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Share Cart</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="link_expiry_days" translate="label comment" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Link Expiry Duration</label>
+                    <comment>Shared cart links expire after this period.</comment>
+                    <source_model>Dcw\ShareCart\Model\Config\Source\LinkExpiryDays</source_model>
+                </field>
+                <field id="recipient_cart_mode" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>When Recipient Already Has Items in Cart</label>
+                    <comment>Choose whether to merge shared items into the existing cart or replace the cart contents.</comment>
+                    <source_model>Dcw\ShareCart\Model\Config\Source\RecipientCartMode</source_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

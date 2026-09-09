@@ -1,0 +1,3 @@
+.admin__data-grid-header .selectmenu-items > ul > li:nth-child(n+4) {
+    display: none !important; /* Adjust the nth-child index as needed */
+}

@@ -1,0 +1,48 @@
+<?php
+/**
+ * Force Unlock JavaScript for Grid
+ * @var \Magento\Framework\View\Element\Template $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+?>
+<script>
+require(['jquery'], function($) {
+    window.forceUnlockQuoteFromGrid = function(quoteId) {
+        if (!confirm('<?= $escaper->escapeJs(__('Are you sure you want to force unlock this quote? This will remove all locks on this quote.')) ?>')) {
+            return;
+        }
+        
+        var forceUnlockUrl = '<?= $escaper->escapeJs($block->getUrl('dcwrequestquote/quote_lock/forceUnlock')) ?>';
+        
+        $.ajax({
+            url: forceUnlockUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {quote_id: quoteId},
+            success: function(response) {
+                if (response.success) {
+                    // Reload the grid
+                    if (typeof require !== 'undefined') {
+                        require(['uiRegistry'], function(registry) {
+                            var grid = registry.get('amasty_quote_grid.amasty_quote_grid.listing');
+                            if (grid) {
+                                grid.source.reload();
+                            } else {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert(response.message || '<?= $escaper->escapeJs(__('Failed to unlock quote.')) ?>');
+                }
+            },
+            error: function() {
+                alert('<?= $escaper->escapeJs(__('An error occurred while unlocking the quote.')) ?>');
+            }
+        });
+    };
+});
+</script>
+

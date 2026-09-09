@@ -1,0 +1,63 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/**
+ * @var \Dcw\CustomCompany\Block\Company\Register\Profile $block
+ */
+ 
+?>
+<div class="block block-company-profile-account pt-5">
+    <div class="block-title">
+        <strong><?= $block->escapeHtml(__('Profile Capture')) ?></strong>
+    </div>
+    <div class="block-content">
+        <div class="box box-account-information">
+            <div class="box-content">
+                <?php $companyInformation = $block->filterEmptyFields($block->getCompanyInformation()); ?>
+                <?php foreach ($companyInformation as $field): ?>
+                <p>
+                    <strong><?= $block->escapeHtml($field->getLabel()) ?></strong>
+                    <span><?= $block->escapeHtml($field->getValue()) ?></span>
+                </p>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="block block-company-profile-address">
+    <div class="block-title">
+        <strong><?= $block->escapeHtml(__('Primary Shipping Address')) ?></strong>
+    </div>
+    <div class="block-content">
+        <div class="box box-address-information">
+            <div class="box-content">
+                <address>
+                   <?= /** @noEscape */ $block->getAddresstext()?>
+                </address>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="block block-company-profile-contacts">
+    <div class="block-title">
+        <strong>
+            <?= $block->escapeHtml(__('Your Profile')) ?>
+        </strong>
+    </div>
+    <div class="block-content">
+        <div class="box box-contact-information">
+            <div class="box-content">
+                <?php $adminInformation = $block->filterEmptyFields($block->getAdminInformation()); ?>
+                <?php foreach ($adminInformation as $field): ?>
+                    <p>
+                        <span><?= $block->escapeHtml($field->getValue()) ?></span>
+                    </p>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+</div>

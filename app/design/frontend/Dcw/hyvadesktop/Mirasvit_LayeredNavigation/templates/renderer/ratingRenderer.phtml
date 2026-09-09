@@ -1,0 +1,169 @@
+<?php
+/**
+ * @var $block \Mirasvit\LayeredNavigation\Block\Renderer\RatingRenderer
+ * @var $escaper \Magento\Framework\Escaper
+ */
+$attributeCode = $block->getAttributeCode();
+$checkedItemsCount = 0;
+$revenueHelper = $this->helper('Dcw\RevenueRanking\Helper\Data');
+$filter_counts = $revenueHelper->getActiveFilterCount();
+?>
+<div class="mst-nav__label mst-nav__rating" data-mst-nav-filter="<?= $attributeCode ?>"
+     x-data="initLabelRenderer()">
+    <ol class="items">
+        <?php foreach ($block->getFilterItems() as $filterItem): ?>
+            <?php
+            $itemRating = $filterItem->getValueString();
+            $numberOfResults = $filterItem->getData('count');
+            $isItemChecked = $block->isFilterItemChecked($filterItem);
+            $url = $isItemChecked ? $filterItem->getRemoveUrl() : $filterItem->getUrl();
+
+            if ($isItemChecked) {
+                $checkedItemsCount++;
+            }
+
+            $rating       = (float)$itemRating;
+            $ratingSteps  = 5;
+            $starsFilled  = $rating ?: 0;
+            $starFragment = 0;
+            $starsEmpty   = floor($ratingSteps - $starsFilled - $starFragment);
+            $yellowHex    = '#f6e05e';
+            $greyHex      = '#cbd5e0';
+
+            $cssClass = [
+                'item',
+                'mst-nav__label-item',
+                $isItemChecked ? '_checked' : '',
+                $isItemChecked && $block->isHighlightEnabled() ? '_highlight' : '',
+            ];
+
+            $final_url = $escaper->escapeUrl($url);
+            if (!str_contains($final_url, 'product_list_mode=list')) { 
+                $final_url .= "&product_list_mode=list";
+            }
+			if (str_contains($final_url, 'product_list_dir')) {
+				// Replace existing product_list_dir=xxx with product_list_dir=desc
+				$final_url = preg_replace('/product_list_dir=[^&]*/', 'product_list_dir=desc', $final_url);
+			} else {
+				// If not present, append
+				$final_url .= (str_contains($final_url, '?') ? '&' : '?') . "product_list_dir=desc";
+			}
+			if($filter_counts==1 && $isItemChecked){
+				$final_url = str_replace('product_list_order=revenue_ranking', 'product_list_order=position', $final_url);
+				$final_url = str_replace('product_list_dir=desc', 'product_list_dir=asc', $final_url);
+			}else{
+				  if (str_contains($final_url, 'product_list_order')) {
+					// Replace existing product_list_order=xxx with product_list_order=revenue_ranking
+					$final_url = preg_replace('/product_list_order=[^&]*/', 'product_list_order=revenue_ranking', $final_url);
+				} else {
+					// If not present, append
+					$final_url .= (str_contains($final_url, '?') ? '&' : '?') . "product_list_order=revenue_ranking";
+				}
+			}
+            ?>
+
+            <li class="<?= implode(' ', $cssClass) ?>" data-element="filter"
+                data-value="<?= $filterItem->getValueString() ?>" @click="handleClick">
+                <a href="<?= $final_url ?>" rel="<?= $block->getRelAttributeValue() ?>" aria-label="<?= $rating ?>">
+                    <div class="rating-summary flex">
+                        <span class="flex mst-nav__label-item__label">
+                            <span class="flex">
+                            <?php if ($rating): ?>
+                                <?php $i = 0; ?>
+                                <?php while ($i < $starsFilled): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="fill-current w-6 h-6" viewBox="3 0 20 20"
+                                         style="color: <?= /** @noEscape */
+                                         $yellowHex ?>"
+                                         fill="currentColor">
+                                        <path
+                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371
+                            1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54
+                            1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1
+                            1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                    </svg>
+                                    <?php $i++; ?>
+                                <?php endwhile; ?>
+                                <?php if ($starFragment): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="3 0 20 20" fill="currentColor"
+                                         class="w-6 h-6">
+                                        <defs>
+                                            <linearGradient id="partialFill<?= /* @noEscape */
+                                            $attributeCode . $i ?>">
+                                                <stop offset="0%" stop-color="<?= /** @noEscape */
+                                                $yellowHex ?>"/>
+                                                <stop offset="<?= $starFragment * 100 ?>%" stop-color="<?= /** @noEscape */
+                                                $yellowHex ?>"/>
+                                                <stop offset="<?= $starFragment * 100 ?>%" stop-color="<?= /** @noEscape */
+                                                $greyHex ?>"/>
+                                                <stop offset="100%" stop-color="<?= /** @noEscape */
+                                                $greyHex ?>"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <g fill="url(#partialFill<?= $attributeCode . $i ?>)">
+                                            <path
+                                                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969
+                                0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54
+                                1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1
+                                0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </g>
+                                    </svg>
+                                <?php endif; ?>
+                                <?php $i = 0; ?>
+                                <?php while ($i < $starsEmpty): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="fill-current w-6 h-6"
+                                         style="color: <?= /** @noEscape */
+                                         $greyHex ?>"
+                                         viewBox="3 0 20 20"
+                                         fill="currentColor">
+                                        <path
+                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0
+                            1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54
+                            1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1
+                            1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                        />
+                                    </svg>
+                                    <?php $i++; ?>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <?php $i = 0; ?>
+                                <?php while ($i < $ratingSteps): ?>
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="fill-current text-gray-200 w-6 h-6"
+                                         viewBox="3 0 20 20"
+                                         fill="currentColor">
+                                        <path
+                                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371
+                            1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54
+                            1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1
+                            1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                                        />
+                                    </svg>
+                                    <?php $i++; ?>
+                                <?php endwhile; ?>
+                            <?php endif; ?>
+                            </span>
+
+                            <span><?= __(' & Up') ?></span>
+                        </span>
+
+                        <span class="count text-primary"><?= $filterItem->getData('count') ?></span>
+                    </div>
+                </a>
+            </li>
+        <?php endforeach ?>
+    </ol>
+    <div class="hidden mst-clear-options-link" data-checked-count="<?= $checkedItemsCount ?>">
+        <div class="mst-nav__checked-counter__wrapper flex items-center mx-2">
+            <div class="mst-nav__checked-counter rounded px-2 bg-gray-200 mr-1"><?= $checkedItemsCount ?></div>
+            <a class="hover:underline text-2xl opacity-50" href="<?= $block->getAttributeClearUrl($attributeCode) ?>" data-element="filter">&#10005;</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .mst-nav__rating .rating-summary.flex {
+        justify-content: space-between;
+        width: 100%;
+    }
+</style>

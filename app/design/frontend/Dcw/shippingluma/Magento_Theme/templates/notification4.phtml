@@ -1,0 +1,41 @@
+<?php
+$notificationsBlock = $block->getLayout()->createBlock(\Dcw\Notifications\Block\Notification::class);
+
+$cat_prod_id = '';
+if($notificationsBlock->fullActionName() == 'catalog_category_view') {
+    $cat_prod_id = $notificationsBlock->getCurrentCatId();
+} elseif($notificationsBlock->fullActionName() == 'catalog_product_view') {
+    $cat_prod_id = $notificationsBlock->getCurrentProdId();
+}
+?>
+<div x-data="globalNotificationAjaxCall()" x-init="initGlobalNotificationFunc()">
+    <div class="notification4 pt-2 pb-2 text-center text-size13 font-normal text-white bg-custom-green" 
+    style="display:none" x-html="global_notification_text"></div>
+</div>
+
+<script>
+function globalNotificationAjaxCall() {
+    return {
+        global_notification_text: '',
+        initGlobalNotificationFunc: function () {
+            fetch(BASE_URL+'notifications/index/GlobalNotification?full_action_name=<?= $notificationsBlock->fullActionName()?>&cat_prod_id=<?= $cat_prod_id?>', {
+                method: "GET",
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    if (data.notification_text !='') {
+                        document.querySelector('.notification4.bg-custom-green').style.display = 'block';
+                        this.global_notification_text = data.notification_text;
+                    }
+                  
+                }
+            });
+        }
+    }
+}
+</script>

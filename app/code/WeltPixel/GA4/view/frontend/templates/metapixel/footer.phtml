@@ -1,0 +1,28 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\MetaPixel\Common */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+$cspNonceProvider = $metaPixelHelper->getCspNonceProvider();
+?>
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled()) : ?>
+    <script <?php if ($cspNonceProvider) echo ' nonce="' .  $cspNonceProvider->generateNonce() . '" ' ?>>
+        require(['jquery', 'Magento_Customer/js/customer-data'],
+            function ($, customerData) {
+                if (window.ga4AllowServices) {
+                    $(document).ajaxComplete(function (event, xhr, settings) {
+                        if (settings.url.search('/customer\/section\/load/') > 0) {
+                            var response = xhr.responseJSON;
+                            if (response.wp_ga4) {
+                                var metaPixel = $.parseJSON(response.wp_ga4.metapixel);
+                                for (index in metaPixel) {
+                                    fbq(metaPixel[index].track, metaPixel[index].eventName, metaPixel[index].eventData);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+    </script>
+<?php endif; ?>

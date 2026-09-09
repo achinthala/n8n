@@ -1,0 +1,46 @@
+diff --git a/vendor/magento/module-catalog-inventory/Model/Indexer/Stock.php b/vendor/magento/module-catalog-inventory/Model/Indexer/Stock.php
+index 4b35bfdc7ab1..c91d79c72641 100644
+--- a/vendor/magento/module-catalog-inventory/Model/Indexer/Stock.php
++++ b/vendor/magento/module-catalog-inventory/Model/Indexer/Stock.php
+@@ -54,7 +54,6 @@ public function __construct(
+     public function execute($ids)
+     {
+         $this->_productStockIndexerRows->execute($ids);
+-        $this->getCacheContext()->registerEntities(\Magento\Catalog\Model\Product::CACHE_TAG, $ids);
+     }
+ 
+     /**
+@@ -102,6 +101,7 @@ public function executeRow($id)
+      *
+      * @return \Magento\Framework\Indexer\CacheContext
+      * @deprecated 100.0.7
++     * @see we don't add dependecies this way anymore
+      */
+     protected function getCacheContext()
+     {
+diff --git a/vendor/magento/module-catalog-inventory/etc/mview.xml b/vendor/magento/module-catalog-inventory/etc/mview.xml
+index 9733fa32583f..3fee2c2e2fc2 100644
+--- a/vendor/magento/module-catalog-inventory/etc/mview.xml
++++ b/vendor/magento/module-catalog-inventory/etc/mview.xml
+@@ -14,9 +14,4 @@
+             <table name="catalog_product_link" entity_column="product_id" />
+         </subscriptions>
+     </view>
+-    <view id="catalog_product_price" class="Magento\Catalog\Model\Indexer\Product\Price" group="indexer">
+-        <subscriptions>
+-            <table name="cataloginventory_stock_item" entity_column="product_id" />
+-        </subscriptions>
+-    </view>
+ </config>
+diff --git a/vendor/magento/module-catalog-search/etc/mview.xml b/vendor/magento/module-catalog-search/etc/mview.xml
+index 494b97a81688..28737ce23b1e 100644
+--- a/vendor/magento/module-catalog-search/etc/mview.xml
++++ b/vendor/magento/module-catalog-search/etc/mview.xml
+@@ -15,7 +15,6 @@
+             <table name="catalog_product_entity_varchar" entity_column="entity_id" />
+             <table name="catalog_product_entity_datetime" entity_column="entity_id" />
+             <table name="catalog_product_website" entity_column="product_id" />
+-            <table name="cataloginventory_stock_item" entity_column="product_id" />
+             <table name="catalog_product_bundle_selection" entity_column="parent_product_id" />
+             <table name="catalog_product_super_link" entity_column="product_id" />
+             <table name="catalog_product_link" entity_column="product_id" />

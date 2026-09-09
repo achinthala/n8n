@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+   <!-- <preference for="Mirasvit\Search\Index\Magento\Catalog\Product\InstantProvider" type="Dcw\AdvanceSearch\Index\Magento\Catalog\Product\InstantProvider" />
+   <preference for="Mirasvit\Search\Index\Magefan\Blog\Post\InstantProvider" type="Dcw\AdvanceSearch\Index\Magefan\Blog\Post\InstantProvider" />
+   <preference for="Mirasvit\Search\Index\Magento\Catalog\Product\InstantProvider\Mapper" type="Dcw\AdvanceSearch\Index\Magento\Catalog\Product\InstantProvider\MapperNew" />
+   <preference for="Mirasvit\Search\Index\Magento\Catalog\Category\InstantProvider" type="Dcw\AdvanceSearch\Index\Magento\Catalog\Category\InstantProvider" /> -->
+
+   <!--Calculated price display in search autocomplete pop-up-->
+   <preference for="Mirasvit\Search\Index\Magento\Catalog\Product\InstantProvider\Mapper" type="Dcw\AdvanceSearch\Index\Magento\Catalog\Product\InstantProvider\CustomMapper" />
+</config>

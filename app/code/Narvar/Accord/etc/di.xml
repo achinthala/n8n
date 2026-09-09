@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="narvar_accord_order_plugin" type="Narvar\Accord\Plugin\Order" sortOrder="1" />
+    </type>
+    <type name="Magento\Sales\Api\InvoiceRepositoryInterface">
+        <plugin name="narvar_accord_invoice_plugin" type="Narvar\Accord\Plugin\InvoiceRepository" sortOrder="1" />
+    </type>
+    <type name="Magento\Sales\Model\Order\Invoice">
+        <plugin name="narvar_accord_invoice_plugin" type="Narvar\Accord\Plugin\Invoice" sortOrder="1" />
+    </type>
+    <type name="Magento\Sales\Api\ShipmentRepositoryInterface">
+        <plugin name="narvar_accord_shipment_plugin" type="Narvar\Accord\Plugin\ShipmentRepository" sortOrder="1" />
+    </type>
+    <type name="Magento\Sales\Model\Order\Shipment">
+        <plugin name="narvar_accord_shipment_plugin" type="Narvar\Accord\Plugin\Shipment" sortOrder="1" />
+    </type>
+    <type name="Magento\Sales\Api\ShipmentTrackRepositoryInterface">
+        <plugin name="narvar_accord_shipment_plugin" type="Narvar\Accord\Plugin\ShipmentTrack" sortOrder="1" />
+    </type>
+    <type name="Magento\Config\Model\Config">
+        <plugin name="narvar_accord_handshake_plugin" type="Narvar\Accord\Controller\Settings\Activator" sortOrder="1" />
+    </type>
+    <virtualType name="NarvarAccordLogHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/narvar_accord.log</argument>
+        </arguments>
+    </virtualType>
+    <type name="Narvar\Accord\Logger\NarvarAccordLogger">
+        <arguments>
+            <argument name="name" xsi:type="string">narvar_accord_logger</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="narvar_accord_logger" xsi:type="object">NarvarAccordLogHandler</item>
+            </argument>
+        </arguments>
+    </type>
+    <preference for="Narvar\Accord\Api\NarvarOrderManagementInterface" type="Narvar\Accord\Model\NarvarOrderManagement"/>
+	<type name="Narvar\Accord\Logger\Logger">
+		<arguments>
+			<argument name="name" xsi:type="string">custom</argument>
+			<argument name="handlers" xsi:type="array">
+				<item name="default" xsi:type="object">Narvar\Accord\Logger\Handler\Custom</item>
+			</argument>
+		</arguments>
+	</type>
+</config>

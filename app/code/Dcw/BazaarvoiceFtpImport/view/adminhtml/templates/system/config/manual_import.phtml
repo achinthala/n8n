@@ -1,0 +1,74 @@
+<?php
+/**
+ * Bazaarvoice FTP Import Manual Import Template
+ *
+ * @var \Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\ManualImport $block
+ */
+?>
+<div class="actions">
+    <button type="button" class="action-default scalable" id="manual-ftp-import">
+        <span><?= $block->escapeHtml(__('Execute Import')) ?></span>
+    </button>
+    <div id="manual-import-result" style="margin-top: 10px;"></div>
+</div>
+
+<script type="text/javascript">
+require(['jquery'], function($) {
+    $('#manual-ftp-import').on('click', function() {
+        var button = $(this);
+        var resultDiv = $('#manual-import-result');
+        
+        if (!confirm('<?= $block->escapeJs(__('Are you sure you want to execute the import? This will download and process files from the FTP server.')) ?>')) {
+            return;
+        }
+        
+        button.prop('disabled', true);
+        button.find('span').text('<?= $block->escapeJs(__('Importing...')) ?>');
+        resultDiv.html('');
+        
+        $.ajax({
+            url: '<?= $block->escapeUrl($block->getManualImportUrl()) ?>',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                'form_key': '<?= $block->escapeJs($block->getFormKey()) ?>'
+            },
+            success: function(response) {
+                if (response.success) {
+                    var message = response.message;
+                    if (response.data && response.data.processed_files) {
+                        message += '<br><strong><?= $block->escapeJs(__('Processed Files:')) ?></strong><ul>';
+                        response.data.processed_files.forEach(function(file) {
+                            message += '<li>' + file.filename + 
+                                (file.downloaded ? ' (Downloaded)' : '') +
+                                (file.extracted ? ' (Extracted)' : '') +
+                                '</li>';
+                        });
+                        message += '</ul>';
+                    }
+                    
+                    resultDiv.html('<div class="message message-success success">' + 
+                        '<div data-ui-id="messages-message-success">' + 
+                        message + 
+                        '</div></div>');
+                } else {
+                    resultDiv.html('<div class="message message-error error">' + 
+                        '<div data-ui-id="messages-message-error">' + 
+                        response.message + 
+                        '</div></div>');
+                }
+            },
+            error: function() {
+                resultDiv.html('<div class="message message-error error">' + 
+                    '<div data-ui-id="messages-message-error">' + 
+                    '<?= $block->escapeJs(__('An error occurred while executing the import.')) ?>' + 
+                    '</div></div>');
+            },
+            complete: function() {
+                button.prop('disabled', false);
+                button.find('span').text('<?= $block->escapeJs(__('Execute Import')) ?>');
+            }
+        });
+    });
+});
+</script>

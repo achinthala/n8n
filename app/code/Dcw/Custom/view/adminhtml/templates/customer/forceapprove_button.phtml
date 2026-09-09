@@ -1,0 +1,8 @@
+<?php
+/** @var \Dcw\Custom\Block\Adminhtml\Customer\ForceApproveButton $block */
+$forceApproveUrl = $block->getForceApproveUrl();
+if ($forceApproveUrl): ?>
+    <button type="button" onclick="setLocation('<?= $forceApproveUrl ?>')">
+        <?= __('Approve Customer Account') ?>
+    </button>
+<?php endif; ?>

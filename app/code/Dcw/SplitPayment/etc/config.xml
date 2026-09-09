@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../Store/etc/config.xsd">
+    <default>
+        <payment>
+            <splitpayment>
+                <payment_action>authorize_capture</payment_action>
+                <model>Dcw\SplitPayment\Model\PaymentMethod</model>
+                <active>1</active>
+                <title>Split Payment</title>
+                <order_status>pending_payment</order_status>
+                <blackhawk_api_url>https://api.blackhawknetwork.com</blackhawk_api_url>
+                <blackhawk_product_line_id>DW4ZGQDXHZQ108CZSX91TQVS90</blackhawk_product_line_id>
+                <blackhawk_account_type>GIFT_CARD</blackhawk_account_type>
+            </splitpayment>
+        </payment>
+    </default>
+</config>

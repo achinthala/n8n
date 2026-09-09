@@ -1,0 +1,32 @@
+<?php
+$amastyFaqBlock = $block->getLayout()->createBlock(\Amasty\Faq\Block\Lists\QuestionsList::class);
+//$faqCollection = $amastyFaqBlock->getQuestions();
+$faqCollection = $block->getClpFaqList();
+if (!empty($faqCollection) && count($faqCollection) > 0) {
+?>
+
+<div class="clp_faq_container">
+    <div class="block-title">
+        <strong class="text-size28 font-semibold text-black mb-6 block text-center sm:text-size20"><?= $block->escapeHtml(__('Frequently Asked Questions')); ?></strong>
+    </div>
+    <div class="clp_faq_list">
+        <?php foreach ($faqCollection as $question) {?>
+        <div class="clp_faq_item">
+            <div class="clp_faq_item_ques">
+                <?= /* @noEscape */ $question->getTitle() ?>
+            </div>
+            <div class="clp_faq_item_ans">
+            <?= /* @noEscape */ $block->getLimitFullAnswer($question);?>
+            <div class="am-links">
+                <a href="<?= $block->escapeUrl($amastyFaqBlock->getQuestionLink($question)) ?>">
+                    <?= $block->escapeHtml(__('Read More')); ?>
+                </a>
+            </div>
+            </div>
+        </div>
+        <?php }?>
+    </div>
+</div>
+<?php
+}
+?>

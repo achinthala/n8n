@@ -1,0 +1,22 @@
+<script>
+    function dcwEditQuoteButton() {
+        return {
+            click() {
+                window.dispatchEvent(
+                    new CustomEvent(
+                        'dcw-quote-edit-open-modal',
+                        { detail: this.$el.dataset.dcwquoteEditUrl }
+                    )
+                );
+            }
+        }
+    }
+
+    window.addEventListener(
+        'alpine:init',
+        () => Alpine.data('dcwEditQuoteButton', dcwEditQuoteButton),
+        {once: true}
+    );
+</script>
+<?php isset($hyvaCsp) && $hyvaCsp->registerInlineScript() ?>
+

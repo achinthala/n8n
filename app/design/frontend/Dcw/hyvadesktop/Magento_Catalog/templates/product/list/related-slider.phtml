@@ -1,0 +1,232 @@
+<?php
+/**
+ * Related products list - vertical layout (PDP sidebar + popup)
+ * Same Figma design in both places.
+ */
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Magento\Catalog\Block\Product\ReviewRendererInterface as ProductReviewRenderer;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var ViewModelRegistry $viewModels */
+
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+
+// Popup: items from block (getSliderForItems). PDP: from current product.
+$items = $block->getItems() ?? [];
+if (is_object($items) && $items instanceof \Iterator) {
+    $items = iterator_to_array($items);
+}
+if (empty($items)) {
+    $productViewModel = $viewModels->require(ProductPage::class);
+    $product = $productViewModel->getProduct();
+    if ($product) {
+        $collection = $product->getRelatedProductCollection()
+            ->addAttributeToSelect('*')
+            ->addAttributeToFilter('status', ['eq' => 1])
+            ->addAttributeToFilter('visibility', ['neq' => 1])
+			->setPositionOrder();
+        $items = $collection instanceof \Iterator ? iterator_to_array($collection) : $collection;
+    }
+}
+
+$relatedProducts = $items;
+$totalCount = count($relatedProducts);
+$initialDisplayCount = 5;
+$hasMore = $totalCount > $initialDisplayCount;
+$isPopup = !empty($block->getItems()); // Popup gets items from block; needs id="the-label" for modal
+
+if ($totalCount === 0) {
+    return '';
+}
+
+$itemRenderer = $block->getLayout()->getBlock('product_list_item');
+if (!$itemRenderer) {
+    $itemRenderer = $block->getLayout()->createBlock(\Magento\Catalog\Block\Product\AbstractProduct::class);
+}
+if (!$itemRenderer) {
+    return '';
+}
+$originalTemplate = $itemRenderer->getTemplate();
+$itemRenderer->setTemplate('Magento_Catalog::product/list/item-related.phtml');
+$itemRenderer->setData('cache_key_info', array_merge(
+    (array)$itemRenderer->getData('cache_key_info'),
+    ['theme' => $block->getThemeCacheKey()]
+));
+$viewMode = 'grid';
+$imageDisplayArea = 'category_page_grid';
+$showDescription = false;
+?>
+<div <?= $isPopup ? 'id="the-label" ' : '' ?>class="related-products-pdp-section" data-related-view-more data-related-view-more-increment="<?= (int)$initialDisplayCount ?>">
+    <h5>You May Also Need</h5>
+    <div class="related-products-list related_products_list_view">
+        <?php $index = 0; foreach ($relatedProducts as $relatedProduct): ?>
+            <div class="related_products_list_view_content related-product-item<?= $hasMore && $index >= $initialDisplayCount ? ' related-product-item--more' : '' ?>">
+                <?= /** @noEscape */ $productListItemViewModel->getItemHtmlWithRenderer(
+                    $itemRenderer,
+                    $relatedProduct,
+                    $block,
+                    $viewMode,
+                    ProductReviewRenderer::SHORT_VIEW,
+                    $imageDisplayArea,
+                    $showDescription
+                ) ?>
+            </div>
+        <?php $index++; endforeach; ?>
+        <?php if ($hasMore): ?>
+            <div class="related-products-view-more text-center mb-1">
+                <button type="button" class="related-view-more-btn text-[18px] leading-normal font-semibold text-[#296497] underline cursor-pointer hover:no-underline" data-related-view-more-trigger>
+                    View More
+                </button>
+            </div>
+            <style>.related-product-item--more{display:none}</style>
+        <?php endif; ?>
+    </div>    
+</div>
+<?php
+if (!empty($originalTemplate)) {
+    $itemRenderer->setTemplate($originalTemplate);
+}
+?>
+<script>
+(function() {
+    if (window._relatedViewMoreInit) return;
+    window._relatedViewMoreInit = true;
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-related-view-more-trigger]');
+        if (btn) {
+            var section = btn.closest('[data-related-view-more]');
+            if (section) {
+                var increment = parseInt(section.dataset.relatedViewMoreIncrement || '5', 10) || 5;
+                var list = section.querySelector('.related-products-list');
+                var hidden = list ? list.querySelectorAll('.related-product-item--more') : section.querySelectorAll('.related-product-item--more');
+                var len = hidden.length;
+                for (var i = 0; i < increment && i < len; i++) {
+                    var el = hidden[i];
+                    el.style.display = 'block';
+                    el.classList.remove('related-product-item--more');
+                }
+                if (typeof initRelatedAddToCartVisibility === 'function') initRelatedAddToCartVisibility();
+                if (section.querySelectorAll('.related-product-item--more').length === 0) {
+                    var viewMoreWrap = section.querySelector('.related-products-view-more');
+                    if (viewMoreWrap) viewMoreWrap.style.display = 'none';
+                }
+            }
+        }
+    });
+})();
+function updateRelatedPrice(productId, sourceOrContainer) {
+    var container = (sourceOrContainer && sourceOrContainer.closest && sourceOrContainer.closest('.configurable-options-related')) || document.querySelector('.configurable-options-related[data-product-id="' + productId + '"]');
+    if (!container) return;
+    var configStr = container.dataset.optionConfig || container.getAttribute('data-option-config');
+    if (!configStr) return;
+    try {
+        var optionConfig = JSON.parse(configStr);
+    } catch (e) { return; }
+    var selectedValues = {};
+    container.querySelectorAll('.super-attribute-select, input.super-attribute-fixed').forEach(function(el) {
+        var attrId = el.dataset.attrId || el.getAttribute('data-attr-id');
+        var val = el.tagName === 'SELECT' ? el.value : (el.value || '');
+        if (attrId && val) selectedValues[attrId] = val;
+    });
+    var productIndex = null;
+    var index = optionConfig.index || {};
+    var productIndexIds = Object.keys(index);
+    Object.keys(optionConfig.attributes || {}).forEach(function(attrId) {
+        var matchVal = selectedValues[attrId];
+        if (!matchVal) return;
+        var matching = productIndexIds.filter(function(idx) {
+            return String(index[idx][attrId] || '') === String(matchVal);
+        });
+        if (matching.length) productIndexIds = matching;
+    });
+    if (productIndexIds.length) {
+        var prices = optionConfig.optionPrices || {};
+        productIndex = productIndexIds.reduce(function(best, idx) {
+            var p = prices[idx];
+            var amt = (p && (p.finalPrice || p.customPrice)) ? (p.finalPrice || p.customPrice).amount : Infinity;
+            var bestAmt = (prices[best] && (prices[best].finalPrice || prices[best].customPrice)) ? (prices[best].finalPrice || prices[best].customPrice).amount : Infinity;
+            return amt < bestAmt ? idx : best;
+        }, productIndexIds[0]);
+    }
+    var priceData = productIndex && optionConfig.optionPrices && optionConfig.optionPrices[productIndex]
+        ? optionConfig.optionPrices[productIndex]
+        : (optionConfig.prices || {});
+    var finalPrice = priceData.finalPrice || priceData.customPrice;
+    if (!finalPrice || typeof finalPrice.amount === 'undefined') return;
+    var payload = {
+        finalPrice: finalPrice,
+        oldPrice: priceData.oldPrice || { amount: finalPrice.amount },
+        basePrice: priceData.basePrice || { amount: finalPrice.amount }
+    };
+    if (productIndex && optionConfig.coverage_per_case) {
+        payload.getIncstoresPimCoverage = optionConfig.coverage_per_case[productIndex] || '';
+    }
+    if (productIndex && optionConfig.calculator_type) {
+        payload.calculatorType = optionConfig.calculator_type[productIndex] || '';
+    }
+    if (productIndex && optionConfig.exact_width) {
+        payload.exactWidth = optionConfig.exact_width[productIndex] || 0;
+    }
+    if (productIndex && optionConfig.exact_length) {
+        payload.exactLength = optionConfig.exact_length[productIndex] || 0;
+    }
+    window.dispatchEvent(new CustomEvent('update-prices-' + productId, { detail: payload }));
+}
+function updateRelatedAddToCartVisibility(productId, sourceOrContainer) {
+    var container = (sourceOrContainer && sourceOrContainer.closest && sourceOrContainer.closest('.configurable-options-related')) || document.querySelector('.configurable-options-related[data-product-id="' + productId + '"]');
+    if (!container) return;
+    var calcMap = container.dataset.childCalculatorMap || container.getAttribute('data-child-calculator-map');
+    if (!calcMap) return;
+    var map = JSON.parse(calcMap);
+    var saleableMap = {};
+    try {
+        var sm = container.dataset.childSaleableMap || container.getAttribute('data-child-saleable-map');
+        if (sm) saleableMap = JSON.parse(sm);
+    } catch (e) {}
+    var keyParts = [];
+    container.querySelectorAll('.super-attribute-select, input.super-attribute-fixed').forEach(function(el) {
+        var attrId = el.dataset.attrId || el.getAttribute('data-attr-id');
+        var val = el.tagName === 'SELECT' ? el.value : (el.value || '');
+        if (attrId && val) keyParts.push(attrId + '_' + val);
+    });
+    keyParts.sort();
+    var mapKey = keyParts.join('|');
+    var calculatorType = map[mapKey] || '';
+    var isSaleable = (mapKey in saleableMap) ? !!saleableMap[mapKey] : false;
+    var showAddToCart = isSaleable && (calculatorType === 'none' || calculatorType === 'case' || calculatorType === 'sqft' || calculatorType === 'pre_cut_roll');
+    var productScope = container.closest('.related-product-item') || container.closest('.product-info') || container.closest('form.product_addtocart_form') || container.closest('.product-item');
+    var addToCartBlock = productScope ? productScope.querySelector('[id="related-addtocart-block-' + productId + '"]') : null;
+    var viewBlock = productScope ? productScope.querySelector('[id="related-view-block-' + productId + '"]') : null;
+    if (addToCartBlock) addToCartBlock.style.display = showAddToCart ? '' : 'none';
+    if (viewBlock) viewBlock.style.display = showAddToCart ? 'none' : '';
+}
+function initRelatedAddToCartVisibility() {
+    var els = document.querySelectorAll('.related-products-pdp-section .configurable-options-related[data-product-id]');
+    els.forEach(function(el) {
+        var pid = el.dataset.productId;
+        if (pid) {
+            if (typeof updateRelatedAddToCartVisibility === 'function') {
+                updateRelatedAddToCartVisibility(parseInt(pid), el);
+            }
+            if (typeof updateRelatedPrice === 'function') {
+                updateRelatedPrice(parseInt(pid), el);
+            }
+        }
+    });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRelatedAddToCartVisibility);
+} else {
+    initRelatedAddToCartVisibility();
+}
+window.addEventListener('hyva-modal-show', function(e) {
+    if (e.detail && e.detail.dialog === 'related-product-slider-dialog' && typeof initRelatedAddToCartVisibility === 'function') {
+        setTimeout(initRelatedAddToCartVisibility, 150);
+    }
+});
+</script>

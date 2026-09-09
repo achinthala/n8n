@@ -1,0 +1,88 @@
+<div id="ga4Sidepanel" class="ga4sidepanel">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeGA4Sidepanel()">×</a>
+    <json-viewer id="json-viewer"></json-viewer>
+</div>
+
+<button class="openDatalayerBtn" id="openDatalayerBtn" onclick="openGA4Sidepanel()">☰ Show DataLayer Content</button>
+
+<script>
+    window.onload = displayDataLayerValues();
+    var windowUrl = new URL(window.location.href);
+    if (windowUrl.searchParams.has('ga4-dataLayer')) {
+        window.localStorage.ga4Sidepanel = 'open';
+    }
+    function displayDataLayerValues(){
+        document.querySelector('#json-viewer').data = {};
+        document.querySelector('#json-viewer').data = window.dataLayer;
+        if (window.localStorage.ga4Sidepanel == 'open')
+            openGA4Sidepanel();
+        setTimeout(displayDataLayerValues, 500);
+    }
+
+    function openGA4Sidepanel() {
+        document.getElementById("ga4Sidepanel").style.width = "50%";
+        document.getElementById("openDatalayerBtn").style.display = "none";
+        window.localStorage.ga4Sidepanel = 'open';
+
+    }
+
+    function closeGA4Sidepanel() {
+        document.getElementById("ga4Sidepanel").style.width = "0";
+        document.getElementById("openDatalayerBtn").style.display = "block";
+        window.localStorage.ga4Sidepanel = 'closed';
+    }
+</script>
+
+<style>
+    json-viewer {
+        padding: 10px 20px;
+    }
+    .ga4sidepanel  {
+        position: fixed;
+        z-index: 99999;
+        top: 0;
+        right: 0;
+        background-color: #2a2f3a;
+        overflow-x: hidden;
+        width: 0;
+        overflow-y: scroll;
+        max-height: 100%;
+    }
+
+    .ga4sidepanel a {
+        padding: 8px 8px 8px 32px;
+        text-decoration: none;
+        font-size: 25px;
+        color: #818181;
+        display: block;
+    }
+
+    .ga4sidepanel a:hover {
+        color: #f1f1f1;
+    }
+
+    .ga4sidepanel .closebtn {
+        position: absolute;
+        top: 0;
+        right: 25px;
+        font-size: 36px;
+        z-index: 999999;
+    }
+
+    .openDatalayerBtn {
+        font-size: 20px;
+        cursor: pointer;
+        background-color: #111 !important;
+        color: white !important;
+        padding: 10px 15px;
+        border: none;
+        bottom: 5%;
+        z-index: 9999;
+        right: 5%;
+        position: fixed;
+    }
+
+    .openDatalayerBtn:hover {
+        background-color:#444 !important;
+    }
+</style>

@@ -1,0 +1,213 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+use Magento\Framework\Escaper;
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var \Magento\Customer\Block\Form\Login $block */
+/** @var \Magento\Customer\ViewModel\LoginButton $loginButtonViewModel */
+/** @var Escaper $escaper */
+
+$loginButtonViewModel = $block->getData('login_button_view_model');
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$socialblock  = $objectManager->get('\Bss\SocialLogin\Block\SocialLogin');
+?>
+<div class="customer_login_main">
+    <div class="block-new-customer social_login margin" >
+        <h2 id="authenticate-new-customer" class="text-size18 font-medium text-darkblack">
+            <?= $escaper->escapeHtml(__('Log In')) ?>
+        </h2>
+        <div class="block-content">
+            <?php if ($socialblock->hasButtons()) : ?>
+                    <div id="add_button_register_byclass" x-data="bssButtonSocial()" x-ref="registerSocialButton">
+                        <div class="">
+                            <div class="sociallogin-buttons">
+                                <ul class="sociallogin-clearfix flex flex-wrap">
+                                    <?php $i = 1 ; foreach ($socialblock->getPreparedButtons() as $button) : ?>
+                                        <li class="w-full text-size14 font-medium text-darkblack relative sociallogin-button <?php echo $button['type']; ?>"  <?php if ($i > $socialblock->showLimit()) :
+                                            ?>  style="display: none;" <?php
+                                        endif; ?> title="<?php echo __($button['register_text']); ?>">
+                                            <a class="sociallogin-button-link sociallogin-button-click" id="sociallogin-button-click" rel="nofollow"
+                                                href="javascript:void(0);" data-href="<?php echo $button['href']; ?>"
+                                                data-width="<?php echo $button['popup_width']; ?>"
+                                                data-height="<?php echo $button['popup_height']; ?>"
+                                                x-ref="<?php echo $button['type']; ?>"
+                                                @click="popupSocial($refs.<?php echo $button['type']; ?>)">
+                                                <span class="sociallogin-button-auto">
+                                                    <span class="sociallogin-button-icon">
+                                                        <?php echo !empty($button['image']) ? '<img class="inline-block h-8 w-8" src="' . $button['image'] . '" />' : ''; ?>
+                                                    </span>
+                                                    <?php if ($button['register_text'] != '') : ?>
+                                                        <span class="sociallogin-button-text"><?php echo __($button['login_text']); ?></span>
+                                                    <?php endif ?>
+                                                </span>
+                                            </a>
+                                        </li>
+                                        <?php ($i > $socialblock->showLimit())? $show_more = true : $show_more = false; ?>
+                                        <?php $i++;
+                                    endforeach; ?>
+                                </ul>
+                                <p class="or">or</p>
+                                <?php if ($show_more) : ?>
+                                    <div class="sociallogin-showmore flex cursor-pointer"
+                                            @click ="renderShowmore($refs.registerSocialButton)"
+                                            id="showmore-button">
+                                        <div class="showmore-button"></div>
+                                        <span class="showmore-button-text">Show more</span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <div style="clear: both;"></div>
+                    </div>
+            <?php endif; ?>
+        </div>
+    </div>  
+    <div class="block block-customer-login">
+        <div class="block-content" aria-labelledby="block-customer-login-heading">
+            <form class="form form-login"
+                enctype="multipart/form-data"
+                action="<?= $escaper->escapeUrl($block->getUrl('customer/account/loginPost')) ?>"
+                method="post"
+                id="login-form"
+                data-mage-init='{"validation":{}}'>
+                <?= $block->getBlockHtml('formkey') ?>
+                <fieldset class="fieldset login" data-hasrequired="<?= $block->escapeHtml(__('* Required Fields')) ?>">
+                    <div class="field email required">
+                        <label class="label" for="email"><span><?= $block->escapeHtml(__('Email')) ?></span></label>
+                        <div class="control">
+                            <input name="login[username]" value="<?= $block->escapeHtmlAttr($block->getUsername()) ?>"
+                                <?php if ($block->isAutocompleteDisabled()): ?> autocomplete="off"<?php endif; ?>
+                                   id="email" type="email" class="input-text"
+                                   title="<?= $block->escapeHtmlAttr(__('Email')) ?>"
+                                   placeholder="<?= $block->escapeHtmlAttr(__('Email address')) ?>"
+                                   data-mage-init='{"mage/trim-input":{}}'
+                                   data-validate="{required:true, 'validate-email':true}">
+                        </div>
+                    </div>
+                    <div class="field password required">
+                        <label for="pass" class="label"><span><?= $block->escapeHtml(__('Password')) ?></span></label>
+                        <div class="control">
+                            <input name="login[password]" type="password"
+                                <?php if ($block->isAutocompleteDisabled()): ?> autocomplete="off"<?php endif; ?>
+                                   class="input-text" id="pass"
+                                   title="<?= $block->escapeHtmlAttr(__('Password')) ?>"
+                                   placeholder="<?= $block->escapeHtmlAttr(__('Password')) ?>"
+                                   data-validate="{required:true}">
+                        </div>
+                    </div>
+                    <div class="field choice" data-bind="scope: 'showPassword'">
+                        <!-- ko template: getTemplate() --><!-- /ko -->
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="field choice showPassword" x-data>                        
+                            <input type="checkbox" name="login-show-password" @click="showLoginPassword()" id="login-show-password" value="" class="checkbox">
+                            <label class="cursor-pointer text-size12 font-normal text-darkblack" for="login-show-password">Show password</label>
+                            <!-- <span class="cursor-pointer text-size12 font-normal text-darkblack" @click="showLoginPasswordForLable()" id="show-password-label" >
+                                <?= $escaper->escapeHtml(__('Show Password')) ?>  
+                            </span>-->
+                        </div> 
+                        <div class="secondary"><a class="action remind cursor-pointer text-size12 font-normal text-darkblack underline" href="<?= $block->escapeUrl($block->getForgotPasswordUrl()) ?>"><span><?= $block->escapeHtml(__('Forgot Password?')) ?></span></a></div>    
+                    </div>                    
+                    <div class="actions-toolbar w-full">
+                        <div class="primary w-full"><button type="submit" class="action login primary w-full" name="send" id="send2"><span><?= $block->escapeHtml(__('Log In')) ?></span></button></div>
+                        
+                    </div>
+
+                <div class="block-new-customer new_customer text-center" x-show ="openCreate">
+                    <h2 id="authenticate-new-customer" class="text-size13 font-normal text-darkblack">
+                        <?= $escaper->escapeHtml(__('New Customer?')) ?>
+                    </h2>
+                    <div class="block-content">
+                        <div class="actions-toolbar">
+                            <a class="block cursor-pointer text-size18 font-semibold text-custom-blue"
+                            href="<?= $escaper->escapeUrl($block->getUrl('customer/account/create')) ?>"  >
+                                <?= $escaper->escapeHtml(__('Sign Up Now')) ?>
+                            </a>
+                        </div>
+                   </div>
+                </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+    <script>
+        function bssButtonSocial() {
+            return {
+                renderShowmore : function (element) {
+                    var socialButton = element.querySelector('.sociallogin-clearfix').getElementsByTagName("li");
+                    for (let i = 0; i <= socialButton.length - 1; i++) {
+                        socialButton[i].style.display = 'block';
+                    }
+                    element.querySelector('.sociallogin-showmore').style.display = 'none';
+                },
+                popupSocial: function (element) {
+                    var href = element.getAttribute('data-href');
+                    var width = element.getAttribute('data-width');
+                    var height = element.getAttribute('data-height');
+                    var popup_window = null;
+                    if (!width) {
+                        width = 650;
+                    }
+
+                    if(!height) {
+                        height = 350;
+                    }
+
+                    var left = parseInt((window.innerWidth- width) / 2);
+                    var top = parseInt((window.innerHeight - height) / 2);
+
+                    var params = [
+                        'resizable=yes',
+                        'scrollbars=no',
+                        'toolbar=no',
+                        'menubar=no',
+                        'location=no',
+                        'directories=no',
+                        'status=yes',
+                        'width='+ width,
+                        'height='+ height,
+                        'left='+ left,
+                        'top='+ top
+                    ];
+
+                    if(popup_window) {
+                        popup_window.close();
+                    }
+
+                    if(href) {
+                        popup_window = window.open(href,'',params.join(','));
+                        popup_window.focus();
+
+                    }else{
+                        alert('This Login Application was not configured correctly. Please contact our customer support.');
+                    }
+                    return false;
+                }
+            }
+        }
+        function showLoginPassword(){
+            console.log("show Passowrd ");
+            var showPwd=document.getElementById("login-show-password");
+            var password=document.getElementById("pass");
+            if(showPwd.checked==true) {
+                password.type="text";
+            } else {
+                password.type="password";
+            }
+        }    
+        function showLoginPasswordForLable(){
+            console.log("show Passowrd");
+            var password=document.getElementById("pass");
+            if (password.type === "password") {
+                password.type = "text";
+            } else {
+                password.type = "password";
+            }
+        } 
+
+    </script>
+</div>

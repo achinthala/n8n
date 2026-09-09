@@ -1,0 +1,204 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\Navigation;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\Escaper;
+use Magento\Catalog\Model\CategoryRepository; 
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var Navigation $viewModelNavigation */
+$viewModelNavigation = $viewModels->require(Navigation::class);
+
+$uniqueId = '_' . uniqid();
+
+// Order is important here: 1. build the menu data, 2. then set the cache tags from the view model identities
+$menuItems = $viewModelNavigation->getNavigation(4);
+$block->setData('cache_tags', $viewModelNavigation->getIdentities());
+
+
+$imageHelper = $this->helper('\Magento\Catalog\Helper\Image');
+$placeholderimage = $imageHelper->getDefaultPlaceholderUrl('image');
+$blockObj= $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+
+?>
+<div x-data="initMenuMobile<?= $escaper->escapeHtml($uniqueId) ?>()"
+     class="z-50 order-2 sm:order-1 lg:order-2 navigation xl:hidden"
+>
+    <!-- mobile -->    
+    <div @load.window="setActiveMenu($root)"
+         class="mobile-menu bg-lightblue"
+         :class="{'h-screen fixed top-0 left-0 w-full' : open}"
+         @toggle-mobile-menu.window="open = !open"
+         @keydown.window.escape="open=false"
+    >
+        <div class="flex items-baseline justify-between ml-0 menu-icon">
+            <div class="flex justify-end w-full">
+                <a @click="$dispatch('toggle-mobile-menu')"
+                       class="flex items-center justify-center cursor-pointer"
+                       :class="{ 'ml-auto': open }">                       
+                       <span class="close-icon px-5 py-2 text-size12 font-normal text-custom-blue rounded-md absolute" :class="{ 'hidden' : !open, 'block': open }">CLOSE</span>
+                    <img class="menu_icon -mt-0 mr-2 block" :class="{ 'block' : !open, 'hidden': open }" src="<?php echo $this->getViewFileUrl('images/menu-icon.png'); ?>" width="25" height="17" alt="menu-icon">
+                </a>
+            </div>
+        </div>
+        <div class="menu-overlay hidden" :class="{ 'hidden' : !open }" @click="$dispatch('toggle-mobile-menu')"></div>
+        <nav
+            class="hidden w-full h-full duration-150 ease-in-out transform transition-display pt-5 pr-5 pl-12"
+            :class="{ 'hidden' : !open }"
+        >
+        <span class="menu-label text-size28 font-medium text-black pt-1 pb-4" :class="{ 'hidden' : !open, 'block': open }">Menu</span>
+        <div class="nav-in overflow-y-auto overflow-x-hidden h-5/6">
+        <?php foreach ($menuItems as $index => $menuItem): ?>
+            <div class="level-0">               
+                <span class="flex items-center transition-transform duration-150 ease-in-out transform mb-3">
+                    <a class="flex items-center w-full cursor-pointer level-0 text-size24 font-medium text-black no-underline"
+                        <?php if (!empty($menuItem['childData'])){ ?>
+                            @click="mobilePanelActiveId =
+                            mobilePanelActiveId === '<?= /* @noEscape */ (string) $index ?>' ?
+                            0 : '<?= /* @noEscape */ (string) $index ?>'"
+                        <?php } else { ?>
+                            href="<?= $escaper->escapeUrl($menuItem['url']) ?>"
+                        <?php } ?>
+                       title="<?= $escaper->escapeHtmlAttr($menuItem['name']) ?>">
+                        <?= $escaper->escapeHtml($menuItem['name']) ?>
+                    </a>
+                    <?php if (!empty($menuItem['childData'])): ?>
+                    <a class="absolute right-0 cursor-pointer menu_arw1" :class="{
+                        'active' : mobilePanelActiveId,
+                        '' : !mobilePanelActiveId
+                    }"
+                          @click="mobilePanelActiveId =
+                          mobilePanelActiveId === '<?= /* @noEscape */ (string) $index ?>' ?
+                           0 : '<?= /* @noEscape */ (string) $index ?>'"
+                    >
+                        <img src="<?php echo $this->getViewFileUrl('images/menu-arw.png'); ?>" width="17" height="10" alt="menu-arw">
+                    </a>
+                    <?php endif; ?>
+                </span>
+                <?php if (!empty($menuItem['childData'])): ?>
+                    <div
+                        class="w-full h-full transition-transform duration-200 ease-in-out block transform"
+                        :class="{
+                            'block' : mobilePanelActiveId !== '<?= /* @noEscape */ (string) $index ?>',
+                            'hidden' : mobilePanelActiveId === '<?= /* @noEscape */ (string) $index ?>',
+                        }"
+                    >
+                        <?php foreach ($menuItem['childData'] as $subMenuItem): ?>
+                            
+                            <li class="imgcat list-none relative" x-data="{ show: false }" >
+                            <a 
+                            <?php if($subMenuItem['childData'] && count($subMenuItem['childData'])>0){?>
+                                @click="show = !show"
+                            <?php } else { ?>
+                                href="<?= $escaper->escapeUrl($subMenuItem['url']) ?>"
+                            <?php } ?>
+                               title="<?= $escaper->escapeHtmlAttr($subMenuItem['name']) ?>"
+                               class="flex items-center w-full cursor-pointer text-size18 font-normal text-black mb-4 mob-width-adjust"
+                            >
+                                <span>
+                                    <?= $escaper->escapeHtml($subMenuItem['name']) ?>
+                                </span>
+                            </a>
+                            
+                            <?php if($subMenuItem['childData'] && count($subMenuItem['childData'])>0){?>
+                                <img src="<?php echo $this->getViewFileUrl('images/menu-arw.png'); ?>" width="13" height="8" alt="menu-arw" @click="show = !show" class="absolute menu_arw" x-bind:class="show ? 'active' : ''">
+                             <ul class="z-10 w-full" x-show="show"> 
+                                <?php $count=0;foreach ($subMenuItem['childData'] as $itemLevel3):
+                                $catIdLvl2    = ($pos = strrpos($subMenuItem['id'], '-')) !== false
+                                    ? substr($subMenuItem['id'], $pos + 1)
+                                    : 0;
+                                //$category = $blockObj->getCategoryById($catIdLvl2);
+                               // $catThumbnail = $category->getData('cat_thumbnail');
+                                $count=$count+1;
+                                                    ?>
+                                    <li class="level-2">
+                                        <a href="<?= $escaper->escapeUrl($itemLevel3['url']) ?>"
+                                           title="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>"
+                                           class="level-2 pl-5 flex items-center w-full cursor-pointer text-size16 font-normal text-black mb-4">                                                                                                       
+                                           <?= $escaper->escapeHtml($itemLevel3['name']) ?></a>
+                                    </li>
+                                    <?php if($count>=6){break;}?>
+                                <?php endforeach; ?>
+                              </ul>
+                            <?php if(count($subMenuItem['childData'])>5){?>
+                                            <a class="text-size16 font-normal text-black underline pl-5 mt-2 mb-6 inline-block" href="<?= $escaper->escapeUrl($subMenuItem['url']) ?>" x-show="show"><?= $escaper->escapeHtml('View All') ?></a>
+                                            <?php }?> 
+                            <?php }?>
+                            
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                
+            </div>
+        <?php endforeach; ?>
+        <div class="menu_static_links">
+            <?php
+                echo $this->getLayout()
+                ->createBlock('Magento\Cms\Block\Block')
+                ->setBlockId('header_menu')
+                ->toHtml();
+            ?>
+        </div>
+    </div>
+        </nav>
+    </div>
+</div>
+<script>
+    'use strict';
+
+    const initMenuMobile<?= $escaper->escapeHtml($uniqueId) ?> = () => {
+        return {
+            mobilePanelActiveId: null,
+            open: false,
+            setActiveMenu(menuNode) {
+                Array.from(menuNode.querySelectorAll('a')).filter(link => {
+                    return link.href === window.location.href.split('?')[0];
+                }).map(item => {
+                    item.classList.add('underline');
+                    item.closest('div.level-0') &&
+                    item.closest('div.level-0').querySelector('a.level-0').classList.add('underline');
+                });
+            }
+        }
+    }    
+
+    window.addEventListener("scroll", function() {
+        successMsgSticky2();
+    });
+
+    // sticky header
+    function successMsgSticky2() {
+        if (window.innerWidth < 767) {
+            var headerHeight = document.querySelector('.page-header .panel.wrapper').offsetHeight;
+            var headerMainHeight = document.getElementById('header').offsetHeight;
+            var scrollTop = window.scrollY;
+
+            if (scrollTop >= headerHeight) {
+                document.body.classList.add('scroll-reached-hHgt');
+                document.body.style.paddingTop = headerMainHeight + 'px';
+            } else {
+                document.body.classList.remove('scroll-reached-hHgt');
+                document.body.style.paddingTop = '0';
+            }
+        }
+    }
+
+    window.addEventListener("load", function() {
+        successMsgSticky2();
+    });
+</script>

@@ -1,0 +1,163 @@
+<?php
+/* @var $block \Mirasvit\Rma\Block\Rma\View */
+$rma      = $block->getRma();
+$orders   = $block->getOrders();
+$progress = $block->getProgress();
+
+$statusMessage = $block->getStatusMessage();
+
+$isMultiorders = count($orders) > 1;
+?>
+<div class="mst-rma-<?php if ($block->isCustomerLoggedIn()) : ?>view<?php else: ?>guest<?php endif ?>">
+    <?php if ($progress): ?>
+        <div style="display: flex; justify-content: center;" class="mb-4">
+            <ul class="opc-progress-bar">
+                <?php foreach ($progress as $item): ?>
+                    <?php if (!$item['visible']) {
+                        continue;
+                    } ?>
+                    <li class="opc-progress-bar-item inline-block <?php if ($item['active']): ?>_active<?php endif ?>">
+                        <span><?= $block->escapeHtml($item['label']) ?></span>
+                    </li>
+                <?php endforeach ?>
+            </ul>
+        </div>
+        <style>
+            .opc-progress-bar {
+                margin-top: 20px;
+                counter-reset: i;
+                display: block;
+                font-size: 0;
+            }
+            .opc-progress-bar-item {
+                margin: 0 0 10px;
+                width: 200px;
+                display: inline-block;
+                position: relative;
+                text-align: center;
+                vertical-align: top;
+            }
+            .opc-progress-bar-item._active:before {
+                background: #ff5501;
+                border-color: #ff5501;
+            }
+            .opc-progress-bar-item:before {
+                background: #e4e4e4;
+                top: 22px;
+                transition: background .3s;
+                content: '';
+                height: 10px;
+                left: 0;
+                position: absolute;
+                width: 100%;
+            }
+            .opc-progress-bar-item:first-child:before {
+                border-radius: 6px 0 0 6px;
+            }
+            .opc-progress-bar-item:last-child:before {
+                border-radius: 0 6px 6px 0;
+            }
+            .opc-progress-bar-item span {
+                display: inline-block;
+                padding-top: 60px;
+                width: 100%;
+                word-wrap: break-word;
+                color: #666;
+                font-weight: 300;
+                font-size: 1.2rem;
+            }
+            .opc-progress-bar-item span:before {
+                background: #e4e4e4;
+                height: 50px;
+                margin-left: -22px;
+                transition: background .3s;
+                width: 50px;
+                border-radius: 50%;
+                content: '';
+                left: 50%;
+                position: absolute;
+                top: 0;
+            }
+            .opc-progress-bar-item._active>span:before {
+                background: #ff5501;
+                border-color: #ff5501;
+            }
+            .opc-progress-bar-item span:after {
+                background: #fff;
+                height: 32px;
+                margin-left: -13px;
+                left: 50%;
+                position: absolute;
+                top: 9px;
+                width: 32px;
+                content: counter(i);
+                counter-increment: i;
+                color: rgba(75, 85, 99, .8);
+                font-weight: 600;
+                font-size: 1.4rem;
+                border-radius: 50%;
+            }
+            .opc-progress-bar-item._active>span {
+                color: black;
+            }
+            .opc-progress-bar-item._active>span:after {
+                border-color: #ff5501;
+                content: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"%3E %3Cpath stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /%3E %3C/svg%3E');
+            }
+        </style>
+    <?php endif ?>
+
+    <?php if ($statusMessage): ?>
+        <div class="mst-rma-box mst-rma__status p-4 mb-4 border-2 text-center rounded">
+            <?= $statusMessage ?>
+        </div>
+        <style>
+            .mst-rma-box.mst-rma__status {
+                background-color: #fff0e9;
+                border-color: #ff5501;
+            }
+        </style>
+    <?php endif; ?>
+
+    <?= $block->getChildHtml('rma.view.buttons') ?>
+
+    <?= $block->getChildHtml('rma.view.info') ?>
+
+    <div class="mst-rma-view__orders mb-4">
+        <?php foreach ($orders as $order): ?>
+            <?php if ($order): ?>
+                <div class="_no-border">
+                    <div class="mst-rma-box _no-border">
+                        <div class="mst-rma-box__title text-lg title">
+                            <?php if ($isMultiorders): ?>
+                                <?= __('RMA Items (order %1)', $block->escapeHtml($block->getOrderLabel($order))) ?>
+                            <?php else: ?>
+                                <?= __('RMA Items') ?>
+                            <?php endif ?>
+                        </div>
+
+                        <div class="mst-rma-box__content text-gray-600">
+                            <?php
+                            $itemsBlock = $order->getIsOffline()
+                                ? $block->getChildBlock('rma.view.offline.items')
+                                : $block->getChildBlock('rma.view.items');
+                            $itemsBlock->setOrder($order);
+                            ?>
+                            <?= $itemsBlock->toHtml() ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif ?>
+        <?php endforeach ?>
+    </div>
+
+    <div class="mst-rma-block _align-top flex items-start">
+        <?= $block->getChildHtml('rma.view.message') ?>
+        <?= $block->getChildHtml('rma.view.history') ?>
+    </div>
+    <style>
+        .mst-rma-block>div {
+            max-width: 50%;
+        }
+    </style>
+</div>

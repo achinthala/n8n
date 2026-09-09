@@ -1,0 +1,38 @@
+<?php
+$order = $block->getOrder();
+$dcwAdminblock = $block->getLayout()->createBlock(\Dcw\RequestQuote\Block\Adminhtml\Index::class);
+$adminUserNamesArr = $dcwAdminblock->getAdminUserNames();
+?>
+<tr>
+    <th>Admin User Assistance</th>
+    <td>
+        <form id="admin_user_assistance_frm" method="post" action="<?= $block->getUrl('dcwordersaveadmin/adminuserassistance/update')?>">
+            <?php echo $block->getBlockHtml('formkey')?>
+            <input type="hidden" name="order_id" value="<?= $order->getId()?>"/>
+            <select name="admin_user_assistance" id="admin_user_assistance">
+            <option  value="">---Select Admin User---</option>
+                <?php
+                    foreach ($adminUserNamesArr as $adminUserName) {
+                    if ($order->getAdminUserAssistance() == $adminUserName['value'] ) {
+                        $selected_attr = 'selected';
+                    } else {
+                        $selected_attr = '';
+                    }
+                    ?>
+                    <option  value="<?= $adminUserName['value']?>" <?= $selected_attr?>><?= $adminUserName['label']?></option>
+                <?php } ?>
+            </select>
+        </form>
+    </td>
+</tr>
+
+<script>
+    require(['jquery'],function($){
+        $(function() {
+            $('#admin_user_assistance').change(function(){
+                $('#admin_user_assistance_frm').submit();
+            });
+            
+        });
+    });
+</script>

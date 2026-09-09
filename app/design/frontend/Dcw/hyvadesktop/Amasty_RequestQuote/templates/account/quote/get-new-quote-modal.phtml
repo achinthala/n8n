@@ -1,0 +1,72 @@
+<?php
+/**
+ * Get New Quote confirmation modal
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\Modal;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var Template $block */
+/** @var Escaper $escaper */
+
+$modalViewModel = $viewModels->require(Modal::class);
+$getNewQuoteModal = $modalViewModel->createModal();
+$getNewQuoteModal->withTemplate('Amasty_RequestQuote::account/quote/get-new-quote-modal-content.phtml');
+$getNewQuoteModal->withDialogRefName('get-new-quote-confirm-modal');
+$getNewQuoteModal->addDialogClass('max-w-lg');
+
+?>
+
+<div x-cloak
+     x-data="initGetNewQuoteModal()"
+     x-init="init()">
+    <?= /** @noEscape */ $getNewQuoteModal ?>
+</div>
+
+<script>
+'use strict';
+
+function initGetNewQuoteModal() {
+    return {
+        ...hyva.modal(),
+        init() {
+            const self = this;
+            
+            // Intercept "Get New Quote" button clicks
+            const interceptButton = () => {
+                const getNewQuoteButton = document.querySelector('a[href*="createNewFromExpired"]');
+                
+                if (getNewQuoteButton && !getNewQuoteButton.dataset.intercepted) {
+                    getNewQuoteButton.addEventListener('click', (e) => {
+                        // Always show confirmation modal
+                        e.preventDefault();
+                        e.stopPropagation();
+                        self.show('<?= $escaper->escapeJs($getNewQuoteModal->getDialogRefName()) ?>');
+                    }, true);
+                    getNewQuoteButton.dataset.intercepted = 'true';
+                }
+            };
+            
+            // Run after a short delay to ensure DOM is ready
+            setTimeout(interceptButton, 100);
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', interceptButton);
+            } else {
+                interceptButton();
+            }
+        },
+        proceedToGetNewQuote() {
+            const getNewQuoteButton = document.querySelector('a[href*="createNewFromExpired"]');
+            if (getNewQuoteButton) {
+                window.location.href = getNewQuoteButton.getAttribute('href');
+            }
+            this.hide('<?= $escaper->escapeJs($getNewQuoteModal->getDialogRefName()) ?>');
+        }
+    };
+}
+</script>
+

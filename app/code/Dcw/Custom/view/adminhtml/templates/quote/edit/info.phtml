@@ -1,0 +1,232 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */
+/** @var \Amasty\RequestQuote\Block\Adminhtml\Quote\Edit\Info $block */
+$quote = $block->getQuote();
+
+$quoteAdminDate = $block->formatDate(
+    $block->getQuoteAdminDate($quote->getData('submited_date')),
+    \IntlDateFormatter::MEDIUM,
+    true
+);
+
+$quoteStoreDate = $block->formatDate(
+    $quote->getData('submited_date'),
+    \IntlDateFormatter::MEDIUM,
+    true,
+    $block->getTimezoneForStore($quote->getStore())
+);
+$customhelper = $this->helper('Dcw\Custom\Helper\Data');
+$cartLabel = $customhelper->getCartLabel($quote->getId());
+
+$quoteCartLabel = "";
+
+if (isset($cartLabel['cart_label'])) {
+    $quoteCartLabel = $cartLabel['cart_label'];
+}
+
+$getCartLabelOptions = $customhelper->getCartLabelOptions();
+?>
+<section class="amquote-order-view admin__page-section order-view-account-information">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $escaper->escapeHtml(__('Quote & Account Information')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <div class="admin__page-section-item order-information">
+            <?php /* Quote Information */ ?>
+            <div class="admin__page-section-item-title">
+                <span class="title">
+                        <?= $escaper->escapeHtml(__('Quote # %1', $quote->getIncrementId())) ?>
+                </span>
+            </div>
+            <div class="admin__page-section-item-content">
+                <table class="amquote-order-table admin__table-secondary order-information-table">
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Quote Date')) ?></th>
+                        <td><?= $escaper->escapeHtml($quoteAdminDate) ?></td>
+                    </tr>
+                    <?php if ($quoteAdminDate != $quoteStoreDate): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Quote Date (%1)', $block->getTimezoneForStore($quote->getStore()))) ?></th>
+                            <td><?= $escaper->escapeHtml($quoteStoreDate) ?></td>
+                        </tr>
+                    <?php endif;?>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Status')) ?></th>
+                        <td><span id="order_status"><?= $escaper->escapeHtml($quote->getStatusLabel()) ?></span></td>
+                    </tr>
+                    <?php if ($block->isExpiredShow()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Expiry Date')) ?></th>
+                            <td><input name="quote[expired_date]" class="admin__control-text edit-date" value="<?= $escaper->escapeHtml($block->getExpiredDate()) ?>"/></td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if ($block->isReminderShow()): ?>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Reminder Date')) ?></th>
+                        <td><input name="quote[reminder_date]" class="admin__control-text edit-date" value="<?= $escaper->escapeHtml($block->getReminderDate()) ?>"/></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?= $block->getChildHtml() ?>
+                    <?php if ($block->isSingleStoreMode() == false): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Created From')) ?></th>
+                            <td><?= $escaper->escapeHtml($block->getQuoteStoreName(), ['br']) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if ($quote->getRelationChildId()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Link to the New Quote')) ?></th>
+                            <td>
+                                <a href="<?= $escaper->escapeHtml($block->getViewUrl($quote->getRelationChildId())) ?>">
+                                    <?= $escaper->escapeHtml($quote->getRelationChildRealId()) ?>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if ($quote->getRelationParentId()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Link to the Previous Quote')) ?></th>
+                            <td>
+                                <a href="<?= $escaper->escapeHtml($block->getViewUrl($quote->getRelationParentId())) ?>">
+                                    <?= $escaper->escapeHtml($quote->getRelationParentRealId()) ?>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if ($quote->getRemoteIp() && $block->shouldDisplayCustomerIp()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Placed from IP')) ?></th>
+                            <td><?= $escaper->escapeHtml($quote->getRemoteIp()) ?><?= $escaper->escapeHtml($quote->getXForwardedFor() ? ' (' . $quote->getXForwardedFor() . ')' : '') ?></td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if ($quote->getGlobalCurrencyCode() != $quote->getBaseCurrencyCode()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('%1 / %2 rate:', $quote->getGlobalCurrencyCode(), $quote->getBaseCurrencyCode())) ?></th>
+                            <td><?= $escaper->escapeHtml($quote->getBaseToGlobalRate()) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if ($quote->getBaseCurrencyCode() != $quote->getQuoteCurrencyCode()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('%1 / %2 rate:', $quote->getQuoteCurrencyCode(), $quote->getBaseCurrencyCode())) ?></th>
+                            <td><?= $escaper->escapeHtml($quote->getBaseToQuoteRate()) ?></td>
+                        </tr>
+                    <?php endif; ?>
+				
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Cart Label')) ?></th>
+                        <td>
+                            <select id="cart_label" name="cart_label">
+                                <option value="">---Select Cart Label---</option>
+                                <?php foreach($getCartLabelOptions as $option) { ?>
+                                <option value="<?php echo $option['value'];?>" <?php if ($quoteCartLabel == $option['value']) echo 'selected';?>><?php echo $option['label'];?></option>
+                                <?php } ?>
+                            </select>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin__page-section-item order-account-information">
+            <?php /* Account Information */ ?>
+            <div class="admin__page-section-item-title">
+                <span class="title"><?= $escaper->escapeHtml(__('Account Information')) ?></span>
+                <div class="actions">
+                    <?php if ($customerUrl = $block->getCustomerViewUrl()): ?>
+                        <a href="<?= /* @noEscape */ $block->getCustomerViewUrl() ?>" target="_blank">
+                            <?= $escaper->escapeHtml(__('Edit Customer')) ?>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="admin__page-section-item-content">
+                <table class="amquote-order-table admin__table-secondary order-account-information-table">
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Customer Name')) ?></th>
+                        <td>
+                            <?php if ($customerUrl = $block->getCustomerViewUrl()): ?>
+                                <a href="<?= $escaper->escapeUrl($customerUrl) ?>" target="_blank">
+                                    <span><?= $escaper->escapeHtml($quote->getCustomerName()) ?></span>
+                                </a>
+                            <?php else: ?>
+                                <?= $escaper->escapeHtml($quote->getCustomerName()) ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Email')) ?></th>
+                        <td><a href="mailto:<?= $escaper->escapeHtml($quote->getCustomerEmail()) ?>"><?= $escaper->escapeHtml($quote->getCustomerEmail()) ?></a></td>
+                    </tr>
+                    <?php if ($groupName = $block->getCustomerGroupName()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Customer Group')) ?></th>
+                            <td><?= $escaper->escapeHtml($groupName) ?></td>
+                        </tr>
+                    <?php endif; ?>
+                    <?php if (!$quote->getCustomerIsGuest()): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml(__('Account Created')) ?></th>
+                            <td><span><?= $escaper->escapeHtml($block->getAccountCreated()) ?></span></td>
+                        </tr>
+                    <?php endif; ?>
+                    <tr>
+                        <th><?= $escaper->escapeHtml(__('Orders Total')) ?></th>
+                        <td><span><?= $escaper->escapeHtml($block->getAccountTotals()) ?></span></td>
+                    </tr>
+                    <?php foreach ($block->getCustomerAccountData() as $data): ?>
+                        <tr>
+                            <th><?= $escaper->escapeHtml($data['label']) ?></th>
+                            <td><?= $escaper->escapeHtml($data['value'], ['br']) ?></td>
+                        </tr>
+                    <?php endforeach;?>
+                    <?= $block->getChildHtml('extra_customer_info') ?>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<?= /* @noEscape */ $secureRenderer->renderTag(
+    'script',
+    ['type' => 'text/javascript'],
+    'require([
+        \'jquery\',
+        \'jquery/ui\', // can\'t be removed, but can be replaced with: \'jquery-ui-modules/datepicker\'
+        \'mage/calendar\'
+    ], function ($) {
+    var editDates = $(\'.edit-date\');
+    editDates.calendar({
+            showOn: \'both\',
+            changeYear: true,
+            yearRange: \'1900:2100\',
+            autoSize: true,
+            buttonText: \'\',
+            minDate: new Date(),
+            dateFormat: "' . $escaper->escapeHtml($block->getDateFormat()) . '"
+        });
+        $.each(editDates, function (key, editDate) {
+            var dateValue = $(editDate).val();
+            if (dateValue) {
+                // Extract just the date portion (before comma if time is included)
+                var dateOnly = dateValue.split(\',\')[0].trim();
+                if (dateOnly && !isNaN(Date.parse(dateOnly))) {
+                    try {
+                        $(editDate).datepicker(\'setDate\', dateOnly);
+                    } catch (e) {
+                        // If setDate fails, try parsing with Date object
+                        var parsedDate = new Date(dateValue);
+                        if (!isNaN(parsedDate.getTime())) {
+                            $(editDate).datepicker(\'setDate\', parsedDate);
+                        }
+                    }
+                }
+            }
+        });
+    });',
+    false
+) ?>

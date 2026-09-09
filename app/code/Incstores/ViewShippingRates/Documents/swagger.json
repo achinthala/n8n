@@ -1,0 +1,371 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Shipping Rates API",
+    "description": "API for calculating shipping rates across multiple carriers",
+    "version": "v1"
+  },
+  "paths": {
+    "/shipping/rate/all": {
+      "post": {
+        "tags": [
+          "AllLineItemShipping"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesBasedShippingQuoteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesBasedShippingQuoteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesBasedShippingQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/shipping/rate/cheapest": {
+      "post": {
+        "tags": [
+          "CheapestLineItemShipping"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesBasedShippingQuoteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesBasedShippingQuoteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RulesBasedShippingQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/shipping/rate/simple": {
+      "post": {
+        "tags": [
+          "SimpleShipping"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomShipmentQuoteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomShipmentQuoteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomShipmentQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Address": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string",
+            "nullable": true
+          },
+          "street2": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "zipCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "$ref": "#/components/schemas/Countries"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Countries": {
+        "enum": [
+          "US",
+          "CA"
+        ],
+        "type": "string"
+      },
+      "CustomShipmentQuoteRequest": {
+        "type": "object",
+        "properties": {
+          "pickUpFrom": {
+            "$ref": "#/components/schemas/FulfillmentLocation"
+          },
+          "pickUpDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliverTo": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "deliveryOptions": {
+            "$ref": "#/components/schemas/LTLDeliveryOptions"
+          },
+          "carrierName": {
+            "type": "string",
+            "nullable": true
+          },
+          "weightClass": {
+            "$ref": "#/components/schemas/WeightClasses"
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShipmentPackage"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "FulfillmentLocation": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LTLDeliveryOptions": {
+        "type": "object",
+        "properties": {
+          "isResidential": {
+            "type": "boolean"
+          },
+          "isLiftGateRequired": {
+            "type": "boolean"
+          },
+          "deliveryNotification": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LineItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "sku": {
+            "type": "string",
+            "nullable": true
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "serviceLevel": {
+            "$ref": "#/components/schemas/ServiceLevels"
+          },
+          "type": {
+            "$ref": "#/components/schemas/LineItemTypes"
+          },
+          "productId": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "variantId": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          },
+          "colorId": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LineItemTypes": {
+        "enum": [
+          "FinishedGood",
+          "Sample",
+          "PromotionalGood"
+        ],
+        "type": "string"
+      },
+      "ProductTypes": {
+        "enum": [
+          "Standard",
+          "Roll"
+        ],
+        "type": "string"
+      },
+      "RulesBasedShippingQuoteRequest": {
+        "type": "object",
+        "properties": {
+          "transactionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "shipToAddress": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "lineItems": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineItem"
+            },
+            "nullable": true
+          },
+          "deliveryOptions": {
+            "$ref": "#/components/schemas/LTLDeliveryOptions"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ServiceLevels": {
+        "enum": [
+          "Standard",
+          "Expedited",
+          "NextDay",
+          "OutsideContinentalUS"
+        ],
+        "type": "string"
+      },
+      "ShipmentPackage": {
+        "type": "object",
+        "properties": {
+          "lineItemId": {
+            "type": "string",
+            "nullable": true
+          },
+          "units": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "productType": {
+            "$ref": "#/components/schemas/ProductTypes"
+          },
+          "unitWeight": {
+            "type": "number",
+            "format": "double"
+          },
+          "dollarValue": {
+            "type": "number",
+            "format": "double"
+          },
+          "serviceLevel": {
+            "$ref": "#/components/schemas/ServiceLevels"
+          },
+          "lineItemType": {
+            "$ref": "#/components/schemas/LineItemTypes"
+          },
+          "applyUpCharge": {
+            "type": "boolean"
+          },
+          "upCharge": {
+            "$ref": "#/components/schemas/UpCharge"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpCharge": {
+        "type": "object",
+        "properties": {
+          "percentUpCharge": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "surchargeDollarAmount": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "WeightClasses": {
+        "enum": [
+          "CLASS_50",
+          "CLASS_55",
+          "CLASS_60",
+          "CLASS_65",
+          "CLASS_70",
+          "CLASS_77_5",
+          "CLASS_85",
+          "CLASS_92_5",
+          "CLASS_100",
+          "CLASS_110",
+          "CLASS_125",
+          "CLASS_150",
+          "CLASS_175",
+          "CLASS_200",
+          "CLASS_250",
+          "CLASS_300",
+          "CLASS_400",
+          "CLASS_500",
+          "NA"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

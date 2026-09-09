@@ -1,0 +1,194 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/**
+ * @var $block \Magento\Company\Block\Company\Role\Edit
+ * @var $escaper \Magento\Framework\Escaper
+ */
+
+$role = $block->getRole();
+?>
+<?php
+        // This is a temporary solution for backward compatibility because we cannot modify block public api methods
+        // Modify getTreeJsOptions methods in minor version for it to return array without roleTree key
+        $treeJsOptions = $block->getTreeJsOptions();
+        $treeOptions = $treeJsOptions['roleTree'];
+?>
+ 
+        <?php
+        
+        $allcheckeditems=[];
+        if (isset($treeOptions['data'])) {
+            foreach ($treeOptions['data'] as $permition) {
+                if (isset($permition['state']['selected']) && $permition['state']['selected']==1) {
+                    $allcheckeditems[]=$permition['id'];
+                }
+                if (isset($permition['children'])) {
+                    foreach ($permition['children'] as $chPermi) {
+                        if (isset($chPermi['state']['selected']) && $chPermi['state']['selected']==1) {
+                            $allcheckeditems[]=$chPermi['id'];
+                        }
+                        if (isset($chPermi['children'])) {
+                            foreach ($chPermi['children'] as $chPermi2) {
+                                if (isset($chPermi2['state']['selected']) && $chPermi2['state']['selected']==1) {
+                                        $allcheckeditems[]=$chPermi2['id'];
+                                }
+                                if (isset($chPermi2['children'])) {
+                                    foreach ($chPermi2['children'] as $chPermi3) {
+                                        if (isset($chPermi3['state']['selected'])
+                                            && $chPermi3['state']['selected']==1) {
+                                            $allcheckeditems[]=$chPermi3['id'];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+        }?>
+ <?php $allitemstring= $block->escapeHtml(json_encode($allcheckeditems));?>
+
+<form x-data="{ checkedItems: <?=/** @noEscape */ $allitemstring?> }" 
+class="form form-edit-role" method="post" id="role-edit-form"
+      action="<?= /** @noEscape */  $block->escapeUrl($block->getUrl('*/*/editPost', ['id' => $role->getId()])) ?>"
+      data-mage-init='{"validation":{}}'>
+    <?= $block->getBlockHtml('formkey') ?>
+
+    <fieldset class="fieldset info">
+        <legend class="legend"><span><?= $block->escapeHtml(__('Role Information')) ?></span></legend>
+        <div class="field role-name _required">
+            <label class="label" for="role_name">
+                <span><?= $block->escapeHtml(__('Role Name')) ?></span>
+            </label>
+            <div class="control">
+            <i class="jstree-icon jstree-ocl" role="presentation"></i>
+                <input type="text" name="role_name" id="role_name"
+                       value="<?= $block->escapeHtmlAttr($role->getRoleName()) ?>"
+                       title="<?= $block->escapeHtmlAttr(__('Role Name')) ?>"
+                       data-async-is-valid="true"
+                       data-mage-init='{"Magento_Company/js/form/element/async-validation": {
+                            "name": "company_role_name",
+                            "validateUrl": "<?= $block->escapeUrl($block->getUrl('company/role/validate')) ?>"
+                       }}'
+                       data-validate="{required:true, 'validate-async-company-role-name': true}"
+                       class="input-text">
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="fieldset info permitionchecked">
+        <legend class="legend"><span><?= $block->escapeHtml(__('Role Permissions')) ?></span></legend>
+        <p class="note">
+            <?= $escaper->escapeHtml(__('Granting permissions does not affect which features are
+            available for your company account. The merchant must enable features to make
+            them available for your account.')) ?>
+        </p>
+        <div class="box-actions" x-data="{ show: true }" :class="{ 'notopenrole': !show, 'openrole': show }">
+            <button class="action expand" data-action="expand-tree" type="button" @click="show = !show">
+                <span><?= $block->escapeHtml(__('Expand / Collapse')) ?></span>
+            </button>
+          <!--  <button class="action expand" data-action="collapse-tree" type="button">
+                <span><?= $block->escapeHtml(__('Collapse Allll')) ?></span>
+            </button> -->
+        </div>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        <?php if (isset($treeOptions['data'])) {?>
+        <ul x-show="!show" class="mt-8">
+            <?php foreach ($treeOptions['data'] as $permition) {?>
+            
+            <li >
+                <i class="jstree-icon jstree-ocl" role="presentation"></i>
+                <label class="label" for="role_name">
+                    <span><?=$block->escapeHtml(__($permition['text']))?></span>
+                </label>
+                <input x-model="checkedItems" 
+                @click="setTimeout(() => checkeddataarreng(checkedItems), 100);"
+                type="checkbox" value="<?=/** @noEscape */$permition['id']?>" >
+                <?php if (isset($permition['children'])) {?>    
+             <ul> 
+                    <?php foreach ($permition['children'] as $chPermi) {?>
+                <li>
+                <i class="jstree-icon jstree-ocl" role="presentation"></i>
+                    <label class="label" for="role_name">
+                        <span><?=$block->escapeHtml(__($chPermi['text']))?></span>
+                    </label>
+                    <input x-model="checkedItems" 
+                    @click="setTimeout(() => checkeddataarreng(checkedItems), 100);"
+                    type="checkbox" value="<?=/** @noEscape */$chPermi['id']?>" >
+                        <?php if (isset($chPermi['children'])) {?>
+                    <ul>
+                            <?php foreach ($chPermi['children'] as $chPermi2) {?>
+                        <li>
+                        <i class="jstree-icon jstree-ocl" role="presentation"></i>
+                            <label class="label" for="role_name">
+                                <span><?=$block->escapeHtml(__($chPermi2['text']))?></span>
+                            </label>
+                            <input x-model="checkedItems" 
+                            @click="setTimeout(() => checkeddataarreng(checkedItems), 100);"
+                            type="checkbox" value="<?=/** @noEscape */$chPermi2['id']?>" >
+                            
+                                <?php if (isset($chPermi2['children'])) {?>
+                            <ul>
+                                    <?php foreach ($chPermi2['children'] as $chPermi3) {?>
+                                <li>
+                                <i class="jstree-icon jstree-ocl" role="presentation"></i>
+                                    <label class="label" for="role_name">
+                                        <span><?=$block->escapeHtml(__($chPermi3['text']))?></span>
+                                    </label>
+                                    <input x-model="checkedItems" 
+                                    @click="setTimeout(() => checkeddataarreng(checkedItems), 100);" 
+                                    type="checkbox" value="<?=/** @noEscape */$chPermi3['id']?>" >
+                                </li>
+                                <?php } ?>
+                            </ul>
+                        <?php } ?>
+                        
+                        </li>
+                        <?php } ?>
+                    </ul>
+                    <?php } ?>
+                </li>
+                <?php } ?>
+            </ul>
+            <?php } ?>    
+            </li>
+            <?php } ?>
+        </ul>
+        <?php }?>
+        <input type="hidden" name="role_permissions" 
+        value='<?=/** @noEscape */$allitemstring?>' id="role_permissions" />
+    </fieldset> 
+
+    <div class="actions-toolbar">
+        <div class="primary">
+            <button type="submit" @click="checkeddataarreng(checkedItems);"
+            class="action save primary" title="<?= $block->escapeHtmlAttr(__('Save Role')) ?>">
+                <span><?= $block->escapeHtml(__('Save Role')) ?></span>
+            </button>
+        </div>
+    </div>
+</form>
+<script>
+  function checkeddataarreng(checkedItems) {
+        var str1 = checkedItems.toString();
+   document.getElementById('role_permissions').value=str1;
+    return true;
+    // Do something with checked items, like sending them to the server
+  } 
+</script>

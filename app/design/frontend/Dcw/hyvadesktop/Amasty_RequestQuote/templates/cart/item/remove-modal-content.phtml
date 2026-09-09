@@ -1,0 +1,35 @@
+<?php
+/**
+ * Remove item confirmation modal content
+ */
+
+use Hyva\Theme\Model\Modal\ModalBuilderInterface;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var ModalBuilderInterface $modal */
+/** @var Escaper $escaper */
+/** @var Template $block */
+?>
+
+<div class="flex flex-col w-full">
+    <p>
+        <?= $escaper->escapeHtml(__('Are you sure you would like to remove this item from the shopping cart?')) ?>
+    </p>
+    <p>
+        <?= $escaper->escapeHtml(__('This item is a part of the approved quote. Removing it will remove all quote items from the cart.')) ?>
+    </p>
+</div>
+<div class="w-full flex flex-row gap-3 mt-4">
+    <button type="button"
+            class="btn btn-secondary"
+            @click="hide('<?= $escaper->escapeHtmlAttr($modal->getDialogRefName()) ?>')">
+        <?= $escaper->escapeHtml(__('Cancel')) ?>
+    </button>
+    <button type="button"
+            class="btn btn-primary"
+            @click="removeFromQuoteCart()">
+        <?= $escaper->escapeHtml(__('OK')) ?>
+    </button>
+</div>
+

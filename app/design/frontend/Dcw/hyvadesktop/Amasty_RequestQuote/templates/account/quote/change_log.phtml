@@ -1,0 +1,369 @@
+<?php
+/**
+ * Quote Change Log Template
+ */
+
+use Magento\Framework\Escaper;
+
+/** @var \Dcw\RequestQuote\Block\Account\Quote\ChangeLog $block */
+/** @var Escaper $escaper */
+
+// Check if logs should be shown to customer
+if (!$block->isShowToCustomer()) {
+    return;
+}
+
+$changeLogs = $block->getChangeLogs();
+?>
+
+<?php if (!empty($changeLogs)): ?>
+    <div class="quote-change-log order-details-items">
+        <div class="order-title">
+            <strong class="text-size18 font-semibold text-black"><?= $escaper->escapeHtml(__('Quote Change History')) ?></strong>
+        </div>
+        <div class="table-wrapper order-items">
+            <table class="data table table-quote-changes w-full" id="quote-change-log-table">
+                <caption class="table-caption hidden"><?= $escaper->escapeHtml(__('Quote Change History')) ?></caption>
+                <thead>
+                    <tr>
+                        <th class="col date text-left text-size16 font-semibold text-black pt-4"><?= $escaper->escapeHtml(__('Date')) ?></th>
+                        <th class="col action text-left text-size16 font-semibold text-black pt-4"><?= $escaper->escapeHtml(__('Action')) ?></th>
+                        <th class="col details text-left text-size16 font-semibold text-black pt-4"><?= $escaper->escapeHtml(__('Details')) ?></th>
+                        <th class="col changed-by text-left text-size16 font-semibold text-black pt-4"><?= $escaper->escapeHtml(__('Changed By')) ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($changeLogs as $log): ?>
+                        <?php $logData = $block->formatLogData($log); ?>
+                        <tr>
+                            <td data-th="<?= $escaper->escapeHtml(__('Date')) ?>" class="col date text-left text-size14 font-normal text-thingray">
+                                <?= $escaper->escapeHtml($block->formatDate($logData['created_at'], \IntlDateFormatter::MEDIUM, true)) ?>
+                            </td>
+                            <td data-th="<?= $escaper->escapeHtml(__('Action')) ?>" class="col action text-left text-size14 font-normal text-thingray">
+                                <?= $escaper->escapeHtml($logData['action']) ?>
+                            </td>
+                            <td data-th="<?= $escaper->escapeHtml(__('Details')) ?>" class="col details text-left text-size14 font-normal text-thingray">
+                                <?php
+                                $details = [];
+                                
+                                // Format details based on action type
+                                switch ($log->getActionType()) {
+                                    case 'item_added':
+                                        if (isset($logData['new_value']['sku'])) {
+                                            $details[] = __('SKU: %1', $escaper->escapeHtml($logData['new_value']['sku']));
+                                        }
+                                        if (isset($logData['new_value']['qty'])) {
+                                            $details[] = __('Qty: %1', $escaper->escapeHtml($logData['new_value']['qty']));
+                                        }
+                                        if (isset($logData['new_value']['name'])) {
+                                            $details[] = $escaper->escapeHtml($logData['new_value']['name']);
+                                        }
+                                        if (isset($logData['new_value']['row_total'])) {
+                                            $details[] = __('Row Total: %1', $block->formatPrice($logData['new_value']['row_total']));
+                                        }
+                                        break;
+                                        
+                                    case 'item_removed':
+                                        if (isset($logData['old_value']['sku'])) {
+                                            $details[] = __('SKU: %1', $escaper->escapeHtml($logData['old_value']['sku']));
+                                        }
+                                        if (isset($logData['old_value']['qty'])) {
+                                            $details[] = __('Qty: %1', $escaper->escapeHtml($logData['old_value']['qty']));
+                                        }
+                                        if (isset($logData['old_value']['name'])) {
+                                            $details[] = $escaper->escapeHtml($logData['old_value']['name']);
+                                        }
+                                        if (isset($logData['old_value']['row_total'])) {
+                                            $details[] = __('Row Total: %1', $block->formatPrice($logData['old_value']['row_total']));
+                                        }
+                                        break;
+                                        
+                                    case 'item_updated':
+                                        if (isset($logData['old_value']['qty']) && isset($logData['new_value']['qty'])) {
+                                            if ($logData['old_value']['qty'] != $logData['new_value']['qty']) {
+                                                $details[] = __('Qty: %1 → %2', 
+                                                    $escaper->escapeHtml($logData['old_value']['qty']),
+                                                    $escaper->escapeHtml($logData['new_value']['qty'])
+                                                );
+                                            }
+                                        }
+                                        if (isset($logData['old_value']['price']) && isset($logData['new_value']['price'])) {
+                                            if ($logData['old_value']['price'] != $logData['new_value']['price']) {
+                                                $details[] = __('Price: %1 → %2', 
+                                                    $block->formatPrice($logData['old_value']['price']),
+                                                    $block->formatPrice($logData['new_value']['price'])
+                                                );
+                                            }
+                                        }
+                                        if (isset($logData['old_value']['row_total']) && isset($logData['new_value']['row_total'])) {
+                                            if ($logData['old_value']['row_total'] != $logData['new_value']['row_total']) {
+                                                $details[] = __('Row Total: %1 → %2', 
+                                                    $block->formatPrice($logData['old_value']['row_total']),
+                                                    $block->formatPrice($logData['new_value']['row_total'])
+                                                );
+                                            }
+                                        }
+                                        if (isset($logData['new_value']['sku'])) {
+                                            $details[] = __('SKU: %1', $escaper->escapeHtml($logData['new_value']['sku']));
+                                        }
+                                        if (isset($logData['new_value']['discount'])) {
+                                            $discountValue = (float)$logData['new_value']['discount'];
+                                            $discountFormatted = ($discountValue == floor($discountValue)) 
+                                                ? (string)(int)$discountValue 
+                                                : number_format($discountValue, 2);
+                                            $details[] = __('Discount: %1%', $escaper->escapeHtml($discountFormatted));
+                                        }
+                                        break;
+                                        
+                                    case 'items_merged':
+                                        if (isset($logData['new_value']['quote_items']) && is_array($logData['new_value']['quote_items'])) {
+                                            $itemsCount = count($logData['new_value']['quote_items']);
+                                            $details[] = __('%1 item(s) merged from cart', $itemsCount);
+                                        }
+                                        break;
+                                        
+                                    case 'discount_changed':
+                                        $oldDiscount = $logData['old_value']['discount'] ?? null;
+                                        $newDiscount = $logData['new_value']['discount'] ?? null;
+                                        $reason      = $logData['new_value']['reason'] ?? null;
+                                        
+                                        // Format discount as percentage
+                                        if ($oldDiscount !== null && $oldDiscount !== '') {
+                                            $oldDiscountValue = (float)$oldDiscount;
+                                            $oldDiscountFormatted = ($oldDiscountValue == floor($oldDiscountValue)) 
+                                                ? (string)(int)$oldDiscountValue . '%' 
+                                                : number_format($oldDiscountValue, 2) . '%';
+                                        } else {
+                                            $oldDiscountFormatted = __('None');
+                                        }
+                                        
+                                        if ($newDiscount !== null && $newDiscount !== '') {
+                                            $newDiscountValue = (float)$newDiscount;
+                                            $newDiscountFormatted = ($newDiscountValue == floor($newDiscountValue)) 
+                                                ? (string)(int)$newDiscountValue . '%' 
+                                                : number_format($newDiscountValue, 2) . '%';
+                                        } else {
+                                            $newDiscountFormatted = __('None');
+                                        }
+                                        
+                                        if ($reason === 'threshold_limit_reached') {
+                                            $details[] = __(
+                                                'Threshold limit reached so discount removed. Discount: %1 → %2',
+                                                $oldDiscountFormatted,
+                                                $newDiscountFormatted
+                                            );
+                                        } else {
+                                            $details[] = __('Discount: %1 → %2', 
+                                                $oldDiscountFormatted,
+                                                $newDiscountFormatted
+                                            );
+                                        }
+                                        break;
+                                        
+                                    case 'discount_carried_over':
+                                        // Get new_value data - it should be an array after unserialization
+                                        // But handle case where it might still be a JSON string
+                                        $newValue = $logData['new_value'] ?? null;
+                                        
+                                        // If new_value is a JSON string, decode it
+                                        if (is_string($newValue)) {
+                                            $decoded = json_decode($newValue, true);
+                                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                                                $newValue = $decoded;
+                                            } else {
+                                                $newValue = [];
+                                            }
+                                        }
+                                        
+                                        // Ensure new_value is an array
+                                        if (!is_array($newValue)) {
+                                            $newValue = [];
+                                        }
+                                        
+                                        $message = $newValue['message'] ?? null;
+                                        $fromQuoteId = $newValue['from_quote_id'] ?? null;
+                                        $discount = $newValue['discount'] ?? null;
+                                        
+                                        // Display message if available (contains discount info and quote ID)
+                                        if ($message !== null && $message !== '') {
+                                            $details[] = $escaper->escapeHtml((string)$message);
+                                        } elseif ($fromQuoteId !== null && $fromQuoteId !== '') {
+                                            // Fallback: create message if not provided
+                                            $discountText = '';
+                                            if ($discount !== null && $discount !== '' && (float)$discount > 0) {
+                                                $discountValue = (float)$discount;
+                                                $discountFormatted = ($discountValue == floor($discountValue)) 
+                                                    ? (string)(int)$discountValue . '%' 
+                                                    : number_format($discountValue, 2) . '%';
+                                                $discountText = $discountFormatted;
+                                            }
+                                            if ($discountText) {
+                                                $details[] = __('Discount %1 carried over from quote #%2', 
+                                                    $discountText,
+                                                    $escaper->escapeHtml((string)$fromQuoteId)
+                                                );
+                                            } else {
+                                                $details[] = __('Discount carried over from quote #%1', 
+                                                    $escaper->escapeHtml((string)$fromQuoteId)
+                                                );
+                                            }
+                                        }
+                                        
+                                        // If no details found, show generic message
+                                        if (empty($details)) {
+                                            $details[] = __('Discount carried over from previous quote');
+                                        }
+                                        break;
+                                        
+                                    case 'status_changed':
+                                        if (isset($logData['old_value']['status']) && isset($logData['new_value']['status'])) {
+                                            $details[] = __('Status: %1 → %2', 
+                                                $escaper->escapeHtml($logData['old_value']['status']),
+                                                $escaper->escapeHtml($logData['new_value']['status'])
+                                            );
+                                        }
+                                        break;
+                                        
+                                    case 'custom_fee_changed':
+                                        $oldCustomFee = $logData['old_value']['custom_fee'] ?? null;
+                                        $newCustomFee = $logData['new_value']['custom_fee'] ?? null;
+                                        
+                                        $oldCustomFeeFormatted = ($oldCustomFee !== null && $oldCustomFee !== '') 
+                                            ? $block->formatPrice((float)$oldCustomFee) 
+                                            : __('None');
+                                        
+                                        $newCustomFeeFormatted = ($newCustomFee !== null && $newCustomFee !== '') 
+                                            ? $block->formatPrice((float)$newCustomFee) 
+                                            : __('None');
+                                        
+                                        $details[] = __('Shipping Amount: %1 → %2', 
+                                            $oldCustomFeeFormatted,
+                                            $newCustomFeeFormatted
+                                        );
+                                        break;
+                                        
+                                    case 'quote_edited':
+                                        // Show subtotal changes
+                                        if (isset($logData['old_value']['subtotal']) && isset($logData['new_value']['subtotal'])) {
+                                            if ($logData['old_value']['subtotal'] != $logData['new_value']['subtotal']) {
+                                                $details[] = __('Subtotal: %1 → %2', 
+                                                    $block->formatPrice($logData['old_value']['subtotal']),
+                                                    $block->formatPrice($logData['new_value']['subtotal'])
+                                                );
+                                            }
+                                        }
+                                        
+                                        // Show grand total changes
+                                        if (isset($logData['old_value']['grand_total']) && isset($logData['new_value']['grand_total'])) {
+                                            if ($logData['old_value']['grand_total'] != $logData['new_value']['grand_total']) {
+                                                $details[] = __('Grand Total: %1 → %2', 
+                                                    $block->formatPrice($logData['old_value']['grand_total']),
+                                                    $block->formatPrice($logData['new_value']['grand_total'])
+                                                );
+                                            }
+                                        }
+                                        
+                                        // Show items count changes
+                                        if (isset($logData['old_value']['items_count']) && isset($logData['new_value']['items_count'])) {
+                                            if ($logData['old_value']['items_count'] != $logData['new_value']['items_count']) {
+                                                $details[] = __('Items Count: %1 → %2', 
+                                                    (int)$logData['old_value']['items_count'],
+                                                    (int)$logData['new_value']['items_count']
+                                                );
+                                            }
+                                        }
+                                        
+                                        // Show individual item changes if items array exists
+                                        if (isset($logData['old_value']['items']) && isset($logData['new_value']['items'])) {
+                                            $oldItems = $logData['old_value']['items'];
+                                            $newItems = $logData['new_value']['items'];
+                                            
+                                            // Check for removed items
+                                            foreach ($oldItems as $itemId => $oldItem) {
+                                                if (!isset($newItems[$itemId])) {
+                                                    $details[] = __('Item Removed: %1 (Qty: %2)', 
+                                                        $escaper->escapeHtml($oldItem['name'] ?? $oldItem['sku'] ?? 'Item #' . $itemId),
+                                                        (int)($oldItem['qty'] ?? 0)
+                                                    );
+                                                }
+                                            }
+                                            
+                                            // Check for added items
+                                            foreach ($newItems as $itemId => $newItem) {
+                                                if (!isset($oldItems[$itemId])) {
+                                                    $details[] = __('Item Added: %1 (Qty: %2)', 
+                                                        $escaper->escapeHtml($newItem['name'] ?? $newItem['sku'] ?? 'Item #' . $itemId),
+                                                        (int)($newItem['qty'] ?? 0)
+                                                    );
+                                                }
+                                            }
+                                            
+                                            // Check for updated items (qty or price changes)
+                                            foreach ($newItems as $itemId => $newItem) {
+                                                if (isset($oldItems[$itemId])) {
+                                                    $oldItem = $oldItems[$itemId];
+                                                    $itemChanges = [];
+                                                    
+                                                    if (isset($oldItem['qty']) && isset($newItem['qty']) && $oldItem['qty'] != $newItem['qty']) {
+                                                        $itemChanges[] = __('Qty: %1 → %2', 
+                                                            (int)$oldItem['qty'],
+                                                            (int)$newItem['qty']
+                                                        );
+                                                    }
+                                                    
+                                                    if (isset($oldItem['price']) && isset($newItem['price']) && $oldItem['price'] != $newItem['price']) {
+                                                        $itemChanges[] = __('Price: %1 → %2', 
+                                                            $block->formatPrice($oldItem['price']),
+                                                            $block->formatPrice($newItem['price'])
+                                                        );
+                                                    }
+                                                    
+                                                    if (!empty($itemChanges)) {
+                                                        $details[] = __('%1: %2', 
+                                                            $escaper->escapeHtml($newItem['name'] ?? $newItem['sku'] ?? 'Item #' . $itemId),
+                                                            implode(', ', $itemChanges)
+                                                        );
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        
+                                        // If no specific changes found, show generic message
+                                        if (empty($details)) {
+                                            $details[] = __('Quote details updated');
+                                        }
+                                        break;
+                                }
+                                
+                                echo !empty($details) ? implode('<br>', $details) : '-';
+                                ?>
+                            </td>
+                            <td data-th="<?= $escaper->escapeHtml(__('Changed By')) ?>" class="col changed-by text-left text-size14 font-normal text-thingray">
+                                <?php
+                                $changedBy = $logData['changed_by'] ?: __('System');
+                                
+                                // If admin made the change, show admin details
+                                if ($log->getAdminId()) {
+                                    $adminInfo = [];
+                                    if ($log->getAdminEmail()) {
+                                        $adminInfo[] = $escaper->escapeHtml($log->getAdminEmail());
+                                    }
+                                    if ($log->getAdminRole()) {
+                                        $adminInfo[] = '(' . $escaper->escapeHtml($log->getAdminRole()) . ')';
+                                    }
+                                    if (!empty($adminInfo)) {
+                                        $changedBy = implode(' ', $adminInfo);
+                                    }
+                                }
+                                
+                                echo $escaper->escapeHtml($changedBy);
+                                ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>
+

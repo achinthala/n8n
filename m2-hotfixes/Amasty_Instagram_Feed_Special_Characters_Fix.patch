@@ -1,0 +1,16 @@
+diff --git a/vendor/amasty/instagram-feed/Model/Repository/PostRepository.php b/vendor/amasty/instagram-feed/Model/Repository/PostRepository.php
+index 5a2afad5..6c093fa3 100644
+--- a/vendor/amasty/instagram-feed/Model/Repository/PostRepository.php
++++ b/vendor/amasty/instagram-feed/Model/Repository/PostRepository.php
+@@ -279,7 +279,9 @@ class PostRepository implements PostRepositoryInterface
+         $posts = [];
+         /** @var PostInterface $post */
+         foreach ($postCollection->getItems() as $post) {
+-            $post->setData('caption', htmlspecialchars_decode($this->removeAccents->filter($post->getData('caption'))));
++            //special characters issue fix
++            $postCaption = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $post->getData('caption'));
++            $post->setData('caption', htmlspecialchars_decode($this->removeAccents->filter($postCaption)));
+             $posts[] = $post;
+         }
+
+         

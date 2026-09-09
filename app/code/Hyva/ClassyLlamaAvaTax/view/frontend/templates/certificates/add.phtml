@@ -1,0 +1,214 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * @category  Dotcomweavers
+ * @package   Hyva_ClassyLlamaAvaTax
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+*/
+
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var \Hyva\Theme\Model\ViewModelRegistry $viewModels */
+?>
+<?php 
+$zones = json_decode($block->getViewModel()->getCertificateExposureZonesJsConfig(), true);	
+$is_auto_approve_disable = $block->getViewModel()->isCertificatesAutoValidationDisabled();
+
+?>
+
+<?php ob_start(); ?>
+<style>
+	iframe {
+		width: 100% !important;
+	}
+</style>
+<select name="exemption-zone" class="exemption-zone">
+    <option value=""><?= __('Select an Exemption Zone') ?></option>
+    <?php 
+	if($zones){
+	foreach ($zones as $zone) { ?>
+        <option value="<?= $zone ?>"><?= $zone ?></option>
+    <?php }} ?>
+</select>
+<?php $exemptionOptions = ob_get_clean(); ?>
+
+<?php
+$modal = $viewModels->require(\Hyva\Theme\ViewModel\Modal::class)
+   ->createModal()
+   ->withDialogRefName('exemption-dialog')
+   ->withContent('   
+   <div class="relative w-full h-full max-w-2xl md:h-auto" id ="ava-tax-content">
+        <div class="exemption-zone-select-view fieldset p-6 space-y-6">
+            <div class="field">
+                <p>'.__('Select a new state/exposure zone').'</p>
+            </div>
+            <div class="field">
+                '.$exemptionOptions.'
+            </div>
+            <button class="action primary" @click="proceedToSdk">'.__('Proceed').'</button>
+        </div>      
+   </div>'
+   );
+?>
+<div class="excemption-adjust">
+<div x-data="{
+    ...hyva.modal(),
+    init() {
+        window.openExemptionDialog = function (event) {
+            this.show('exemption-dialog', event);
+        }.bind(this);
+    }
+}" x-init="init()">
+    <?= $modal ?>
+</div>
+<div>
+    <button onclick="openExemptionDialog()" type="button" class="btn excemptions-btn">
+        <?= $escaper->escapeHtml(__('Add Exemptions')) ?>
+    </button>
+</div>
+</div>
+
+
+<script src="https://sbx.certcapture.com/gencert2/js"> </script>
+
+<script>
+
+	/*
+    function proceedToSdk() {
+        let data = localStorage.getItem('mgses.605c.expires');
+        let jwtToken = '';
+		let token = '';
+		let css = false;
+		let cid = "";
+		let key  ="";
+		let loadUrl = "";
+		jQuery.ajax({
+			url: BASE_URL+'rest/V1/avatax/token?_='+data,
+			type: 'GET',
+			dataType: 'json',
+			showLoader: true,
+			success: function(response) { console.log("response ",response);
+				localStorage.setItem('avatax-token', JSON.stringify(response));
+
+				const script = jQuery('<script>');
+				// Set attributes for the script element
+				script.attr({
+					type: 'text/javascript',
+					src: response.sdk_url,
+					charset:'utf-8',
+					async: false // Example of another attribute
+				});				
+				jQuery('head').append(script);
+
+				token = response.token;
+				this.jwtToken = token;
+				if (response.customer_id) {
+					cid = response.customer_id;
+				}
+				// new method
+				var zone_name = $(".exemption-zone").val();
+				initGencert(token,zone_name,cid,token);
+				//end of new method
+
+			}
+		});
+    }
+	*/
+
+	function proceedToSdk() {
+		var data = localStorage.getItem('mgses.605c.expires'); //mgid.d9c0.expires mgses.605c.expires
+		if(data!=null){ 
+			data = localStorage.getItem('mgid.d9c0.expires');
+			if(data==null){
+				data = Date.now();
+			}
+		}
+		console.log("token = ",data);
+		let jwtToken = '';
+		let token = '';
+		let css = false;
+		let cid = "";
+		let key  = "";
+		let loadUrl = "";
+
+		fetch(BASE_URL + 'rest/V1/avatax/token?_=' + data, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Requested-With': 'XMLHttpRequest'
+			}
+		})
+		.then(response => response.json())
+		.then(response => {
+			console.log("response ", response);
+			localStorage.setItem('avatax-token', JSON.stringify(response));
+
+			const script = document.createElement('script');
+			// Set attributes for the script element
+			script.type = 'text/javascript';
+			script.src = response.sdk_url;
+			script.charset = 'utf-8';
+			script.async = false; // Example of another attribute
+			document.head.appendChild(script);
+			console.log("token",response.token);
+			token = response.token;
+			jwtToken = token;
+			if (response.customer_id) {
+				cid = response.customer_id;
+			}
+			// new method
+			var zone_name = document.querySelector(".exemption-zone").value;
+			initGencert(token, zone_name, cid, token);
+			//end of new method
+		})
+		.catch(error => {
+			console.error('Error:', error);
+			
+		});
+	}
+
+	function initGencert(token,state,cid,token){
+			console.log("initGencert");
+		// Check if window.parent.GenCert is null or undefined
+		if (!window.parent.GenCert) { console.log("new gencert init");
+			// Initialize GenCert object if it doesn't exist
+			window.parent.GenCert = {};
+		}
+
+		// Check if window.parent.GenCert.clientData is null or undefined
+		if (!window.parent.GenCert.clientData) { console.log("new client data");
+			// Initialize clientData object if it doesn't exist
+			window.parent.GenCert.clientData = {};
+		}
+		window.parent.GenCert.jwtToken = token;
+		window.parent.GenCert.clientData.cid = cid;
+		window.parent.GenCert.clientData.key = token;
+		
+		console.log("gencert data ",window.parent.GenCert)
+		setTimeout(() => {
+				console.log("before option init genert");
+			GenCert.init(document.getElementById("ava-tax-content"), {
+			token: token,
+			submit_to_stack:Boolean(Number(<?=$is_auto_approve_disable?>))
+			});
+			//Create Customer and assign contact info automatically when loading Ecom SDK
+			console.log("before setcustomer number");
+			GenCert.setCustomerNumber(cid);
+			console.log("before settoken");
+			GenCert.setToken(token);
+			console.log("before setshipzone");
+			//Sends Ship-To State
+			GenCert.setShipZone(state); //Sends Ship-To State
+			console.log("before show");
+			GenCert.show();
+			
+			setTimeout(() => {
+				//jQuery("body").find("#gencert_iframe").css("width", "100% !important");	
+				document.querySelector("body").querySelector("#gencert_iframe").style.setProperty("width", "100%", "important");
+			}, 1000);
+			
+
+		}, 900);
+	}
+</script>

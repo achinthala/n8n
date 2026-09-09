@@ -1,0 +1,71 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+$productId = (int) $block->getData('product_id');
+$attributeId = (int) $block->getData('attribute_id');
+$swatchSection = (string) ($block->getData('swatch_section') ?? 'normal');
+
+if (!$productId || !$attributeId) {
+    return '';
+}
+
+/** @var Data $blockObj */
+$blockObj = $viewModels->require(Data::class);
+$product = $blockObj->getLoadProduct($productId);
+$attr = $blockObj->getAttributeById($attributeId);
+$attributeCode = $attr->getAttributeCode();
+
+$shipRegionHideExpr = $swatchSection === 'legacy_normal'
+    ? 'false'
+    : "!shipRegionShowInSection('" . $escaper->escapeJs($swatchSection) . "', '"
+        . $attributeCode . "', " . $attributeId . ", item.id)";
+$quickShipHideExpr = in_array($swatchSection, ['normal', 'legacy_normal'], true)
+    ? "quickShipValidation('" . $attributeCode . "', " . $attributeId . ", item.id) == 1"
+    : 'false';
+?>
+<div class="selectOptionColor dcw-ship-region-swatch"
+     :class="{
+         'hidden': <?= $quickShipHideExpr ?> || <?= /* @noEscape */ $shipRegionHideExpr ?>
+     }">
+    <template x-if="optionIsEnabled(<?= $attributeId ?>, item.id)">
+        <label :id="'swatch-label-box-<?= $attributeId ?>-'+item.id"
+               :for="'attribute-option-<?= $productId ?>-'+item.id"
+               class="dcw-ship-region-swatch__card product-option-value-label swatch-option cursor-pointer"
+               :class="{
+                   'checked': selectedValues[<?= $attributeId ?>] === item.id,
+                   'dcw-ship-region-swatch__card--inactive': !optionIsActive(<?= $attributeId ?>, item.id)
+               }">
+            <input :id="'attribute-option-<?= $productId ?>-'+item.id"
+                   :value="item.id"
+                   name="super_attribute[<?= $attributeId ?>]"
+                   type="radio"
+                   class="inline-block absolute p-0 border-0 focus:border-0 focus:ring-0 product-option-value-input"
+                   data-attributecode="<?= $escaper->escapeHtmlAttr($attributeCode) ?>"
+                   :data-optionlabel="getSwatchText(<?= $attributeId ?>, item.id)"
+                   style="z-index:-1"
+                   :aria-label="'<?= $escaper->escapeJs($attr->getStoreLabel()) ?>: ' + getSwatchText(<?= $attributeId ?>, item.id)"
+                   x-on:focus="focusLabel(item.id)"
+                   x-on:blur="blurLabel()"
+                   x-on:change="changeOption(<?= $attributeId ?>, $event.target.value)"
+                   x-model="selectedValues[<?= $attributeId ?>]"
+                   :required="getAllowedAttributeOptions(<?= $attributeId ?>).filter(
+                       attributeOption => selectedValues[attributeOption]
+                   ).length === 0">
+            <div class="dcw-ship-region-swatch__image">
+                <span x-html="getShipRegionSwatchImageHtml(<?= $attributeId ?>, item.id)"
+                      :id="'child-color-<?= $attributeId ?>-'+item.id"></span>
+            </div>
+            <div class="dcw-ship-region-swatch__name"
+                 x-text="getSwatchText(<?= $attributeId ?>, item.id)"></div>
+        </label>
+    </template>
+</div>

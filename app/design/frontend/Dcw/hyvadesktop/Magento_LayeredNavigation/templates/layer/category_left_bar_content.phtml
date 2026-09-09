@@ -1,0 +1,17 @@
+<?php 
+$blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom'); 
+$currentCategory = $blockObj->getCurrentCategory();//get current category information
+$display_type = $currentCategory->getDisplayMode();
+if($display_type != "PAGE") :
+    if ($_leftbar = $currentCategory->getLeftbarContent()) :?>
+        <div class="category-top-filter">
+            <?= /* @noEscape */ $this->helper(Magento\Catalog\Helper\Output::class)->categoryAttribute(
+                $currentCategory,
+                $_leftbar,
+                'description'
+            ) ?>
+        </div> 
+<?php 
+    endif;
+endif; 
+?>

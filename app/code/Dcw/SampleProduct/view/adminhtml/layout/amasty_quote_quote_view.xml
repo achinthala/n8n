@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="admin-2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="left">
+            <referenceBlock name="column_name">
+                <action method="setTemplate">
+                    <argument name="template" xsi:type="string">Dcw_SampleProduct::items/column/am_quotes_name.phtml</argument>
+                </action>
+            </referenceBlock>
+        </referenceContainer>
+    </body>
+</page>

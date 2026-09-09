@@ -1,0 +1,44 @@
+<?php
+/**
+ * Manual GMC Convert Button Template
+ *
+ * @var \Dcw\BazaarvoiceFtpImport\Block\Adminhtml\System\Config\ManualGmcConvert $block
+ */
+?>
+
+<script>
+function manualGmcConvert() {
+    if (confirm('<?= $block->escapeJs(__('Are you sure you want to convert existing XML files to GMC format? This will process all XML files in the import directory.')) ?>')) {
+        var element = $('manual_gmc_convert');
+        element.disabled = true;
+        element.value = '<?= $block->escapeJs(__('Converting...')) ?>';
+        
+        new Ajax.Request('<?= $block->escapeUrl($block->getAjaxUrl()) ?>', {
+            method: 'post',
+            parameters: {
+                form_key: FORM_KEY
+            },
+            onSuccess: function(transport) {
+                var response = JSON.parse(transport.responseText);
+                if (response.success) {
+                    alert('<?= $block->escapeJs(__('GMC conversion completed successfully!')) ?>\n\n' + 
+                          '<?= $block->escapeJs(__('Files processed:')) ?> ' + response.files_processed + '\n' +
+                          '<?= $block->escapeJs(__('GMC files generated:')) ?> ' + response.gmc_files_generated + '\n' +
+                          '<?= $block->escapeJs(__('Output directory:')) ?> ' + response.output_directory);
+                } else {
+                    alert('<?= $block->escapeJs(__('GMC conversion failed:')) ?> ' + response.message);
+                }
+            },
+            onFailure: function() {
+                alert('<?= $block->escapeJs(__('An error occurred during GMC conversion.')) ?>');
+            },
+            onComplete: function() {
+                element.disabled = false;
+                element.value = '<?= $block->escapeJs(__('Convert to GMC')) ?>';
+            }
+        });
+    }
+}
+</script>
+
+<?= $block->getButtonHtml() ?>

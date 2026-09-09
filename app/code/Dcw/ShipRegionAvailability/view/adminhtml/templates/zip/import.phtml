@@ -1,0 +1,96 @@
+<?php
+/**
+ * @var \Dcw\ShipRegionAvailability\Block\Adminhtml\Zip\Import $block
+ */
+?>
+<div class="admin__page-section">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml(__('Import ZIP Codes (CSV)')) ?></span>
+    </div>
+    <div class="admin__page-section-content">
+        <p><?= $block->escapeHtml(__('Upload a CSV with columns: zipcode (or zip) and region. Region values such as "Midwest" are converted to lowercase codes (midwest) and matched to Ship Regions in admin.')) ?></p>
+        <p class="note">
+            <a href="<?= $block->escapeUrl($block->getSampleCsvUrl()) ?>" class="action-default">
+                <span><?= $block->escapeHtml(__('Download sample CSV (5 rows)')) ?></span>
+            </a>
+            <span> | </span>
+            <a href="<?= $block->escapeUrl($block->getExportCsvUrl()) ?>" class="action-default">
+                <span><?= $block->escapeHtml(__('Download existing ZIP mappings')) ?></span>
+            </a>
+        </p>
+        <form action="<?= $block->escapeUrl($block->getPostUrl()) ?>"
+              method="post"
+              enctype="multipart/form-data"
+              id="dcw-ship-region-zip-import-form">
+            <?= $block->getBlockHtml('formkey') ?>
+            <div class="admin__field">
+                <label class="admin__field-label" for="import_mode">
+                    <span><?= $block->escapeHtml(__('Import Mode')) ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <select name="import_mode" id="import_mode" class="admin__control-select" required="required">
+                        <?php foreach ($block->getImportModeOptions() as $option): ?>
+                            <option value="<?= $block->escapeHtmlAttr($option['value']) ?>"
+                                <?= $option['value'] === $block->getDefaultImportMode() ? 'selected="selected"' : '' ?>>
+                                <?= $block->escapeHtml($option['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="note">
+                        <span id="import-mode-note-merge">
+                            <?= $block->escapeHtml(__('Merge: keeps ZIPs not in the file; updates or adds rows from the CSV.')) ?>
+                        </span>
+                        <span id="import-mode-note-replace" style="display:none;">
+                            <?= $block->escapeHtml(__('Replace all: deletes every ZIP mapping first, then imports only what is in this file.')) ?>
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <div class="admin__field">
+                <label class="admin__field-label" for="import_file">
+                    <span><?= $block->escapeHtml(__('CSV File')) ?></span>
+                </label>
+                <div class="admin__field-control">
+                    <input type="file" name="import_file" id="import_file" accept=".csv,text/csv" required="required"/>
+                </div>
+            </div>
+            <div class="admin__field admin__field-option">
+                <button type="submit" class="action-primary" title="<?= $block->escapeHtmlAttr(__('Import')) ?>">
+                    <span><?= $block->escapeHtml(__('Import')) ?></span>
+                </button>
+                <a class="action-secondary" href="<?= $block->escapeUrl($block->getBackUrl()) ?>">
+                    <span><?= $block->escapeHtml(__('Back')) ?></span>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+require(['jquery'], function ($) {
+    var $mode = $('#import_mode');
+    var $form = $('#dcw-ship-region-zip-import-form');
+    var replaceValue = 'replace_all';
+
+    function toggleNote() {
+        var isReplace = $mode.val() === replaceValue;
+        $('#import-mode-note-merge').toggle(!isReplace);
+        $('#import-mode-note-replace').toggle(isReplace);
+    }
+
+    $mode.on('change', toggleNote);
+    toggleNote();
+
+    $form.on('submit', function (e) {
+        if ($mode.val() !== replaceValue) {
+            return true;
+        }
+        if (!window.confirm(
+            '<?= $block->escapeJs(__('Replace all will permanently delete every existing ZIP-to-region mapping before import. Continue?')) ?>'
+        )) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    });
+});
+</script>

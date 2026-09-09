@@ -1,0 +1,52 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+//phpcs:disable Magento2.Templates.ThisInTemplate.FoundThis
+//phpcs:disable Magento2.Files.LineLength.MaxExceeded
+/** @var $block \Magento\Rma\Block\Email\Items */
+$writer = new  \Zend_Log_Writer_Stream(BP . '/var/log/RmaPhtml.log');
+$logger = new \Zend_Log();
+$logger->addWriter($writer);
+$logger->info('text message');
+$logger->info('collection');
+$logger->info(json_encode($block->getCollection()->getData()));
+?>
+<table class="email-items rma-items" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <thead>
+    <tr>
+        <th style="text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('Item')) ?></th>
+        <th style="text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('Condition')) ?></th>
+        <th style="text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('Resolution')) ?></th>
+        <th style="text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('Requested Qty')) ?></th>
+        <th style="display: none !important;text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('SKU')) ?></th>
+        <th style="text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('Qty')) ?></th>
+        <th style="text-align:left !important;font-weight:700 !important;color:#000000;font-size:12px;line-height:24px;vertical-align:top;padding-bottom:8px;border-bottom:1px solid rgba(0, 0, 0, 0.25);"><?= $block->escapeHtml(__('Status')) ?></th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($block->getCollection() as $item) : ?>
+    <tr>
+        <td style="padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;width: 165px;
+    padding-right: 10px;box-sizing: border-box;">
+            <strong style="font-weight:600 !important;color:#000000;font-size:12px;line-height:20px;display: block;margin: 0 0 10px 0 !important;"><?= $block->escapeHtml($item->getProductName()) ?></strong>
+            <?php if ($_options = $item->getOptions()) : ?>
+            <dl class="item-options">
+                <?php foreach ($_options as $_option) : ?>
+                <dt style="display: inline !important;margin: 0 !important;font-weight:600 !important;color:#000000 !important;font-size:12px !important;line-height:20px !important;"><?= $block->escapeHtml($_option['label']) ?></dt>
+                <dd style="display: inline !important;margin: 0 !important;font-weight:400 !important;color:#000000 !important;font-size:12px !important;line-height:20px !important;"><?= $block->escapeHtml($_option['value']) ?></dd>
+                <?php endforeach; ?>
+            </dl>
+            <?php endif; ?>
+        </td>
+        <td style="padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;font-weight:400 !important;color:#000000;font-size:12px;line-height:20px;"><?= $block->escapeHtml($block->getOptionAttributeStringValue($item->getCondition())) ?></td>
+        <td style="padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;font-weight:400 !important;color:#000000;font-size:12px;line-height:20px;"><?= $block->escapeHtml($block->getOptionAttributeStringValue($item->getResolution())) ?></td>
+        <td style="padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;font-weight:400 !important;color:#000000;font-size:12px;line-height:20px;"><?= /* @noEscape */  $this->helper(Magento\Rma\Helper\Data::class)->parseQuantity($item->getQtyRequested(), $item) ?></td>
+        <td style="display: none !important;padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;font-weight:400 !important;color:#000000;font-size:12px;line-height:20px;"><?= $block->escapeHtml($item->getProductSku()) ?></td>
+        <td style="padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;font-weight:400 !important;color:#000000;font-size:12px;line-height:20px;width: 40px;"><?= /* @noEscape */  $this->helper(Magento\Rma\Helper\Data::class)->getQty($item) ?></td>
+        <td style="padding-top: 12px;text-align:left !important;vertical-align:top;padding-bottom:10px;font-weight:400 !important;color:#000000;font-size:12px;line-height:20px;"><?= $block->escapeHtml($item->getStatusLabel()) ?></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>

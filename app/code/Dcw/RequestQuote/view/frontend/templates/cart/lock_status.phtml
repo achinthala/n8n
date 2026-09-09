@@ -1,0 +1,114 @@
+<?php
+/**
+ * Quote Lock Status Template (Cart Page)
+ * @var \Dcw\RequestQuote\Block\Cart\LockStatus $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$quoteId = $block->getQuoteId();
+?>
+<?php if ($quoteId): ?>
+<script>
+(function() {
+    'use strict';
+    
+    var quoteId = <?= (int) $quoteId ?>;
+    var releaseUrl = '<?= $escaper->escapeJs($block->getReleaseLockUrl()) ?>';
+    var updateActivityUrl = '<?= $escaper->escapeJs($block->getUpdateActivityUrl()) ?>';
+    var formKey = typeof hyva !== 'undefined' ? hyva.getFormKey() : '';
+    
+    // Update lock activity periodically while on cart page
+    var activityInterval = null;
+    
+    function updateActivity() {
+        if (!updateActivityUrl || !quoteId) {
+            return;
+        }
+        
+        var formData = new URLSearchParams();
+        formData.append('quote_id', quoteId);
+        if (formKey) {
+            formData.append('form_key', formKey);
+        }
+        
+        fetch(updateActivityUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'include',
+            body: formData.toString()
+        }).catch(function() {
+            // Silent fail
+        });
+    }
+    
+    // Update activity every 30 seconds while on cart page
+    function startActivityUpdates() {
+        if (activityInterval) {
+            clearInterval(activityInterval);
+        }
+        // Update immediately
+        updateActivity();
+        // Then update every 30 seconds
+        activityInterval = setInterval(updateActivity, 30000);
+    }
+    
+    // Release lock when leaving cart page
+    function releaseLock() {
+        if (!releaseUrl || !quoteId) {
+            return;
+        }
+        
+        var formData = new URLSearchParams();
+        formData.append('quote_id', quoteId);
+        if (formKey) {
+            formData.append('form_key', formKey);
+        }
+        
+        // Use sendBeacon for reliable delivery on page unload
+        if (navigator.sendBeacon) {
+            var blob = new Blob([formData.toString()], { type: 'application/x-www-form-urlencoded' });
+            navigator.sendBeacon(releaseUrl, blob);
+        } else {
+            // Fallback to synchronous fetch (deprecated but works)
+            fetch(releaseUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'include',
+                body: formData.toString(),
+                keepalive: true
+            }).catch(function() {
+                // Silent fail
+            });
+        }
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            startActivityUpdates();
+        });
+    } else {
+        startActivityUpdates();
+    }
+    
+    // Release lock when leaving page
+    window.addEventListener('beforeunload', releaseLock);
+    
+    // Release lock when form is submitted (quote saved)
+    var formElement = document.getElementById('form-validate');
+    if (formElement) {
+        formElement.addEventListener('submit', function() {
+            releaseLock();
+        });
+    }
+})();
+</script>
+<?php endif; ?>
+<?php isset($hyvaCsp) && $hyvaCsp->registerInlineScript() ?>
+

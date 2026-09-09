@@ -1,0 +1,243 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php /** @var $block Magento\Company\Block\Company\Management */ ?>
+<?php if ($block->hasCustomerCompany()): ?>
+<p class="messagesho" id="messageshow"></p>
+    <div id="new-customers-container">
+     <?php if ($block->isSuperUser()): ?>
+        <div data-role="add-customer-dialog" class="modal-container" x-cloak 
+        x-data="{
+            showModal: false,
+            jobititle:'',
+            role:'',
+            fname:'',
+            lname:'',
+            email:'',
+            mobile:'',
+            status:0
+        }">
+            <button x-on:click="showModal = true,addtimeblank()" class="action add"
+            id="add-customer" type="button" data-action="add-user">
+                <?= $block->escapeHtml(__('Add User')) ?>
+            </button>      
+            <div class="modal" x-show="showModal">
+            <div class="modal-overlay" x-on:click="showModal = false"></div>
+        <div class="modal-content">
+        <button class="closemodal" type="button" x-on:click="showModal = false">X</button>
+                <?= $block->getChildHtml('dialog.customer.add') ?>
+            </div>
+            </div>
+        </div> 
+        
+        
+        
+        <div data-role="add-team-dialog" class="modal-container" x-cloak 
+        x-data="{showModal: false}">
+                    <button x-on:click="showModal = true,addtimeblank()" 
+                    class="action add" id="add-team" type="button" data-action="add-user">
+                        <?= $block->escapeHtml(__('Add Team')) ?>
+                    </button>
+            
+            <div class="modal" x-show="showModal">
+            <div class="modal-overlay" x-on:click="showModal = false"></div>
+        <div class="modal-content">
+        <button class="closemodal" id="closeteamaddpop" type="button" 
+        x-on:click="showModal = false">X</button>
+                 <?= $block->getChildHtml('dialog.team.add') ?>
+            </div>
+            </div>
+        </div> 
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
+
+
+
+<div class="company_tree_block"
+    x-data="{
+        posts: {},
+
+        async retrievePosts() {
+            this.posts = await (await fetch( BASE_URL +'company/structure/get')).json();
+
+            // log out all the posts to the console
+            console.log(this.posts);
+        }
+    }"
+    x-init="retrievePosts">
+    
+    <ul class="treea_tag_structure">
+        <template x-for="(level,i) in posts">
+            <li x-html="renderLevel(level,i)" x-bind:class="level.type" class="treeatag"></li>
+        </template>
+    </ul>
+    
+</div>
+<script>
+function renderLevel(obj,i){
+                if(obj.text){
+                let ref = 'l'+Math.random().toString(36).substring(7);
+                let html = `<a href="javascript:void(0)"  class="treeatag mdi-folder-open-outline block px-5 py-1 hover:text-gray-900" :class="{'has-children':level.children}" x-html="(level.children?'<i class=\\'mdi mdi-folder-outline fa fa-user\\'></i>':'<i class=\\'mdi mdi-file-outline fa fa-user\\'></i>')+' '+level.text" ${obj.children?`@click.prevent="toggleLevel($refs.${ref})"`:''}></a>`;
+                 html += `<div class="actionitem"><div class="itemsact"><p @click.prevent="addsubuser(level)">Add User</p><p @click.prevent="addsubteam(level)">Add Team</p><p @click.prevent="edituserteam(level)">Edit</p><p @click.prevent="deleteuserteam(level)">Delete</p></div></div>`;
+                if(obj.children) {
+                    html += `<ul style="display:block;" x-ref="${ref}" class="pl-5 pb-1 transition-all duration-1000 opacity-100">
+                            <template x-for='(level,i) in level.children'>
+                                <li x-html="renderLevel(level,i)" class="treeatag" x-bind:class="level.type"></li>
+                            </template>
+                        </ul>`;
+                }
+
+                return html;
+                }
+                return '';
+            }
+            function showLevel(el) {
+                if (el.style.length === 1 && el.style.display === 'none') {
+                    el.removeAttribute('style')
+                } else {
+                    el.style.removeProperty('display')
+                }
+                setTimeout(()=>{
+                    el.previousElementSibling.previousElementSibling.querySelector('i.mdi').classList.add("mdi-folder-open-outline");
+                    el.previousElementSibling.previousElementSibling.querySelector('i.mdi').classList.remove("mdi-folder-outline");
+                    el.classList.add("opacity-100");
+                },10)
+            }
+           function hideLevel(el) {
+                el.style.display = 'none';
+                el.classList.remove("opacity-100");
+                el.previousElementSibling.previousElementSibling.querySelector('i.mdi').classList.remove("mdi-folder-open-outline");
+                el.previousElementSibling.previousElementSibling.querySelector('i.mdi').classList.add("mdi-folder-outline");
+
+                let refs = el.querySelectorAll('ul[x-ref]');
+                for (var i = 0; i < refs.length; i++) {
+                    this.hideLevel(refs[i]);
+                }
+            }
+           function toggleLevel(el) {
+                if( el.style.length && el.style.display === 'none' ) {
+                    this.showLevel(el);
+                } else {
+                    this.hideLevel(el);
+                }
+            }
+
+
+
+function edituserteam(obj){
+    if(obj.type=='icon-customer'){
+        console.log(obj.attr['data-entity-id']);
+        let cusbutton = document.getElementById('add-customer');
+        cusbutton.click();
+    fetchuserfromContent(obj.attr['data-entity-id']);    
+    }else{
+        let teambutton = document.getElementById('add-team');
+        teambutton.click();
+    fetchTeamFromContent(obj.attr['data-entity-id']);
+    }
+    // 
+}
+function deleteuserteam(obj){
+    
+    
+    if(obj.type=='icon-customer'){
+        
+        const formKey = hyva.getFormKey();
+const postUrl = BASE_URL + 'company/customer/delete/';
+fetch(postUrl, {
+    "headers": {
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    },
+    "body": "form_key=" + formKey +"&customer_id="+obj.attr['data-entity-id'],
+    // "body": formData,
+    "method": "POST",
+    "mode": "cors",
+    "credentials": "include"
+})
+.then(response => {
+    
+    if (! response.ok){
+    document.getElementById('messageshow').innerHTML ='Your request failed.';    
+    }else{
+    return response.json();}
+})
+.then(data => {
+    if (data) {
+        console.log(data);
+        
+        document.getElementById('messageshow').innerHTML =data.message;
+        setTimeout(() => location.reload(), 3000);
+    }
+}).catch(error => {
+    console.error(error);
+}); 
+        
+        
+        
+        
+    }else{
+        
+        
+        const formKey = hyva.getFormKey();
+const postUrl = BASE_URL + 'company/team/delete/';
+fetch(postUrl, {
+        "headers": {
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        "body": "form_key=" + formKey +"&team_id="+obj.attr['data-entity-id'],
+        // "body": formData,
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+})
+.then(response => {
+    if (! response.ok){
+    document.getElementById('messageshow').innerHTML ='Your request failed.';    
+    }else{
+    return response.json();}
+})
+.then(data => {
+    if (data) {
+        document.getElementById('messageshow').innerHTML =data.message;
+        setTimeout(() => location.reload(), 1000);
+    }
+}).catch(error => {
+    console.error(error);
+}); 
+        
+        
+         
+        
+        
+    }
+    
+    
+}
+
+ function addsubuser(obj){
+       let cusbutton = document.getElementById('add-customer');
+        cusbutton.click();
+        document.getElementById('target_id').value= obj.attr['data-tree-id'];
+}
+
+function addsubteam(obj){
+       let teambutton = document.getElementById('add-team');
+        teambutton.click();
+        document.getElementById('target_id').value= obj.attr['data-tree-id'];      
+}
+</script>
+ <style>
+ /*.actionitem{display:none;}
+ .actionitem:hover{display:block;}
+ div.actionitem {
+    display: none;
+}   
+a.treeatag:hover + div.actionitem {
+    display: block;
+}*/ 
+ </style> 
+

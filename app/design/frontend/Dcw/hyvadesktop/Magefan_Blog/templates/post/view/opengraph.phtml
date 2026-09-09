@@ -1,0 +1,50 @@
+<?php
+/**
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
+ *
+ * Glory to Ukraine! Glory to the heroes!
+ */
+?>
+<?php
+/**
+ * Blog post og:tags
+ *
+ * @var $block \Dcw\BlogSeo\Block\Post\View\Opengraph
+ */
+?>
+<meta property="og:locale" content="en_US" />
+<meta property="og:site_name" content="Flooring Inc." />
+<meta property="og:type" content="<?= $block->escapeHtml($block->getType()); ?>" />
+<meta property="og:title" content="<?= $block->escapeHtml($block->getTitle()); ?>" />
+<meta property="og:description" content="<?= $block->escapeHtml($block->getDescription()); ?>" />
+<meta property="og:url" content="<?= $block->escapeHtml($block->getPageUrl()); ?>" />
+<meta property="article:published_time" content="<?= $block->escapeHtml($block->getPublishedTime()); ?>" />
+<meta property="article:modified_time" content="<?= $block->escapeHtml($block->getModifiedTime()); ?>" />
+<?php if ($image = $block->getImage()) { ?>
+<meta property="og:image" content="<?= $block->escapeHtml($image); ?>" />
+<meta property="og:image:width" content="912" />
+<meta property="og:image:height" content="600" />
+<meta property="og:image:type" content="image/jpeg" />
+<?php } ?>
+<meta name="author" content="<?= $block->escapeHtml($block->getAuthor()); ?>" />
+<meta name="twitter:label1" content="Written by" />
+<meta name="twitter:data1" content="<?= $block->escapeHtml($block->getAuthor()); ?>" />
+
+<script type="application/ld+json">
+{ "@context": "https://schema.org", 
+ "@type": "BlogPosting",
+ "headline": "<?php $block->escapeHtml($block->getTitle()); ?>",
+ "alternativeHeadline": "<?= $block->escapeHtml($block->getTitle()); ?>",
+ "image": "<?= $block->escapeHtml($image); ?>",
+ "url": "<?= $block->escapeHtml($block->getPageUrl()); ?>",
+ "datePublished": "<?= $block->escapeHtml($block->getPublishedTime()); ?>",
+ "dateCreated": "<?= $block->escapeHtml($block->getCreatedTime()); ?>",
+ "dateModified": "<?= $block->escapeHtml($block->getModifiedTime()); ?>",
+ "description": "<?= $block->escapeHtml($block->getDescription()); ?>",
+ "author": {
+    "@type": "Person",
+    "name": "<?= $block->escapeHtml($block->getAuthor()); ?>"
+  }
+ }
+</script>

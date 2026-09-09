@@ -1,0 +1,54 @@
+<?php
+/**
+ * @var $block \Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\Items
+ */
+$isLockedByCustomer = $block->isLockedByCustomer();
+$hasPermission = $block->canAddOrConfigureProducts();
+?>
+<div class="admin__page-section-title">
+    <strong class="title"><?= /* @noEscape */ $block->getHeaderText() ?></strong>
+    <div class="actions" style="float: right;" id="quote-items-actions">
+        <?= $block->getButtonsHtml() ?>
+    </div>
+</div>
+<?php if ($isLockedByCustomer || !$hasPermission): ?>
+<script>
+require(['jquery'], function($) {
+    function hideAddProductsButton() {
+        $('#quote-items-actions button, #quote-items-actions a, .admin__page-section-title .actions button, .admin__page-section-title .actions a').each(function() {
+            var $btn = $(this);
+            var text = ($btn.text() || '').toLowerCase().trim();
+            var onclick = ($btn.attr('onclick') || '').toLowerCase();
+            
+            var isAddProductButton = (
+                (text.indexOf('add') !== -1 && (text.indexOf('product') !== -1 || text.indexOf('item') !== -1)) ||
+                (onclick.indexOf('add') !== -1 && (onclick.indexOf('product') !== -1 || onclick.indexOf('show') !== -1)) ||
+                (onclick.indexOf('show') !== -1 && onclick.indexOf('product') !== -1) ||
+                text === 'add products' ||
+                text === 'add product'
+            );
+            
+            if (isAddProductButton) {
+                $btn.remove();
+            }
+        });
+    }
+    
+    $(document).ready(function() {
+        hideAddProductsButton();
+        setTimeout(hideAddProductsButton, 100);
+        setTimeout(hideAddProductsButton, 500);
+        
+        if (typeof MutationObserver !== 'undefined') {
+            var observer = new MutationObserver(hideAddProductsButton);
+            var targetNode = document.querySelector('#quote-items-actions') || document.querySelector('.admin__page-section-title .actions');
+            if (targetNode) {
+                observer.observe(targetNode, { childList: true, subtree: true });
+            }
+        }
+    });
+});
+</script>
+<?php endif; ?>
+<?= $block->getChildHtml() ?>
+

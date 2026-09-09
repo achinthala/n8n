@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Dcw\ShipRegionAvailability\Api\Data\RegionInterface"
+                type="Dcw\ShipRegionAvailability\Model\Region"/>
+    <preference for="Dcw\ShipRegionAvailability\Api\Data\ZipInterface"
+                type="Dcw\ShipRegionAvailability\Model\Zip"/>
+    <preference for="Dcw\ShipRegionAvailability\Api\RegionRepositoryInterface"
+                type="Dcw\ShipRegionAvailability\Model\RegionRepository"/>
+    <preference for="Dcw\ShipRegionAvailability\Api\ZipRepositoryInterface"
+                type="Dcw\ShipRegionAvailability\Model\ZipRepository"/>
+    <preference for="Dcw\ShipRegionAvailability\Api\RegionLookupInterface"
+                type="Dcw\ShipRegionAvailability\Model\RegionLookup"/>
+
+    <type name="Dcw\ShipRegionAvailability\Model\ResourceModel\Zip\Grid\Collection">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">dcw_ship_region_zip</argument>
+            <argument name="resourceModel" xsi:type="string">Dcw\ShipRegionAvailability\Model\ResourceModel\Zip</argument>
+        </arguments>
+    </type>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="dcw_ship_region_listing_data_source" xsi:type="string">Dcw\ShipRegionAvailability\Model\ResourceModel\Region\Grid\Collection</item>
+                <item name="dcw_ship_region_zip_listing_data_source" xsi:type="string">Dcw\ShipRegionAvailability\Model\ResourceModel\Zip\Grid\Collection</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

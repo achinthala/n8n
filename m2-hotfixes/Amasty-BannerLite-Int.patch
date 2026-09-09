@@ -1,0 +1,37 @@
+diff --git a/vendor/amasty/module-banners-lite/Model/ProductBannerProvider.php b/vendor/amasty/module-banners-lite/Model/ProductBannerProvider.php
+index 3bfe5452..f3a223b3 100644
+--- a/vendor/amasty/module-banners-lite/Model/ProductBannerProvider.php
++++ b/vendor/amasty/module-banners-lite/Model/ProductBannerProvider.php
+@@ -88,6 +88,7 @@ class ProductBannerProvider
+      */
+     public function getBanners($productId)
+     {
++        $productId = (int)$productId; // Ensure $productId is an integer
+         if (!isset($this->productBanners[$productId])) {
+             $this->productBanners[$productId] = [];
+             if (!empty($ruleIds = $this->getValidRulesIds($productId))) {
+@@ -141,12 +142,18 @@ class ProductBannerProvider
+      */
+     private function getBannerRuleIds($productId)
+     {
+-        /** @var \Magento\Catalog\Model\Product $product */
+-        $product = $this->productRepository->getById($productId);
+-        /** @var \Amasty\BannersLite\Model\ResourceModel\BannerRule\Collection $collection */
+-        $collection = $this->bannerRuleFactory->create();
+-
+-        return $collection->getValidBannerRuleIds($product->getSku(), $product->getCategoryIds());
++        try {
++            /** @var \Magento\Catalog\Model\Product $product */
++            $product = $this->productRepository->getById($productId);
++            /** @var \Amasty\BannersLite\Model\ResourceModel\BannerRule\Collection $collection */
++            $collection = $this->bannerRuleFactory->create();
++
++            return $collection->getValidBannerRuleIds($product->getSku(), $product->getCategoryIds());
++        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
++            return [];
++        } catch (\Exception $e) {
++            return [];
++        }
+     }
+
+     /**

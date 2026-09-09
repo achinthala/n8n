@@ -1,0 +1,125 @@
+<?php
+/**
+ * Copyright © Dotcom Weavers. All rights reserved.
+ * @var \Magento\Backend\Block\Template $block
+ * @var \Dcw\RevenueRanking\ViewModel\Admin\RevenueRankingInfo $viewModel
+ */
+
+$viewModel = $block->getData('view_model');
+?>
+
+<div class="revenue-ranking-management">
+    <div class="page-header">
+        <h1><?= $block->escapeHtml(__('Revenue Ranking Management')) ?></h1>
+    </div>
+    
+    <div class="admin__data-grid-wrap">
+        <div class="admin__data-grid-header">
+            <div class="admin__data-grid-header-row">
+                <div class="admin__data-grid-actions-wrap">
+                    <button type="button" class="action-primary" id="refresh-revenue-data">
+                        <span><?= $block->escapeHtml(__('Refresh Revenue Data')) ?></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="admin__data-grid">
+            <div class="admin__data-grid-wrap">
+                <table class="data-grid">
+                    <thead>
+                        <tr>
+                            <th class="data-grid-th"><?= $block->escapeHtml(__('Product ID')) ?></th>
+                            <th class="data-grid-th"><?= $block->escapeHtml(__('Base Revenue')) ?></th>
+                            <th class="data-grid-th"><?= $block->escapeHtml(__('Adjusted Revenue')) ?></th>
+                            <th class="data-grid-th"><?= $block->escapeHtml(__('Last Updated')) ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($viewModel->getRevenueData()): ?>
+                            <?php foreach ($viewModel->getRevenueData() as $item): ?>
+                                <tr>
+                                    <td class="data-grid-td"><?= $block->escapeHtml($item['product_id']) ?></td>
+                                    <td class="data-grid-td"><?= $block->escapeHtml(number_format($item['base_revenue'], 2)) ?></td>
+                                    <td class="data-grid-td"><?= $block->escapeHtml(number_format($item['adjusted_revenue'], 2)) ?></td>
+                                    <td class="data-grid-td"><?= $block->escapeHtml($item['last_updated']) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="4" class="data-grid-td"><?= $block->escapeHtml(__('No revenue data found. Click "Refresh Revenue Data" to calculate.')) ?></td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+require(['jquery'], function($) {
+    $('#refresh-revenue-data').on('click', function() {
+        var button = $(this);
+        var originalText = button.find('span').text();
+        
+        button.prop('disabled', true);
+        button.find('span').text('<?= $block->escapeJs(__('Refreshing...')) ?>');
+        
+        // Create a form and submit it to trigger a page refresh
+        var form = $('<form>', {
+            'method': 'POST',
+            'action': '<?= $block->escapeUrl($block->getUrl('revenue_ranking/index/refresh')) ?>'
+        });
+        
+        // Add form key
+        form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'form_key',
+            'value': '<?= $block->escapeJs($block->getFormKey()) ?>'
+        }));
+        
+        // Add form to page and submit
+        $('body').append(form);
+        form.submit();
+    });
+});
+</script>
+
+<style>
+.revenue-ranking-management {
+    padding: 20px;
+}
+
+.page-header {
+    margin-bottom: 20px;
+}
+
+.admin__data-grid-header {
+    background: #f8f8f8;
+    padding: 15px;
+    border: 1px solid #d6d6d6;
+    margin-bottom: 20px;
+}
+
+.admin__data-grid-actions-wrap {
+    text-align: right;
+}
+
+.data-grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-grid-th,
+.data-grid-td {
+    padding: 10px;
+    border: 1px solid #d6d6d6;
+    text-align: left;
+}
+
+.data-grid-th {
+    background: #f8f8f8;
+    font-weight: bold;
+}
+</style>

@@ -1,0 +1,304 @@
+<?php
+/**
+ * Remove item confirmation modal for quote cart
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\Modal;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var Template $block */
+/** @var Escaper $escaper */
+
+$modalViewModel = $viewModels->require(Modal::class);
+$removeConfirmModal = $modalViewModel->createModal();
+$removeConfirmModal->withTemplate('Amasty_RequestQuote::cart/item/remove-modal-content.phtml');
+$removeConfirmModal->withDialogRefName('amquote-remove-item-modal');
+$removeConfirmModal->addDialogClass('max-w-lg');
+?>
+
+<div x-cloak
+     x-data="initQuoteCartItemRemove()"
+     @amquote-remove-item.window="showConfirm($event)"
+     x-init="init()">
+    <?= /** @noEscape */ $removeConfirmModal ?>
+</div>
+
+<script>
+// Global event listener as fallback
+window.addEventListener('amquote-remove-item', function(event) {
+    // Trigger the modal via Alpine.js
+    const modalElement = document.querySelector('[x-data*="initQuoteCartItemRemove"]');
+    if (modalElement && modalElement._x_dataStack) {
+        const modalData = modalElement._x_dataStack[0];
+        if (modalData && modalData.showConfirm) {
+            modalData.showConfirm({ detail: event.detail });
+        }
+    }
+});
+</script>
+
+<script>
+'use strict';
+
+function initQuoteCartItemRemove() {
+    return {
+        ...hyva.modal(),
+        itemId: null,
+        init() {
+            // Intercept delete button clicks
+            const self = this;
+            
+            // Function to intercept buttons
+            const interceptButtons = () => {
+                // Find all delete buttons in quote cart
+                const deleteButtons = document.querySelectorAll('.q-carts .action-delete');
+                
+                deleteButtons.forEach((button) => {
+                    // Check if already intercepted
+                    if (button.dataset.intercepted) {
+                        return;
+                    }
+                    
+                    // Get item ID from parent container or extract from postForm JSON
+                    const actionsToolbar = button.closest('.actions-toolbar');
+                    let itemId = actionsToolbar?.dataset?.itemId || 
+                                button.closest('[data-item-id]')?.dataset?.itemId;
+                    
+                    // If no item ID from data attribute, try to extract from @click postForm JSON
+                    if (!itemId) {
+                        const clickAttr = button.getAttribute('@click');
+                        if (clickAttr && clickAttr.includes('hyva.postForm')) {
+                            try {
+                                // Extract JSON from hyva.postForm(...) - handle multiline JSON and escaped quotes
+                                // Match everything between hyva.postForm( and the closing )
+                                const jsonMatch = clickAttr.match(/hyva\.postForm\(([\s\S]+)\)/);
+                                if (jsonMatch) {
+                                    let jsonStr = jsonMatch[1].trim();
+                                    // Remove trailing semicolon if present
+                                    jsonStr = jsonStr.replace(/;?\s*$/, '');
+                                    const postData = JSON.parse(jsonStr);
+                                    itemId = postData?.data?.id || postData?.data?.item_id;
+                                }
+                            } catch (e) {
+                                // Silently fail if parsing fails
+                            }
+                        }
+                    }
+                    
+                    if (itemId) {
+                        // Add event listener that runs before Alpine.js handler
+                        // Use capture phase to intercept before Alpine.js processes it
+                        button.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                            window.dispatchEvent(new CustomEvent('amquote-remove-item', { detail: parseInt(itemId) }));
+                        }, true); // Use capture phase
+                        button.dataset.intercepted = 'true';
+                        button.dataset.itemId = itemId; // Store itemId for reference
+                    }
+                });
+            };
+            
+            // Run immediately
+            setTimeout(interceptButtons, 100);
+            
+            // Also intercept after DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', interceptButtons);
+            } else {
+                interceptButtons();
+            }
+            
+            // Use mutation observer to catch dynamically added buttons
+            const observer = new MutationObserver(() => {
+                interceptButtons();
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        },
+        showConfirm: function ({ detail: itemId }) {
+            this.itemId = itemId;
+            this.show('<?= $escaper->escapeJs($removeConfirmModal->getDialogRefName()) ?>');
+        },
+        removeFromQuoteCart: function () {
+            const url = '<?= $escaper->escapeJs($block->getUrl('amasty_quote/cart/delete')) ?>';
+            
+            window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+            
+            fetch(url, {
+                headers: {
+                    'Content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'form_key=' + hyva.getFormKey() + '&id=' + this.itemId,
+                method: 'POST',
+                redirect: 'follow'
+            }).then((response) => {
+                // Check if response is JSON (error or popup response)
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then((data) => {
+                        // Threshold popup: ask to remove discount, then retry delete
+                        if (data && data.show_discount_removal_popup) {
+                            window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            const quoteId = data.quote_id || null;
+                            const itemId = this.itemId;
+
+                            return (typeof showDiscountRemovalModal === 'function' ? showDiscountRemovalModal() : Promise.resolve(true)).then((proceed) => {
+                            if (proceed) {
+                                // User confirmed: remove discount then retry delete
+                                window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+                                const removeDiscountUrl = '<?= $escaper->escapeUrl($block->getUrl('dcwrequestquote/cart/removeDiscount')) ?>';
+                                const formKey = hyva.getFormKey();
+
+                                const params = new URLSearchParams();
+                                if (quoteId) {
+                                    params.append('quote_id', quoteId);
+                                }
+                                params.append('form_key', formKey);
+
+                                return fetch(removeDiscountUrl, {
+                                    headers: {
+                                        'Content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    method: 'POST',
+                                    body: params.toString(),
+                                    redirect: 'follow'
+                                }).then((removeRes) => {
+                                    if (!removeRes.ok) {
+                                        throw new Error('Failed to remove discount');
+                                    }
+                                    const ct = removeRes.headers.get('content-type');
+                                    if (ct && ct.includes('application/json')) {
+                                        return removeRes.json();
+                                    }
+                                    return { success: true };
+                                }).then((removeData) => {
+                                    if (removeData && removeData.error) {
+                                        throw new Error(removeData.message || 'Failed to remove discount');
+                                    }
+
+                                    // After discount removed, retry delete for this item
+                                    const retryBody = 'form_key=' + hyva.getFormKey() + '&id=' + itemId;
+                                    return fetch(url, {
+                                        headers: {
+                                            'Content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        },
+                                        method: 'POST',
+                                        body: retryBody,
+                                        redirect: 'follow'
+                                    });
+                                }).then((retryResponse) => {
+                                    if (!retryResponse) {
+                                        throw new Error('No response on retry delete');
+                                    }
+                                    const retryContentType = retryResponse.headers.get('content-type');
+                                    if (retryContentType && retryContentType.includes('application/json')) {
+                                        return retryResponse.json().then((retryData) => {
+                                            if (retryData.errors && retryData.message) {
+                                                if (window.dispatchMessages) {
+                                                    window.dispatchMessages([{
+                                                        type: 'error',
+                                                        text: retryData.message
+                                                    }]);
+                                                } else {
+                                                    alert(retryData.message);
+                                                }
+                                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                                this.itemId = null;
+                                                this.hide('<?= $escaper->escapeJs($removeConfirmModal->getDialogRefName()) ?>');
+                                                return;
+                                            }
+                                            // Success after retry
+                                            window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                            window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                            window.location.reload();
+                                        });
+                                    } else {
+                                        // HTML/redirect after retry - reload
+                                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                        window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                                        window.location.reload();
+                                    }
+                                }).catch((error) => {
+                                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                    if (window.dispatchMessages) {
+                                        window.dispatchMessages([{
+                                            type: 'error',
+                                            text: error.message || 'An error occurred while removing the discount.'
+                                        }]);
+                                    } else {
+                                        alert(error.message || 'An error occurred while removing the discount.');
+                                    }
+                                }).finally(() => {
+                                    this.itemId = null;
+                                    this.hide('<?= $escaper->escapeJs($removeConfirmModal->getDialogRefName()) ?>');
+                                });
+                            } else {
+                                // User chose Keep My Discount - cancel the delete
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                if (window.dispatchMessages) {
+                                    window.dispatchMessages([{
+                                        type: 'info',
+                                        text: 'Item delete cancelled.'
+                                    }]);
+                                }
+                                this.itemId = null;
+                                this.hide('<?= $escaper->escapeJs($removeConfirmModal->getDialogRefName()) ?>');
+                                return;
+                            }
+                            });
+                        }
+
+                        // Standard error JSON (no popup flag)
+                        if (data.errors && data.message) {
+                            if (window.dispatchMessages) {
+                                window.dispatchMessages([{
+                                    type: 'error',
+                                    text: data.message
+                                }]);
+                            } else {
+                                alert(data.message);
+                            }
+                            window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            this.itemId = null;
+                            this.hide('<?= $escaper->escapeJs($removeConfirmModal->getDialogRefName()) ?>');
+                            return;
+                        }
+
+                        // Success - reload page
+                        window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                        window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                        window.location.reload();
+                    });
+                } else {
+                    // HTML response (redirect) - reload page
+                    window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                    window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                    window.location.reload();
+                }
+            }).catch(() => {
+                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                if (window.dispatchMessages) {
+                    window.dispatchMessages([{
+                        type: 'error',
+                        text: 'An error occurred while removing the item. Please try again.'
+                    }]);
+                }
+            }).finally(() => {
+                // Modal is hidden in the branches above
+            });
+        }
+    };
+}
+</script>
+

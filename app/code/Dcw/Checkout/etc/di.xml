@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Customer\Model\Address">
+        <plugin name="dcw_checkout_customer_address_telephone_validate"
+                type="Dcw\Checkout\Plugin\Customer\AddressValidatePlugin"
+                sortOrder="100"/>
+    </type>
+	<type name="Magento\Checkout\Model\PaymentInformationManagement">
+        <plugin name="dcw_checkout_telephone_payment_validation"
+                type="Dcw\Checkout\Plugin\Checkout\PaymentInformationManagementPlugin"
+                sortOrder="10"/>
+    </type>
+	<type name="Magento\Checkout\Model\GuestPaymentInformationManagement">
+		<plugin
+			name="dcw_guest_payment_shipping_validation"
+			type="Dcw\Checkout\Plugin\Checkout\GuestPaymentInformationManagementPlugin" sortOrder="10"/>
+	</type>
+</config>

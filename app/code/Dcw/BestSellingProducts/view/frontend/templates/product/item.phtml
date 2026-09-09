@@ -1,0 +1,221 @@
+<?php
+/**
+ * Copyright ©  All rights reserved.
+ * See COPYING.txt for license details.
+ */
+declare(strict_types=1);
+
+use Magento\Catalog\Helper\Output as CatalogOutputHelper;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var \Magento\Catalog\Model\Product $product */
+
+$product = $block->getData('product');
+if (!$product || !$product->getId()) {
+    echo '<div class="product-item-error">Product not found</div>';
+    return;
+}
+
+$productId = $product->getId();
+// Get CatalogOutputHelper using ObjectManager (since we're in a dynamically created template block)
+try {
+    $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+    $catalogOutputHelper = $objectManager->get(CatalogOutputHelper::class);
+} catch (\Exception $e) {
+    // Fallback: simple helper
+    $catalogOutputHelper = new class {
+        public function productAttribute($product, $value, $attribute) {
+            return $value;
+        }
+    };
+}
+$imageDisplayArea = $block->getData('image_display_area') ?: 'category_page_grid';
+$viewIsGrid = (bool) $block->getData('view_is_grid');
+
+// Get product price using AbstractProduct block
+$priceHtml = '';
+try {
+    // Create AbstractProduct block to get price HTML
+    $abstractProductBlock = $block->getLayout()->createBlock(\Magento\Catalog\Block\Product\AbstractProduct::class);
+    if ($abstractProductBlock) {
+        $priceHtml = $abstractProductBlock->getProductPrice($product);
+    }
+    // If that fails, try direct price formatting
+    if (empty($priceHtml)) {
+        $finalPrice = $product->getFinalPrice();
+        if ($finalPrice) {
+            $priceHtml = $product->getFormattedPrice($finalPrice);
+        }
+    }
+} catch (\Exception $e) {
+    // Fallback: use product price directly
+    try {
+        $finalPrice = $product->getFinalPrice();
+        if ($finalPrice) {
+            $priceHtml = $product->getFormattedPrice($finalPrice);
+        }
+    } catch (\Exception $e2) {
+        $priceHtml = "<span class='price'>".$escaper->escapeHtml(__('Price not available'))."</span>";
+    }
+}
+
+// Get color options
+$colorAttributeCode = 'incstores_pim_color_axis';
+$colorOptions = [];
+$colorCount = 0;
+
+try {
+    if ($product->getTypeId() == 'configurable') {
+        // For configurable products, get colors from child products
+        $typeInstance = $product->getTypeInstance();
+        if ($typeInstance) {
+            $usedProducts = $typeInstance->getUsedProducts($product);
+            $colorValues = [];
+            
+            foreach ($usedProducts as $childProduct) {
+                $colorValue = $childProduct->getData($colorAttributeCode);
+                if ($colorValue && !in_array($colorValue, $colorValues)) {
+                    $colorValues[] = $colorValue;
+                    $colorAttribute = $product->getResource()->getAttribute($colorAttributeCode);
+                    if ($colorAttribute && $colorAttribute->usesSource()) {
+                        $colorLabel = $colorAttribute->getSource()->getOptionText($colorValue);
+                        if ($colorLabel) {
+                            $colorOptions[$colorValue] = $colorLabel;
+                        }
+                    }
+                }
+            }
+            $colorCount = count($colorOptions);
+        }
+    } else {
+        // For simple products, check if color attribute exists
+        $colorAttribute = $product->getResource()->getAttribute($colorAttributeCode);
+        if ($colorAttribute && $colorAttribute->usesSource()) {
+            $colorValue = $product->getData($colorAttributeCode);
+            if ($colorValue) {
+                $colorLabel = $colorAttribute->getSource()->getOptionText($colorValue);
+                if ($colorLabel) {
+                    $colorOptions[$colorValue] = $colorLabel;
+                    $colorCount = 1;
+                }
+            }
+        }
+    }
+} catch (\Exception $e) {
+    // If color options fail, continue without them
+    $colorCount = 0;
+}
+
+// Get product image using AbstractProduct block
+$imageHtml = '';
+try {
+    // Get AbstractProduct block from parent or create one
+    $abstractProductBlock = $block->getData('abstract_product_block');
+    if (!$abstractProductBlock) {
+        $abstractProductBlock = $block->getLayout()->createBlock(\Magento\Catalog\Block\Product\AbstractProduct::class);
+    }
+    
+    if ($abstractProductBlock) {
+        // Use AbstractProduct's getImage method
+        $imageBlock = $abstractProductBlock->getImage($product, $imageDisplayArea);
+        if ($imageBlock) {
+            $imageBlock->setTemplate('Magento_Catalog::product/list/image.phtml');
+            $imageBlock->setProductId($productId);
+            $imageHtml = $imageBlock->toHtml();
+        }
+    }
+    
+    // If AbstractProduct method fails, try direct image helper
+    if (empty(trim($imageHtml))) {
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $imageHelper = $objectManager->get(\Magento\Catalog\Helper\Image::class);
+        // Ensure product has image attribute loaded
+        if (!$product->getImage() && !$product->getSmallImage() && !$product->getThumbnail()) {
+            $product->load($productId);
+        }
+        $imageUrl = $imageHelper->init($product, $imageDisplayArea)->getUrl();
+        if ($imageUrl && strpos($imageUrl, 'placeholder') === false) {
+            $imageLabel = $product->getName();
+            $imageHtml = '<img src="' . $escaper->escapeUrl($imageUrl) . '" 
+                         alt="' . $escaper->escapeHtmlAttr($imageLabel) . '"
+                         class="w-full h-auto">';
+        }
+    }
+} catch (\Exception $e) {
+    // Fallback: try direct image helper
+    try {
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $imageHelper = $objectManager->get(\Magento\Catalog\Helper\Image::class);
+        // Reload product to ensure image attributes are loaded
+        if (!$product->getImage() && !$product->getSmallImage() && !$product->getThumbnail()) {
+            $productRepository = $objectManager->get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
+            try {
+                $product = $productRepository->getById($productId);
+            } catch (\Exception $e) {
+                // Product reload failed, continue with existing product
+            }
+        }
+        $imageUrl = $imageHelper->init($product, $imageDisplayArea)->getUrl();
+        if ($imageUrl) {
+            $imageHtml = '<img src="' . $escaper->escapeUrl($imageUrl) . '" 
+                         alt="' . $escaper->escapeHtmlAttr($product->getName()) . '"
+                         class="w-full h-auto">';
+        }
+    } catch (\Exception $e2) {
+        // Final fallback to placeholder
+        try {
+            $placeholderUrl = $block->getViewFileUrl('Magento_Catalog::images/product/placeholder/image.jpg');
+            $imageHtml = '<img src="' . $escaper->escapeUrl($placeholderUrl) . '" 
+                         alt="' . $escaper->escapeHtmlAttr($product->getName()) . '"
+                         class="w-full h-auto">';
+        } catch (\Exception $e3) {
+            $imageHtml = '<div class="image-placeholder w-full h-48 bg-gray-200 flex items-center justify-center">
+                            <span class="text-gray-400">' . $escaper->escapeHtml(__('No Image')) . '</span>
+                         </div>';
+        }
+    }
+}
+?>
+
+<div class="product-item card flex flex-col h-full w-full">
+    <style>
+        .product-item .product__label {
+            display: none !important;
+        }
+    </style>
+    <?php // Product Image ?>
+    <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>"
+       class="product photo product-item-photo block mb-3"
+       tabindex="-1">
+        <?= /* @noEscape */ $imageHtml ?>
+    </a>
+
+    <div class="product-info flex flex-col flex-grow tesinginfo">
+        <?php // Product Name ?>
+        <div class="product-name mb-2 text-center">
+            <a class="product-item-link text-size16 text-black font-bold no-underline relative block cursor-pointer text-left"
+               href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                <?= /* @noEscape */ $catalogOutputHelper->productAttribute($product, $product->getName(), 'name') ?>
+            </a>
+        </div>
+        <?php //if (!$hideRatingSummary): ?>
+            <div class="ratings <?= $viewIsGrid ? '' : 'md:mx-0 md:w-auto' ?>" data-nosnippet>
+                <div data-bv-show="rating_summary"
+                    data-bv-product-id="<?= $product->getSku(); ?>"
+                    data-bv-redirect-url="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                </div>
+            </div>
+        <?php //endif; ?>
+        <?php // Price ?>
+        <div class="product-price text-center">
+            <?php if ($product->getTypeId() == 'configurable'): ?>
+            <?php endif; ?>
+            <div class="price-wrapper text-lg font-semibold text-black text-left">
+                <?= /* @noEscape */ $priceHtml ?>
+            </div>
+        </div>
+    </div>
+</div>

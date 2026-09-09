@@ -1,0 +1,25 @@
+<div class="instagram_content_slider blog_insta_feed">
+    <?php
+        echo $this->getLayout()
+        ->createBlock('Magento\Cms\Block\Block')
+        ->setBlockId('blog_instagram_feed')
+        ->toHtml();
+    ?>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var instagramFeedContainer = document.querySelector('.blog-page .instagram_feed_container1');
+        if (instagramFeedContainer) {
+            var columns = document.querySelector('.columns');
+            if (columns) {
+                columns.parentNode.insertBefore(instagramFeedContainer, columns.nextSibling);
+            }
+        }      
+        var blogCon = document.querySelector('.blog-page .column.main');
+        var blockSearch = document.querySelector('.sidebar-additional .blog-search');
+        if (blogCon && blockSearch) {
+        blogCon.parentNode.insertBefore(blockSearch, blogCon);
+        }        
+    });
+</script>

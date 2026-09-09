@@ -1,0 +1,30 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use \Magento\DataServices\Block\Context;
+use Magento\DataServices\ViewModel\CustomerAddressProvider;
+
+/**
+ * @var Context $block
+ * @var CustomerAddressProvider $viewModel
+ */
+$viewModel = $block->getViewModel();
+$userAction = $viewModel->getUserAction();
+$pageAction = $userAction ? $userAction : $block->getData('step_name');
+?>
+
+<script>
+    window.addEventListener('load', function () {
+        magentoStorefrontEvents.context.setPage({
+            pageType: "<?= /* @noEscape */ $block->getData('page_type'); ?>"
+        });
+        magentoStorefrontEvents.context.setContext("pageExtended", {
+            action: "<?= /* @noEscape */ $pageAction ?>"
+        });
+    });
+</script>

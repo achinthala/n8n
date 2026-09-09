@@ -1,0 +1,57 @@
+<?php
+/* @var $block \Mirasvit\Rma\Block\Rma\View\History */
+$messages   = $block->getMessages();
+?>
+<?php if (count($messages)): ?>
+    <div class="mst-rma-box _half mst-rma__history card flex-auto">
+        <div class="mst-rma-box__title text-lg title"><?= __('RMA History') ?></div>
+        <div class="mst-rma-box__content overflow-y-auto" style="max-height: 50rem;">
+            <?php foreach ($messages as $message): 
+                if ($message->getStatusName() != 'Approved') {
+            ?>
+                <div class="mst-rma__message ml-8 mb-4 mt-2 p-4 <?= $block->getBodyStyles($message); ?>">
+                    <div class="mst-rma__message-title">
+                        <?php if ($message->getCustomerName()): ?>
+                            <strong class="float-left ml-3"><?= $block->escapeHtml($message->getCustomerName()) ?></strong>
+                        <?php elseif (($user = $block->getUser($message)) && trim((string) $user->getName())): ?>
+                            <?php if (!$message->getStatusId()): ?>
+                                <strong class="float-left ml-3"><?= $block->escapeHtml($user->getName()) ?></strong>
+                            <?php endif ?>
+                        <?php endif ?>
+
+                        <i class="float-right text-gray-400 mr-3"><?= $block->formatDate($message->getCreatedAt(), \IntlDateFormatter::MEDIUM) ?> <?= $block->formatTime($message->getCreatedAt(), \IntlDateFormatter::SHORT) ?></i>
+                    </div>
+
+                    <div class="mst-rma__message-body clear-both text-gray-600 p-4 bg-blue-100 rounded">
+                        <?php //do filter auto messages ?>
+                        <?php if ($message->getStatusId()): ?>
+                            <?= $block->getTextHtml($message) ?>
+                        <?php else: ?>
+                            <?= $block->escapeHtml($block->getTextHtml($message), ['b', 'br', 'strong', 'i', 'u', 'a']) ?>
+                        <?php endif; ?>
+
+                        <?php if ($attachments = $block->getAttachments($message)): ?>
+                            <?php foreach ($attachments as $attachment): ?>
+                                <br>
+                                <a href="<?= $block->getAttachmentUrl($attachment) ?>">
+                                    <?= $block->escapeHtml($attachment->getName()) ?>
+                                </a>
+                            <?php endforeach ?>
+                        <?php endif ?>
+                    </div>
+                </div>
+            <?php }
+            endforeach; ?>
+        </div>
+    </div>
+
+    <style>
+        .mst-rma__message.__customer {
+            margin-left: 0!important;
+            margin-right: 2rem;
+        }
+        .mst-rma__message.__customer .mst-rma__message-body {
+            background-color: rgb(209, 250, 229);
+        }
+    </style>
+<?php endif ?>

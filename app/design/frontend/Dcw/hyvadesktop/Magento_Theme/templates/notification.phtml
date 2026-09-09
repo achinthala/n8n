@@ -1,0 +1,20 @@
+<?php 
+$resp_arr = $block->getAllData();
+
+if ($resp_arr['full_action_name'] == 'catalog_product_view' || $resp_arr['full_action_name'] == 'catalog_category_view' ) {
+    if ($resp_arr['full_action_name'] == 'catalog_category_view' && $resp_arr['category_notification_bar2']!='') {  ?>  
+        <div class="notification2 bg-custom-blue pt-2 pb-2 text-center text-size13 font-normal text-white">  
+            <?php  echo $resp_arr['category_notification_bar2']; ?>
+        </div>
+    <?php }
+if ($resp_arr['full_action_name'] == 'catalog_product_view' && $resp_arr['incstores_pim_banner_msg_ext']!='') {  ?>  
+    <div class="notification2 bg-custom-blue pt-2 pb-2 text-center text-size13 font-normal text-white">    
+        <?php echo $resp_arr['incstores_pim_banner_msg_ext']; ?>
+    </div>
+<?php }
+} else {
+    if($resp_arr['glob_notif_2']!='') { ?>
+    <div class="notification2 bg-custom-blue pt-2 pb-2 text-center text-size13 font-normal text-white"> 
+        <?php echo $resp_arr['glob_notif_2']; ?>
+    </div>
+<?php } } ?>

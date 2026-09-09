@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <!-- <event name="sales_quote_save_after">
+        <observer name="dcw_saveshippingamount_set_fixed_shipping" instance="Dcw\SaveShippingAmount\Observer\SetFixedShipping"/>
+    </event> -->
+    <event name="checkout_cart_product_add_after">
+        <observer name="checkout_cart_product_add_after" instance="Dcw\SaveShippingAmount\Observer\CartChangeObserver"/>
+    </event>
+    <event name="checkout_cart_update_items_after">
+        <observer name="checkout_cart_update_items_after" instance="Dcw\SaveShippingAmount\Observer\CartChangeObserver"/>
+    </event>
+    <event name="checkout_cart_remove_item_after">
+        <observer name="checkout_cart_remove_item_after" instance="Dcw\SaveShippingAmount\Observer\CartChangeObserver"/>
+    </event>
+    <event name="checkout_cart_product_update_after">
+        <observer name="checkout_cart_product_update_after" instance="Dcw\SaveShippingAmount\Observer\CartChangeObserver"/>
+    </event>
+    <event name="checkout_controller_onepage_save_shipping_method">
+        <observer name="checkout_controller_onepage_save_shipping_method" instance="Dcw\SaveShippingAmount\Observer\CartChangeObserver"/>
+    </event>
+     <event name="checkout_onepage_controller_shipping_method_save_after">
+        <observer name="checkout_onepage_controller_shipping_method_save_after" instance="Dcw\SaveShippingAmount\Observer\CartChangeObserver"/>
+    </event>
+
+</config>

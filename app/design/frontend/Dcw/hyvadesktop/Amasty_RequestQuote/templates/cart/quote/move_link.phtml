@@ -1,0 +1,139 @@
+<?php
+/** @var \Dcw\RequestQuote\Block\Cart\Quote\Move $block */
+use Magento\Framework\Escaper;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+$blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+$itemId = $blockObj->getCartDetails()->getQuote()->getId();
+
+// Check if Amasty quote cart has items using ViewModel
+$requestQuoteViewModel = $viewModels->require(\Dcw\RequestQuote\ViewModel\Data::class);
+$hasQuoteItems = $requestQuoteViewModel->hasQuoteItems();
+?>
+<script>
+    function moveCartToQuote() {
+        return {
+            moveToQuoteLink: window.BASE_URL + 'dcw_amasty_quote/move/inQuote',
+            isDisabled: false,
+            moveQuotes() {
+                // Prevent double click
+                if (this.isDisabled) {
+                    return;
+                }
+                
+                // Disable button immediately
+                this.isDisabled = true;
+                
+                const self = this;
+                
+				document.getElementById("checkoutLoading").style.display = "block";
+				fetch(this.moveToQuoteLink, {
+                "headers": {
+                    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                },
+                "body": "form_key=" + document.querySelector('input[name=form_key]').value,
+                "method": "POST",
+                "mode": "cors",
+                "credentials": "include",
+            }).then(function (response) {
+				// Run second fetch when InQuote succeeded (redirect or 200 - CDN may cache and return 200 on staging/prod)
+				if (response.redirected || response.ok) {
+					<?php if($blockObj->getCustomerSession()->isLoggedIn()) { ?>
+						cart_id = <?= $itemId; ?>,
+						postUrl = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/cart/updatePost')) ?>',
+						formKey = document.querySelector('input[name=form_key]').value,
+						form = document.getElementById('form-validate');
+						// `checkout=context` is also present on the normal Save Cart form.
+						// Use a dedicated flag so backend can reliably detect Checkout Later.
+						let data = new URLSearchParams(new FormData(form)).toString() + '&update_cart_action=submit&checkout=context&checkout_later=1';
+						fetch(postUrl, {
+							"headers": {
+								"content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+								"X-Requested-With": "XMLHttpRequest"
+							},
+							"method": "POST",
+							"mode": "cors",
+							"credentials": "include",
+							"redirect": "follow",
+							"body": new URLSearchParams(data)
+						}).then((response) => {
+							document.getElementById("checkoutLoading").style.display = "none";
+							window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+							// updatePost returns redirect; always go to success page when request completed (2xx/3xx)
+							if (response.ok || response.redirected) {
+								window.location.href = '<?= $escaper->escapeUrl($block->getUrl('amasty_quote/quote/success/')) ?>';
+							} else {
+								self.isDisabled = false;
+							}
+						}).catch(function (err) {
+							document.getElementById("checkoutLoading").style.display = "none";
+							self.isDisabled = false;
+						})
+					<?php }  else {?>
+						document.getElementById("checkoutLoading").style.display = "none";
+						window.location.href = response.url;
+					<?php } ?>
+                    }
+            }).then(function (response) {
+                 let reloadCustomerDataEvent = new CustomEvent("reload-customer-section-data");
+                 window.dispatchEvent(reloadCustomerDataEvent);
+            }).catch(function (error) {
+                // Re-enable button on error
+                self.isDisabled = false;
+                document.getElementById("checkoutLoading").style.display = "none";
+            });
+			
+        }
+    }
+	}
+</script>
+<div class="flex items-center gap-2">
+    <button
+        class="amquote-addto-button amasty-quote-link btn btn-secondary-large w-full justify-center"
+        x-data="moveCartToQuote()"
+        x-bind:disabled="isDisabled"
+        x-on:click="moveQuotes()"
+        :class="isDisabled ? 'opacity-50 cursor-not-allowed' : ''"
+        ><?= $escaper->escapeHtml(__('Checkout Later')) ?>
+    </button>
+    <?php if ($hasQuoteItems): ?>
+    <div class="relative" 
+         x-data="{ showTooltip: false }"
+         @mouseenter="showTooltip = true"
+         @mouseleave="showTooltip = false">
+        <svg xmlns="http://www.w3.org/2000/svg" 
+             fill="none" 
+             viewBox="0 0 24 24" 
+             stroke-width="1.5" 
+             stroke="currentColor" 
+             class="w-5 h-5 text-gray-500 cursor-help">
+            <path stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+        </svg>
+        <div x-show="showTooltip"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="absolute left-0 bottom-full mb-2 w-64 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg z-50"
+             style="display: none;">
+            <p class="mb-2">
+                <?= $escaper->escapeHtml(__('The items in your shopping cart will be merged with your quote cart.')) ?>
+            </p>
+            <p>
+                <?= $escaper->escapeHtml(__('Your shopping cart items will be removed from the cart after merging.')) ?>
+            </p>
+            <div class="absolute left-4 bottom-0 transform translate-y-full">
+                <div class="border-4 border-transparent border-t-gray-900"></div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+<div id="checkoutLoading" style="display:none" class="checkout-later-loading"></div>

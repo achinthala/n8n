@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_spotlight>
+            <schema_variants>
+                <enable_variants>1</enable_variants>
+                <enable_cache>1</enable_cache>
+                <cache_lifetime>86400</cache_lifetime>
+                <include_only_enabled>1</include_only_enabled>
+                <include_only_in_stock>0</include_only_in_stock>
+            </schema_variants>
+        </dcw_spotlight>
+    </default>
+</config>
+

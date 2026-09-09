@@ -1,0 +1,10 @@
+<div class="field amexfee-item-element" visible="visible" css="$data.additionalClasses">
+    <label class="label amexfee-title">Delivery Fee</label>
+    <div class="control">
+        <p if="description" text="description"></p>
+        <render args="elementTmpl"></render>
+    </div>
+    <!-- ko if: element.error() -->
+    <div class="field-error" data-bind="attr: { id: element.errorId }, text: element.error" generated="true"></div>
+    <!-- /ko -->
+</div>

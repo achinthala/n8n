@@ -1,0 +1,135 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\LayeredNavigation\Block\Navigation;
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var Navigation $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+$applyButtonBlock = $block->getLayout()->createBlock(\Mirasvit\LayeredNavigation\Block\ApplyButton::class);
+?>
+<?php if ($block->canShowBlock()): ?>
+    <div class="block border border-container bg-container-darker p-4 md:border-0 md:bg-transparent md:py-0 md:px-0 my-6"
+         x-data="initLayeredNavigation()"
+         x-init="checkIsMobileResolution()"
+         @resize.window.debounce="checkIsMobileResolution()"
+         @visibilitychange.window.debounce="checkIsMobileResolution()"
+		 :class="{ 'popupshow' : blockOpen, 'popuphide': !blockOpen }"
+    >
+	
+	
+        <div class="block-title flex items-center justify-between"
+             @click="blockOpen = !blockOpen"
+        >
+            <span class="text-primary text-md text-xl md:text-2xl font-semibold capitalize">
+                <?= $escaper->escapeHtml(__('Filters')) ?>
+            </span>
+            <span class="py-1 px-1 bg-container-lighter rounded border border-container-darker hidden"
+                  :class="{ 'block' : isMobile, 'hidden': !isMobile }">
+                <?= $heroicons->chevronDownHtml(
+                    'transition-transform transform duration-300 ease-in-out',
+                    24,
+                    24,
+                    [":class" => "{ 'rotate-180': blockOpen }"]
+                ); ?>
+            </span>
+        </div>
+		
+	
+        <div class="block-content filter-content pt-3 hidden md:block" :class="{ 'hidden' : isMobile && !blockOpen }">
+			<div :class="{ 'modal' : blockOpen}">
+			<div class="modal-overlay" @click="blockOpen = !blockOpen"></div>
+			<div :class="{ 'modal-content' : blockOpen}">
+            <div class="filter-btn"><span  @click="blockOpen = !blockOpen">Filters</span></div>
+			<div class="close-btn"><span  @click="blockOpen = !blockOpen">Close</span></div>
+			
+			<?= $block->getChildHtml('state') ?>
+            <?php foreach ($block->getFilters() as $filter): ?>
+                <?php if ($filter->getItemsCount()): ?>
+                    <div class="filter-option card my-4" x-data="{ open: false }">
+                        <div
+                            class="filter-options-title flex justify-between items-center cursor-pointer hover:text-secondary-darker border-container"
+                            :class="{ 'border-b pb-4': open }"
+                            @click="open = !open">
+                            <span class="title text-md md:text-lg font-semibold">
+                                <?= $escaper->escapeHtml(__($filter->getName())) ?>
+                                </span>
+                            <span class="py-1 px-1 rounded border border-container">
+                                <?= $heroicons->chevronDownHtml(
+                                    'transition-transform transform duration-300 ease-in-out',
+                                    24,
+                                    24,
+                                    [":class" => "{ 'rotate-180': open }"]
+                                ); ?>
+                            </span>
+                        </div>
+                        <template x-if="open">
+                            <div class="filter-options-content pt-3">
+                                <?= /* @noEscape */ $block->getChildBlock('renderer')->render($filter) ?>
+                            </div>
+                        </template>
+                    </div>
+                <?php endif; ?>
+            <?php endforeach; ?>
+            <?php 
+                $current_url = $_SERVER['REQUEST_URI'];
+                $current_url = explode("?", $_SERVER['REQUEST_URI']);
+            ?>
+            <div class="clear_buttons flex justify-between">
+                <div class="clear-filter"><a href="<?= $current_url[0] ?>">Clear Filters</a></div>
+                <?php if ($applyButtonBlock->isApplyingMode()) {?>
+                    <div class="show-result">
+                        <div class="" data-element="mst-nav__applyButton">
+                            <div class="mst-nav__apply-button">
+                                <div class="loader hidden">
+                                    <i class="fa fa-spinner fa-spin"></i>
+                                </div>
+                                <div class="items hidden">
+                                    <strong data-count></strong>
+                                    <span data-label-1><?= __('items') ?></span>
+                                    <span data-label-n><?= __('item') ?></span>
+                                </div>
+                                <button class="" data-apply><?= __('Show Result') ?></button>
+                            </div>
+                        </div>
+                    </div>
+                <?php }?>
+            </div>
+            <?php /*<div id="mob-navfilter-loader" class="loading-mask" style="display:none">
+                <div class="loader">
+                    <img src="<?=  $block->getViewFileUrl('images/loader-1.gif'); ?>" alt="Loading...">
+                </div>
+            </div> */?>
+        </div>
+        </div>
+        </div>
+    </div>
+
+    
+    <script>
+        function initLayeredNavigation() {
+            return {
+                isMobile: false,
+                blockOpen: false,
+                checkIsMobileResolution() {
+                    this.isMobile = window.matchMedia('(max-width: 767px)').matches;
+                }
+            }
+        }
+    </script>
+<?php endif; ?>

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="company" resource="default" engine="innodb" comment="Company Table">
+        <column xsi:type="smallint" name="business_focus" unsigned="true" nullable="true" identity="false" default="0" comment="Business Focus"/>
+		<column xsi:type="boolean" name="contact_by_phone" nullable="false" default="0" comment="Contact By Phone"/>
+		<column xsi:type="smallint" name="flooring_jobs_per_year" unsigned="true" nullable="false" identity="false" default="0" comment="Flooring Jobs per Year"/>		
+		<column xsi:type="smallint" name="loading_dock" unsigned="true" nullable="false" identity="false" default="0" comment="Loading Dock"/>
+		<column xsi:type="varchar" name="company_website" nullable="true" length="255" comment="Company Website"/>
+		<column xsi:type="varchar" name="business_focus_others" nullable="true" length="255" comment="Business Focus Others"/>
+		<column xsi:type="int" name="company_id" unsigned="true" nullable="true" identity="false" comment="Company Id"/>
+		<column xsi:type="varchar" name="toll_free_number" nullable="true" length="20" comment="Toll Free Number"/>
+		<column xsi:type="varchar" name="sales_rep_name" nullable="true" length="255" comment="Sales Rep Name"/>
+		<column xsi:type="varchar" name="sales_rep_email" nullable="true" length="255" comment="Sales Rep Email"/>
+		<column xsi:type="varchar" name="total_order_value" nullable="true" length="100" comment="Total Order Value"/>
+		<column xsi:type="varchar" name="unlock_next_level" nullable="true" length="100" comment="Unlock Next Level"/> 
+		<column xsi:type="varchar" name="job_title_other" nullable="true" length="100" comment="Job Title Other"/>
+	</table> 
+</schema>

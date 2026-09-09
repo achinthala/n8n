@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="quote" resource="default" engine="innodb" comment="Company Table">
+        <column xsi:type="smallint" name="loading_dock" unsigned="true" nullable="true" identity="false" default="0" comment="Loading Dock"/>
+		<column xsi:type="smallint" name="residential_address" unsigned="true" nullable="true" identity="false" default="0" comment="Residential Address"/>
+	</table>
+	<table name="sales_order" resource="default" engine="innodb" comment="Company Table">
+        <column xsi:type="smallint" name="loading_dock" unsigned="true" nullable="true" identity="false" default="0" comment="Loading Dock"/>
+		<column xsi:type="smallint" name="residential_address" unsigned="true" nullable="true" identity="false" default="0" comment="Residential Address"/>
+	</table>
+</schema>

@@ -1,0 +1,63 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Customer\Block\Account\Dashboard\Info;
+use Magento\Framework\Escaper;
+
+/** @var Info $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+?>
+<div class="block-title"><?= $escaper->escapeHtml(__('Account Information')) ?></div>
+<div class="block block-dashboard-addresses-info">
+    <div class="block-content"><h2 class="text-size18 font-normal">
+            <span><?= $escaper->escapeHtml(__('Contact Information')) ?></span></h2>
+        <p class="font-normal text-size16">
+            <span class="block"><?= $escaper->escapeHtml($block->getName()) ?></span>
+            <?= ''//$escaper->escapeHtml($block->getCustomer()->getCompany()) ?>
+            <span class="block"><?= $escaper->escapeHtml($block->getCustomer()->getEmail()) ?></span>
+        </p>
+        <?= $block->getChildHtml('customer.account.dashboard.info.extra'); ?>
+        <div class="flex items-center ct-info">
+            <a
+                class="font-normal text-size16 relative"
+                href="<?= $escaper->escapeUrl($block->getUrl('customer/account/edit')) ?>">
+                <span><?= $escaper->escapeHtml(__('Edit')) ?></span>
+            </a>
+            <a
+                class="font-normal text-size16 relative"
+                href="<?= $escaper->escapeUrl($block->getChangePasswordUrl()) ?>" class="action change-password">
+                <?= $escaper->escapeHtml(__('Change Password')) ?>
+            </a>
+        </div>
+    </div>
+    <?php if ($block->isNewsletterEnabled()): ?>
+        <div class="block-content"><h2 class="text-size18 font-semibold">
+                <span><?= $escaper->escapeHtml(__('Newsletters')) ?></span></h2>
+            <p class="font-normal text-size16">
+                <?php if ($block->getIsSubscribed()): ?>
+                    <?= $escaper->escapeHtml(__('You are subscribed to "General Subscription".')) ?>
+                <?php else: ?>
+                    <?= $escaper->escapeHtml(__('You aren\'t subscribed to our newsletter.')) ?>
+                <?php endif; ?>
+            </p>
+            <div class="flex items-center">
+                <a
+                    class="font-normal text-size16"
+                    href="<?= $escaper->escapeUrl($block->getUrl('newsletter/manage')) ?>">
+                    <span><?= $escaper->escapeHtml(__('Edit')) ?></span>
+                </a>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>

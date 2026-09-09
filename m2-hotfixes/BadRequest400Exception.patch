@@ -1,0 +1,56 @@
+diff --git a/vendor/magento/module-elasticsearch/SearchAdapter/Dynamic/DataProvider.php b/vendor/magento/module-elasticsearch/SearchAdapter/Dynamic/DataProvider.php
+index 67b12a307..bd937a342 100644
+--- a/vendor/magento/module-elasticsearch/SearchAdapter/Dynamic/DataProvider.php
++++ b/vendor/magento/module-elasticsearch/SearchAdapter/Dynamic/DataProvider.php
+@@ -250,7 +250,7 @@ class DataProvider implements \Magento\Framework\Search\Dynamic\DataProviderInte
+                 $result[$key] = $bucket['doc_count'];
+             }
+         } catch (\Exception $e) {
+-            $this->logger->critical($e);
++            //$this->logger->critical($e); //stop logging
+         }
+ 
+         return $result;
+
+diff --git a/vendor/magento/module-elasticsearch/SearchAdapter/Aggregation/Builder/Dynamic.php b/vendor/magento/module-elasticsearch/SearchAdapter/Aggregation/Builder/Dynamic.php
+index 4454ce6fb..b5d060102 100644
+--- a/vendor/magento/module-elasticsearch/SearchAdapter/Aggregation/Builder/Dynamic.php
++++ b/vendor/magento/module-elasticsearch/SearchAdapter/Aggregation/Builder/Dynamic.php
+@@ -58,12 +58,16 @@ class Dynamic implements BucketBuilderInterface
+     private function getEntityStorage(array $queryResult)
+     {
+         $ids = [];
+-        foreach ($queryResult['hits']['hits'] as $document) {
+-            if (!array_key_exists('_id', $document) && isset($document['fields']['_id'][0])) {
+-                $document['_id'] = $document['fields']['_id'][0];
+-                unset($document['fields']);
++        try {
++            foreach ($queryResult['hits']['hits'] as $document) {
++                if (!array_key_exists('_id', $document) && isset($document['fields']['_id'][0])) {
++                    $document['_id'] = $document['fields']['_id'][0];
++                    unset($document['fields']);
++                }
++                $ids[] = $document['_id'];
+             }
+-            $ids[] = $document['_id'];
++        } catch (\Exception $e) {
++            //$this->logger->critical($e); //stop logging
+         }
+ 
+         return $this->entityStorageFactory->create($ids);
+
+
+diff --git a/vendor/elasticsearch/elasticsearch/src/Elasticsearch/Connections/Connection.php b/vendor/elasticsearch/elasticsearch/src/Elasticsearch/Connections/Connection.php
+index acec0d002..a8fba3931 100644
+--- a/vendor/elasticsearch/elasticsearch/src/Elasticsearch/Connections/Connection.php
++++ b/vendor/elasticsearch/elasticsearch/src/Elasticsearch/Connections/Connection.php
+@@ -330,6 +330,7 @@ class Connection implements ConnectionInterface
+                             if (strpos($body, '"succeeded":true') !== false) {
+                                  $ignore[] = 404;
+                             }
++                            $ignore[] = 400;
+                             $this->process4xxError($request, $response, $ignore);
+                         } elseif ($response['status'] >= 500) {
+                             $ignore = $request['client']['ignore'] ?? [];
+                             
+

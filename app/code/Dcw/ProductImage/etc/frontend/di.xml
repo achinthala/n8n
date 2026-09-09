@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Catalog\Block\Product\View\Gallery">
+        <plugin name="add_images_to_gallery" type="Dcw\ProductImage\Plugin\AddImagesToGalleryBlock"/>
+    </type>
+
+    <type name="Magento\Catalog\Block\Product\AbstractProduct">
+        <plugin name="after_get_image_plugin" type="Dcw\ProductImage\Plugin\AfterGetImage"/>
+    </type>
+
+    <type name="Magento\Catalog\Block\Product\Image">
+        <plugin name="after_get_image_url_plugin" type="Dcw\ProductImage\Plugin\AfterGetImageUrl"/>
+    </type>
+
+    <type name="Magento\Checkout\CustomerData\AbstractItem">
+        <plugin name="Dcw_Minicartrelated" type="Dcw\ProductImage\Plugin\DefaultItem" disabled="false" sortOrder="10"/>
+    </type>
+    <type name="Magento\ConfigurableProduct\Block\Product\View\Type\Configurable">
+        <plugin name="vendor_configurable_product_configurable"
+                type="Dcw\ProductImage\Block\ConfigurableProduct\Product\View\Type\Configurable" sortOrder="10"/>
+    </type>
+    <preference for="Magento\Checkout\Model\Cart\ImageProvider" type="Dcw\ProductImage\Model\Cart\ImageProvider"/>
+    <preference for="Magento\Swatches\Controller\Ajax\Media" type="Dcw\ProductImage\Controller\Ajax\Media"/>
+</config>

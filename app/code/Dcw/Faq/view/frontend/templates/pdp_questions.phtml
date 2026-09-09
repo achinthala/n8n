@@ -1,0 +1,185 @@
+<?php
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Amasty\Faq\Block\Lists\QuestionsList;
+use Amasty\Faq\Block\Rating\Rating;
+use Magento\Framework\Escaper;
+
+/** @var QuestionsList $block */
+/** @var Rating $rating */
+/** @var ViewModelRegistry $viewModels */
+/** @var Escaper $escaper */
+
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+$rating = $block->getChildBlock('amasty_faq_rating');
+$questions = $block->getQuestions();
+$total = $questions ? count($questions) : 0;
+?>
+
+<div
+    class="amfaq_questions widget"
+    x-data="{
+        visibleCount: 5,
+        step: 5,
+        isLoading: false
+    }"
+>
+    <?php if ($block->hasBlockTitle()): ?>
+        <div class="amfaq-title mb-4">
+            <?= $escaper->escapeHtml((string) $block->getBlockTitle()) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($questions): ?>
+        <?php $i = 0; ?>
+        <?php foreach ($questions as $question): ?>
+            <?php 
+            $uniqueId = '_' . uniqid();
+            $shortAnswer = $block->getShortAnswer($question);
+            $fullAnswer = $question->getAnswer();
+            // Compare stripped versions to check if answer is truncated
+            $shortAnswerStripped = trim(strip_tags($shortAnswer));
+            $fullAnswerStripped = trim(strip_tags($fullAnswer));
+            // Check if short answer ends with ... (3 dots) or if it's shorter than full answer
+            $endsWithEllipsis = mb_strlen($shortAnswerStripped) >= 3 && 
+                                mb_substr($shortAnswerStripped, -3) === '...';
+            $isShorter = mb_strlen($shortAnswerStripped) < mb_strlen($fullAnswerStripped);
+            // Answer is truncated if it ends with ellipsis OR if it's shorter than the full answer
+            $isTruncated = $endsWithEllipsis || ($isShorter && $shortAnswerStripped !== $fullAnswerStripped);
+            ?>
+            <div
+                class="amquestion-wrapper border-container border-b mb-4"
+                x-show="<?= $i ?> < visibleCount"
+                x-cloak
+                x-data="{selected: null, open: true, showFullAnswer: false }"
+            >
+                <button
+                    type="button"
+                    class="amquestion-title w-full flex justify-between text-left text-lg font-light"
+                    @click="open = !open"
+                >
+                    <span>
+                        <?= /** @noEscape */ $block->highlight(
+                            $escaper->escapeHtml($question->getTitle())
+                        ) ?>
+                    </span>
+                    <?= $heroicons->chevronDownHtml('transition duration-300', 20, 20) ?>
+                </button>
+
+                <div
+                    class="amquestion-content text-base relative overflow-hidden
+                            transition-all max-h-0 duration-300 mb-3"
+                    x-ref="container<?= $escaper->escapeHtmlAttr($uniqueId) ?>"
+                    x-bind:style="selected == 1 ?
+                        'max-height: max-content' : ''"
+                >
+                    <div class="amfaq-short-answer-container mt-2">
+                        <?php if ($isTruncated): ?>
+                            <div x-show="!showFullAnswer">
+                                <?= /** @noEscape */ $block->highlight($shortAnswer) ?>
+                            </div>
+                            <div x-show="showFullAnswer" x-cloak>
+                                <?= /** @noEscape */ $block->highlight($fullAnswer) ?>
+                            </div>
+                        <?php else: ?>
+                            <?= /** @noEscape */ $block->highlight($fullAnswer) ?>
+                        <?php endif ?>
+                    </div>
+                    <div>
+                        <?php if ($isTruncated): ?>
+                            <div class="mt-2">
+                                <button
+                                    type="button"
+                                    @click.stop.prevent="showFullAnswer = !showFullAnswer"
+                                    class="text-blue-600 hover:underline text-sm cursor-pointer bg-transparent border-0 p-0 focus:outline-none"
+                                    x-text="showFullAnswer ? '<?= $escaper->escapeJs(__('Read Less')) ?>' : '<?= $escaper->escapeJs(__('Read More')) ?>'"
+                                ></button>
+                            </div>
+                        <?php endif ?>
+
+                        <?php if ($rating): ?>
+                            <div class="mt-4 flex">
+                                <?php $rating->ratingItemHtml((int)$question->getQuestionId()) ?>
+                                <?= /** @noEscape */ $rating->toHtml() ?>
+                            </div>
+                        <?php endif ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php $i++; ?>
+        <?php endforeach; ?>
+
+        <!-- LOAD MORE BUTTON -->
+        <div
+            class="text-center mt-6"
+            x-show="visibleCount < <?= (int) $total ?>"
+            x-cloak
+        >
+            <button
+                type="button"
+                class="px-6 py-2 border rounded text-sm hover:bg-gray-100"
+                :disabled="isLoading"
+                @click="
+                    isLoading = true;
+                    setTimeout(() => {
+                        visibleCount += step;
+                        isLoading = false;
+                    }, 500);
+                "
+            >
+                <span x-show="!isLoading"
+                      x-text="'<?= $escaper->escapeJs(__('Load more questions')) ?> (' + (<?= (int) $total ?> - visibleCount) + ' <?= $escaper->escapeJs(__('more')) ?>)'">
+                </span>
+                <span x-show="isLoading" x-cloak>
+                    <?= $escaper->escapeHtml(__('Loading...')) ?>
+                </span>
+            </button>
+        </div>
+
+    <?php else: ?>
+        <div class="am-no-items">
+            <?= $escaper->escapeHtml($block->getNoItemsLabel()) ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- LOADER OVERLAY -->
+    <div
+        x-show="isLoading"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-white/70"
+    >
+        <svg
+            class="animate-spin h-10 w-10 text-gray-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+            ></circle>
+            <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            ></path>
+        </svg>
+    </div>
+</div>
+
+<?php if ($block->isShowQuestionForm()): ?>
+    <?= /** @noEscape */ $block->getChildHtml('amasty_faq_ask_question_form') ?>
+<?php endif; ?>
+
+<?php if ($block->isAddStructuredData()): ?>
+    <?= /** @noEscape */ $block->getQuestionsStructuredDataHtml() ?>
+<?php endif; ?>
+
+<?= /** @noEscape */ $block->getChildHtml('amasty_faq_product_url') ?>

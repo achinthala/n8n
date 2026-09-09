@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_localization>
+            <localization>
+                <east_coast>Madhya Pradesh,Connecticut, Delaware, Florida, Georgia, Maine, Maryland, Massachusetts, New Hampshire, New Jersey, New York, North Carolina, Rhode Island, South Carolina, Virginia, Washington, D.C., Pennsylvania, Vermont, West Virginia</east_coast>
+                <midwest>Illinois, Indiana, Michigan, Ohio, Wisconsin, Iowa, Kansas, Minnesota, Missouri, Nebraska, North Dakota, South Dakota</midwest>
+                <west_coast>Alaska, California, Hawaii, Oregon, Washington</west_coast>
+                <!--<south_coast>Florida,Alabama,Mississippi,Louisiana,Texas,Georgia,South Carolina,North Carolina</south_coast>-->
+            </localization>
+        </dcw_localization>
+    </default>
+</config>

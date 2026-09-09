@@ -1,0 +1,16 @@
+diff --git a/vendor/plumrocket/module-gdpr-old/Helper/Notifys.php b/vendor/plumrocket/module-gdpr-old/Helper/Notifys.php
+index 1234567..abcdefg 100644
+--- a/vendor/plumrocket/module-gdpr-old/Helper/Notifys.php
++++ b/vendor/plumrocket/module-gdpr-old/Helper/Notifys.php
+@@ -142,7 +142,8 @@ class Notifys extends \Magento\Framework\App\Helper\AbstractHelper
+             try {
+                 $customer = $this->customerRepositoryInterface->getById($this->customerSession->getCustomerId());
+             } catch (NoSuchEntityException | LocalizedException $e) {
+                 $customer = null;
+-                $this->logger->error($e->getMessage());
++                // Patch: Commented out logger error to reduce log noise
++                // $this->logger->error($e->getMessage());
+             }
+ 
+             if ($customer) {
+

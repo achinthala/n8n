@@ -1,0 +1,222 @@
+<?php
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Magento\Swatches\ViewModel\Product\Renderer\Configurable as ConfigurableViewModel;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+
+$attributes = $block->getData('attributes');
+$swatchRendererViewModel = $block->getData('swatch_renderer_view_model');
+$getQuickShipProductCount = $block->getData('quick_ship_color_ids') ?? [];
+
+if (!$attributes || !$swatchRendererViewModel) {
+    return;
+}
+
+$hasQuickShip = is_array($getQuickShipProductCount) && count($getQuickShipProductCount) > 0;
+$swatchImageUrlJson = (string) ($block->getData('swatch_image_url') ?? '');
+$productId = (int) ($block->getData('product_id') ?? 0);
+
+$shipRegionSwatchBlock = $block->getLayout()->createBlock(Template::class)
+    ->setTemplate('Dcw_ShipRegionAvailability::product/ship-region/swatch-item.phtml')
+    ->setData(['product_id' => $productId]);
+
+foreach ($attributes as $attribute):
+    $attributeId = (int) $attribute->getAttributeId();
+    $productAttribute = $attribute->getProductAttribute();
+    if (!$swatchRendererViewModel->isSwatchAttribute($productAttribute)
+        || $productAttribute->getAttributeCode() !== 'incstores_pim_color_axis') {
+        continue;
+    }
+    $attributeCode = $productAttribute->getAttributeCode();
+    ?>
+    <template x-if="showSwatches && shipRegionZipActive && customerRegionCode">
+        <div class="dcw-ship-region-sections"
+             data-ship-region-swatch-images="<?= $escaper->escapeHtmlAttr($swatchImageUrlJson) ?>">
+            <!-- Fastest & Lowest Shipping -->
+            <div class="dcw-ship-region-section dcw-ship-region-section--near region-section">
+                <span class="dcw-ship-region-section__badge region-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
+                    </svg>
+                    <?= $escaper->escapeHtml(__('Fastest & Lowest Shipping')) ?>
+                </span>
+                <div class="dcw-ship-region-section__header region-header">
+                    <h3 class="dcw-ship-region-section__title">
+                        <?= $escaper->escapeHtml(__('Ships from our closest manufacturing facilities')) ?>
+                    </h3>
+                    <span class="color-count"
+                          x-text="(selectedValues && countShipRegionSectionColors('near', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>)) + ' colors'"></span>
+                </div>
+                <p class="dcw-ship-region-section__sub region-subtitle">
+                    <?= $escaper->escapeHtml(__('In stock at the warehouse closest to you — fastest delivery and lowest shipping cost.')) ?>
+                </p>
+
+                <div class="active-color-line dcw-ship-region-active-line dcw-ship-region-active-line--near"
+                     x-show="selectedValues[<?= $attributeId ?>] && isSelectedProductNearRegion()"
+                     x-cloak>
+                    <div class="active-color-swatch dcw-ship-region-active-swatch"
+                         x-effect="shipRegionZipActive && syncShipRegionActiveSwatchDisplay(<?= $attributeId ?>, $el)"></div>
+                    <div class="active-color-meta">
+                        <div class="dcw-ship-region-active-top-row">
+                            <div class="active-color-top">
+                                <span class="label"><?= $escaper->escapeHtml(__('Selected:')) ?></span>
+                                <span class="dcw-ship-region-active-color"
+                                      x-text="getShipRegionSelectedColorLabel(<?= $attributeId ?>)"></span>
+                            </div>
+                            <span class="dcw-ship-region-active-variant"
+                                  x-show="getShipRegionSelectedVariantLabel()"
+                                  x-text="getShipRegionSelectedVariantLabel()"></span>
+                        </div>
+                        <div class="dcw-ship-region-pdp-clone-wrapper dcw-ship-region-pdp-clone-wrapper--price"
+                             x-show="shipRegionClonedPriceHtml"
+                             x-effect="shipRegionZipActive && selectedValues[<?= $attributeId ?>] && scheduleShipRegionPriceClone()"
+                             x-cloak>
+                            <div x-html="shipRegionClonedPriceHtml"></div>
+                        </div>
+                        <div class="active-color-ship"
+                             x-show="getShipRegionExpectedDaysShip()"
+                             x-text="getShipRegionExpectedDaysShip()"></div>
+                    </div>
+                </div>
+
+                <?php if ($hasQuickShip): ?>
+                    <div class="dcw-ship-region-section__subhead sub-header"
+                         x-show="selectedValues && countShipRegionSubsectionColors('quickship', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>) > 0"
+                         x-cloak>
+                        <span class="bolt" aria-hidden="true">⚡</span>
+                        <?= $escaper->escapeHtml(__('Quick Ship Colors')) ?>
+                        <span class="count"
+                              x-text="'(' + (selectedValues && countShipRegionSubsectionColors('quickship', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>)) + ')'"></span>
+                    </div>
+                    <div class="dcw-ship-region-section__swatches dcw-ship-region-swatch-grid w-full color_swatches mb-6">
+                        <div class="swatch-attribute-options dcw-ship-region-swatch-grid__inner">
+                            <template x-for="(item, index) in optionConfig.attributes[<?= $attributeId ?>].options" :key="'near-q-' + item.id">
+                                <?= /* @noEscape */ $shipRegionSwatchBlock
+                                    ->setData('attribute_id', $attributeId)
+                                    ->setData('swatch_section', 'quickship')
+                                    ->toHtml() ?>
+                            </template>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="dcw-ship-region-section__subhead sub-header"
+                     x-show="selectedValues && countShipRegionSubsectionColors('normal', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>) > 0"
+                     x-cloak>
+                    <?= $escaper->escapeHtml(__('Standard Shipping Colors')) ?>
+                    <span class="count"
+                          x-text="'(' + (selectedValues && countShipRegionSubsectionColors('normal', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>)) + ')'"></span>
+                </div>
+                <div class="dcw-ship-region-section__swatches dcw-ship-region-swatch-grid w-full color_swatches mb-4">
+                    <div class="swatch-attribute-options dcw-ship-region-swatch-grid__inner">
+                        <template x-for="(item, index) in optionConfig.attributes[<?= $attributeId ?>].options" :key="'near-s-' + item.id">
+                            <?= /* @noEscape */ $shipRegionSwatchBlock
+                                ->setData('attribute_id', $attributeId)
+                                ->setData('swatch_section', 'normal')
+                                ->toHtml() ?>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ships From Farther Away -->
+            <div class="dcw-ship-region-section dcw-ship-region-section--far region-section farther">
+                <span class="dcw-ship-region-section__badge region-badge">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <?= $escaper->escapeHtml(__('Ships From Farther Away')) ?>
+                </span>
+                <div class="dcw-ship-region-section__header region-header">
+                    <h3 class="dcw-ship-region-section__title">
+                        <?= $escaper->escapeHtml(__('Longer transit times')) ?>
+                    </h3>
+                    <span class="color-count"
+                          x-text="(selectedValues && countShipRegionSectionColors('far', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>)) + ' colors'"></span>
+                </div>
+                <div class="dcw-ship-region-section__cost-note shipping-cost-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <span>
+                        <?= $escaper->escapeHtml(__('These colors ship cross-country. Expect longer transit and an estimated +$0.35–$0.50/sqft in additional shipping cost.')) ?>
+                    </span>
+                </div>
+
+                <div class="active-color-line dcw-ship-region-active-line dcw-ship-region-active-line--far"
+                     x-show="selectedValues[<?= $attributeId ?>] && !isSelectedProductNearRegion()"
+                     x-cloak>
+                    <div class="active-color-swatch dcw-ship-region-active-swatch"
+                         x-effect="shipRegionZipActive && syncShipRegionActiveSwatchDisplay(<?= $attributeId ?>, $el)"></div>
+                    <div class="active-color-meta">
+                        <div class="dcw-ship-region-active-top-row">
+                            <div class="active-color-top">
+                                <span class="label"><?= $escaper->escapeHtml(__('Selected:')) ?></span>
+                                <span class="dcw-ship-region-active-color"
+                                      x-text="getShipRegionSelectedColorLabel(<?= $attributeId ?>)"></span>
+                            </div>
+                            <span class="dcw-ship-region-active-variant"
+                                  x-show="getShipRegionSelectedVariantLabel()"
+                                  x-text="getShipRegionSelectedVariantLabel()"></span>
+                        </div>
+                        <div class="dcw-ship-region-pdp-clone-wrapper dcw-ship-region-pdp-clone-wrapper--price"
+                             x-show="shipRegionClonedPriceHtml"
+                             x-effect="shipRegionZipActive && selectedValues[<?= $attributeId ?>] && scheduleShipRegionPriceClone()"
+                             x-cloak>
+                            <div x-html="shipRegionClonedPriceHtml"></div>
+                        </div>
+                        <div class="active-color-ship"
+                             x-show="getShipRegionExpectedDaysShip()"
+                             x-text="getShipRegionExpectedDaysShip()"></div>
+                    </div>
+                </div>
+
+                <?php if ($hasQuickShip): ?>
+                    <div class="dcw-ship-region-section__subhead sub-header"
+                         x-show="selectedValues && countShipRegionSubsectionColors('farther_quick', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>) > 0"
+                         x-cloak>
+                        <span class="bolt" aria-hidden="true">⚡</span>
+                        <?= $escaper->escapeHtml(__('Quick Ship Colors')) ?>
+                        <span class="count"
+                              x-text="'(' + (selectedValues && countShipRegionSubsectionColors('farther_quick', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>)) + ')'"></span>
+                    </div>
+                    <div class="dcw-ship-region-section__swatches dcw-ship-region-swatch-grid w-full color_swatches mb-6">
+                        <div class="swatch-attribute-options dcw-ship-region-swatch-grid__inner">
+                            <template x-for="(item, index) in optionConfig.attributes[<?= $attributeId ?>].options" :key="'far-q-' + item.id">
+                                <?= /* @noEscape */ $shipRegionSwatchBlock
+                                    ->setData('attribute_id', $attributeId)
+                                    ->setData('swatch_section', 'farther_quick')
+                                    ->toHtml() ?>
+                            </template>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <div class="dcw-ship-region-section__subhead sub-header"
+                     x-show="selectedValues && countShipRegionSubsectionColors('farther_normal', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>) > 0"
+                     x-cloak>
+                    <?= $escaper->escapeHtml(__('Standard Shipping Colors')) ?>
+                    <span class="count"
+                          x-text="'(' + (selectedValues && countShipRegionSubsectionColors('farther_normal', '<?= $escaper->escapeJs($attributeCode) ?>', <?= $attributeId ?>)) + ')'"></span>
+                </div>
+                <div class="dcw-ship-region-section__swatches dcw-ship-region-swatch-grid w-full color_swatches mb-4">
+                    <div class="swatch-attribute-options dcw-ship-region-swatch-grid__inner">
+                        <template x-for="(item, index) in optionConfig.attributes[<?= $attributeId ?>].options" :key="'far-s-' + item.id">
+                            <?= /* @noEscape */ $shipRegionSwatchBlock
+                                ->setData('attribute_id', $attributeId)
+                                ->setData('swatch_section', 'farther_normal')
+                                ->toHtml() ?>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+<?php endforeach; ?>

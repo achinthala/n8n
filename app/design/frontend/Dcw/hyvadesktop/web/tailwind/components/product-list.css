@@ -1,0 +1,36 @@
+
+.product-list-image .product-list-image-hover {
+    @apply opacity-0 transition-opacity duration-300;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .product-list-image.is-hovered .product-list-image-hover {
+        @apply opacity-100;
+    }
+}
+
+.product-item {
+    .price-container {
+        @apply block;
+
+        .price {
+            @apply font-semibold text-lg;
+        }
+
+        .price-label {
+            @apply text-sm;
+        }
+    }
+
+    .special-price .price-container .price-label {
+        @apply sr-only;
+    }
+
+    .old-price .price-container {
+        @apply text-gray-500;
+
+        .price {
+            @apply font-normal text-base;
+        }
+    }
+}

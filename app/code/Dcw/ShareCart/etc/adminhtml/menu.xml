@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Dcw_ShareCart::share_cart"
+             title="Share Cart"
+             module="Dcw_ShareCart"
+             sortOrder="90"
+             parent="Magento_Sales::sales"
+             resource="Dcw_ShareCart::share_cart"/>
+        <add id="Dcw_ShareCart::history"
+             title="Share History"
+             module="Dcw_ShareCart"
+             sortOrder="10"
+             parent="Dcw_ShareCart::share_cart"
+             action="dcw_sharecart/history/index"
+             resource="Dcw_ShareCart::history"/>
+        <add id="Dcw_ShareCart::config"
+             title="Configuration"
+             module="Dcw_ShareCart"
+             sortOrder="20"
+             parent="Dcw_ShareCart::share_cart"
+             action="admin/system_config/edit/section/dcw_share_cart"
+             resource="Dcw_ShareCart::config"/>
+    </menu>
+</config>

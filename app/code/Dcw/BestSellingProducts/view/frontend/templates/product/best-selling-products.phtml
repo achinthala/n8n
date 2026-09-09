@@ -1,0 +1,320 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Store;
+use Magento\Catalog\Block\Product\ReviewRendererInterface as ProductReviewRenderer;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var Store $viewModelStore */
+$viewModelStore = $viewModels->require(Store::class);
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var ProductListItem $productListItemViewModel */
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+$viewMode = 'grid';
+$imageDisplayArea = 'category_page_grid';
+$showDescription = false;
+$title = (string) $block->getTitle();
+$items = $block->getItems() ?? [];
+if (is_object($items) && $items instanceof \Iterator) {
+    $items = iterator_to_array($items);
+}
+if (!$itemCount = count($items)) {
+    return '';
+}
+
+// Filter out invalid products
+$validItems = [];
+foreach ($items as $product) {
+    if ($product && $product->getId()) {
+        $validItems[] = $product;
+    }
+}
+$items = $validItems;
+$itemCount = count($items);
+if ($itemCount === 0) {
+    return ''; // Don't show section if no valid products
+}
+
+$sliderItemRenderer = $block->getLayout()->getBlock('product_list_item')
+    ?: $block->getChildBlock('slider.item.template')
+    ?: $block->getLayout()->createBlock(Template::class);
+
+$hideRatingSummary = (bool) $block->getData('hide_rating_summary');
+$hideDetails       = (bool) $block->getData('hide_details');
+$sliderItemRenderer->setData('hide_details', $hideDetails);
+$sliderItemRenderer->setData('hide_rating_summary', $hideRatingSummary);
+
+// The slider item renderer block is often a shared instance.
+// If a specific item template is set for this slider, the previously set template must be reset later
+// so the item template is only replaced for the one slider it is specified on.
+$sharedItemRendererTemplate = null;
+$isSharedItemRenderer       = $sliderItemRenderer !== $block->getChildBlock('slider.item.template');
+if ($isSharedItemRenderer && $block->getChildBlock('slider.item.template')) {
+    $sharedItemRendererTemplate = $sliderItemRenderer->getTemplate();
+    $sliderSpecificItemTemplate = $block->getChildBlock('slider.item.template')->getTemplate();
+    $sliderItemRenderer->setTemplate($sliderSpecificItemTemplate);
+}
+?>
+<script>
+    'use strict';
+    function initSliderComponent() {
+        return {
+            active: 0,
+            itemCount: <?= (int) $itemCount ?>,
+            getSlider() {
+                return this.$root.querySelector('.js_slides');
+            },
+            pageSize: 6,
+            pageFillers: 0,
+            calcPageSize() {
+                const slider = this.getSlider();
+                if (slider) {
+                    this.itemCount = slider.querySelectorAll('.js_slide').length;
+                    this.pageSize = Math.round(slider.clientWidth / slider.querySelector('.js_slide').clientWidth);
+                    this.pageFillers = (
+                        this.pageSize * Math.ceil(this.itemCount / this.pageSize)
+                    ) - this.itemCount;
+                }
+            },
+            calcActive() {
+                const slider = this.getSlider();
+                if (slider) {
+                    const sliderItems = this.itemCount + this.pageFillers;
+                    const calculatedActiveSlide = slider.scrollLeft / (slider.scrollWidth / sliderItems);
+                    this.active = Math.round(calculatedActiveSlide / this.pageSize) * this.pageSize;
+                }
+            },
+            scrollPrevious() {
+                this.scrollTo(this.active - this.pageSize);
+            },
+            scrollNext() {
+                this.scrollTo(this.active + this.pageSize);
+            },
+            scrollTo(idx) {
+                const slider = this.getSlider();
+                if (slider) {
+                    const slideWidth = slider.scrollWidth / (this.itemCount + this.pageFillers);
+                    slider.scrollLeft = Math.floor(slideWidth) * idx;
+                    this.active = idx;
+                }
+            }
+        }
+    }
+</script>
+<section class="dcw-best-selling-products-container <?=
+$escaper->escapeHtmlAttr($block->getData('maybe_purged_tailwind_section_classes'))
+    ?: 'my-12 text-gray-700 body-font';
+?>"
+         x-data="initSliderComponent()"
+         x-defer="intersect"
+         x-init="calcPageSize();"
+         @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })"
+         tabindex="0"
+        role="region"
+        aria-label="Best selling products carousel"
+        aria-roledescription="carousel"
+        @keydown.arrow-right.prevent="scrollNext()"
+        @keydown.arrow-left.prevent="scrollPrevious()"
+>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remove product__label elements from Best Selling Products section
+        const bestSellingSection = document.querySelector('.dcw-best-selling-products');
+        if (bestSellingSection) {
+            const labels = bestSellingSection.querySelectorAll('.product__label');
+            labels.forEach(function(label) {
+                if (label.classList.contains('flex') && label.classList.contains('items-center') && 
+                    label.classList.contains('w-full') && label.classList.contains('justify-between') &&
+                    label.classList.contains('py-[13px]')) {
+                    label.remove();
+                }
+            });
+        }
+        
+        // Also use MutationObserver to catch dynamically added labels
+        if (bestSellingSection) {
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 && node.classList && node.classList.contains('product__label')) {
+                            if (node.classList.contains('flex') && node.classList.contains('items-center') && 
+                                node.classList.contains('w-full') && node.classList.contains('justify-between') &&
+                                node.classList.contains('py-[13px]')) {
+                                node.remove();
+                            }
+                        }
+                    });
+                });
+            });
+            observer.observe(bestSellingSection, { childList: true, subtree: true });
+        }
+    });
+</script>
+    <?php if ($items): ?>
+        <div class="relative dcw-best-selling-products">
+            <?php if ($title): ?>
+                <div class="flex flex-col items-center pt-6 md:flex-row">
+                    <h3 class="text-2xl font-medium text-gray-900 title-font">
+                        <?= $escaper->escapeHtml($title); ?>
+                    </h3>
+                </div>
+            <?php endif; ?>
+            <div class="flex-none relative w-full overflow-x-hidden max-slide">
+                <div class="sr-only"
+                    aria-live="polite"
+                    x-text="'Showing products ' + (active + 1) + ' to ' + Math.min(active + pageSize, itemCount)">
+                </div>
+                <div id="product-slider" class="relative flex flex-nowrap w-full overflow-auto js_slides snap"
+                     @scroll.debounce="calcActive"
+                     role="group"
+                     aria-label="Product slider"
+                    >                
+                    <?php
+                    $index = 0;
+                    foreach ($items as $product):
+                        $index++;
+                    ?>
+                        <div class="flex shrink-0 w-full js_slide md:w-1/2 lg:w-1/3 xl:w-1/6"
+                             style="flex-basis: 100%;"
+                             data-product-index="<?= (int)$index ?>"
+                        >
+                            <?php
+                            $productRendered = false;
+                            try {
+                                // Create AbstractProduct block for image rendering
+                                $abstractProductBlock = $block->getLayout()->createBlock(\Magento\Catalog\Block\Product\AbstractProduct::class);
+                                $itemBlock = $block->getLayout()->createBlock(Template::class)
+                                    ->setTemplate('Dcw_BestSellingProducts::product/item.phtml')
+                                    ->setData('product', $product)
+                                    ->setData('image_display_area', $imageDisplayArea)
+                                    ->setData('abstract_product_block', $abstractProductBlock)
+                                    ->setData('view_is_grid', $viewMode === 'grid');
+                                $itemHtml = $itemBlock->toHtml();
+                                if (!empty(trim($itemHtml))) {
+                                    echo $itemHtml;
+                                    $productRendered = true;
+                                }
+                            } catch (\Exception $e) {
+                                // Continue to fallback
+                            }
+                            
+                            if (!$productRendered) {
+                                // Fallback to default product display if custom template returns empty
+                                try {
+                                    $product->setData('index_value', $index);
+                                    echo /** @noEscape */ $productListItemViewModel->getItemHtmlWithRenderer(
+                                        $sliderItemRenderer,
+                                        $product,
+                                        $block,
+                                        $viewMode,
+                                        ProductReviewRenderer::SHORT_VIEW,
+                                        $imageDisplayArea,
+                                        $showDescription
+                                    );
+                                    $productRendered = true;
+                                } catch (\Exception $e) {
+                                    // If all else fails, show placeholder
+                                    echo '<div class="product-item-error p-4 text-center">Product #' . (int)$index . '</div>';
+                                }
+                            }
+                            ?>
+                            <?php echo $this->getLayout()->createBlock("Magento\Catalog\Block\Product\AbstractProduct")->setTemplate("Amasty_OutofstockHyvaCompatibility::category/stock-status.phtml")->toHtml();?>
+                            <?php echo $this->getLayout()->createBlock("Magento\Catalog\Block\Product\AbstractProduct")->setTemplate("Amasty_OutofstockHyvaCompatibility::js/amnotification-init.phtml")->toHtml();?>
+                        </div>
+                    <?php endforeach; ?>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/6 flex shrink-0 py-1' : pageFillers > 0
+                        }"></div>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/6 flex shrink-0 py-1' : pageFillers > 1
+                        }"></div>
+                </div>
+            </div>
+            <div>
+            <template x-if="itemCount > pageSize">
+                <div class="flex items-center justify-center page arrow-nav">
+                    <button
+                        aria-label="<?= $escaper->escapeHtml(__('Previous')) ?>"       
+                        :aria-disabled="active === 0"       
+                        aria-controls="product-slider"          
+                        class="mr-4 text-black rounded-full outline-none focus:outline-none flex-none btn-prev"
+                        :class="{ 'opacity-25 pointer-events-none' : active === 0 }"
+                        @click="scrollPrevious">
+                        <?= $heroicons->chevronLeftHtml("w-5 h-5", 25, 25) ?>
+                    </button>
+                    <div class="flex flex-wrap w-full md:w-auto justify-center js_dots">
+                    <?php for ($i=0; $i < $itemCount; $i++): ?>
+                        <span class="shrink-0 block w-3 h-3 m-1 bg-black bg-opacity-25 rounded-full shadow cursor-pointer"
+                                :class="{
+                                    'bg-opacity-100': active === <?= (int) $i ?>,
+                                    'hidden': (pageSize !== 1 && !!(<?= (int) $i ?> % pageSize))
+                                    }"
+                                @click="scrollTo(<?= (int) $i ?>)"
+                                @keydown.enter.prevent="scrollTo(<?= (int)$i ?>)"
+                                @keydown.space.prevent="scrollTo(<?= (int)$i ?>)"
+                                role="button"
+                                tabindex="0"
+                                :aria-label="'Go to slide ' + (<?= (int)$i ?> + 1)"
+                                :aria-current="active === <?= (int)$i ?> ? 'true' : 'false'"
+                                aria-controls="product-slider"
+                        >
+                        </span>
+                    <?php endfor; ?>
+                    </div>
+                    <button
+                        aria-label="<?= $escaper->escapeHtml(__('Next')) ?>"           
+                        :aria-disabled="active >= itemCount - pageSize"        
+                        aria-controls="product-slider"    
+                        class="ml-4 text-black rounded-full outline-none focus:outline-none flex-none btn-next"
+                        :class="{ 'opacity-25 pointer-events-none' : active >= itemCount-pageSize }"
+                        @click="scrollNext">
+                        <?= $heroicons->chevronRightHtml("w-5 h-5", 25, 25) ?>
+                    </button>
+                </div>
+            </template>
+            </div>
+        </div>
+    <?php endif; ?>
+</section>
+<?php
+
+if ($sharedItemRendererTemplate) {
+    $sliderItemRenderer->setTemplate($sharedItemRendererTemplate);
+}
+
+?>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let bestsellingsection = document.querySelector(".best-selling-products-container-section");
+        let bestselling = document.querySelector(".dcw-best-selling-products-container");
+
+        if (bestsellingsection && bestselling) {
+            bestsellingsection.parentNode.insertBefore(bestselling, bestsellingsection.nextSibling);
+        }   
+    });
+</script>

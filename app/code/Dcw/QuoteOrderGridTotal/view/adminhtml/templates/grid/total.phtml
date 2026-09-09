@@ -1,0 +1,450 @@
+<?php
+/**
+ * @var \Magento\Backend\Block\Template $block
+ */
+$gridTotalUrl = $block->getUrl('dcwquoteordergridtotal/quote/gridTotal');
+?>
+<script>
+window.dcwQuoteGridTotalUrl = <?= /* @noEscape */ json_encode($gridTotalUrl) ?>;
+</script>
+<div id="quote-grid-total-top" class="grid-total-container" data-grid-total-url="<?= $block->escapeUrl($gridTotalUrl) ?>" style="display: none;">
+    <span class="total-label"><?= $block->escapeHtml(__('Total:')) ?></span>
+    <span class="total-amount">$0.00</span>
+</div>
+
+<script>
+require(['jquery'], function($) {
+    'use strict';
+
+    var fetchTotalDebounceTimer = null;
+    var lastFetchParams = null;
+
+    function getUrl() {
+        return window.dcwQuoteGridTotalUrl || $('#quote-grid-total-top').data('grid-total-url') || $('#quote-grid-total-top').attr('data-grid-total-url') || '';
+    }
+
+    function setGridTotalVisible(visible) {
+        if (visible) {
+            $('#quote-grid-total-top, #quote-grid-total-bottom').show();
+        } else {
+            $('#quote-grid-total-top, #quote-grid-total-bottom').hide();
+        }
+    }
+
+    function updateDisplay(totalAmount, totalCount) {
+        totalAmount = parseFloat(totalAmount) || 0;
+        totalCount = parseInt(totalCount, 10) || 0;
+        var formatted = '$' + totalAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        var html = 'Total: <span class="total-amount">' + formatted + '</span>';
+        $('#quote-grid-total-top').html(html);
+        $('#quote-grid-total-bottom').html(html);
+    }
+
+    function getRecordsFoundCount() {
+        var count = null;
+        $('.admin__control-support-text:visible').each(function () {
+            var text = ($(this).text() || '').trim();
+            var m = text.match(/([\d,]+)\s+records found/i);
+            if (m && m[1]) {
+                count = parseInt(m[1].replace(/,/g, ''), 10);
+                return false;
+            }
+        });
+        return (typeof count === 'number' && !isNaN(count)) ? count : null;
+    }
+
+    function resolveDisplayCount(fallbackCount) {
+        var recordsFound = getRecordsFoundCount();
+        if (recordsFound !== null) {
+            return recordsFound;
+        }
+        return parseInt(fallbackCount, 10) || 0;
+    }
+
+    function moveTopTotalAfterRecordsFound() {
+        var totalEl = document.getElementById('quote-grid-total-top');
+        var recordsEl = document.querySelector('.admin__control-support-text');
+        if (!totalEl || !recordsEl || !recordsEl.parentNode) {
+            return false;
+        }
+
+        if (totalEl.previousElementSibling === recordsEl) {
+            return true;
+        }
+
+        recordsEl.parentNode.insertBefore(totalEl, recordsEl.nextSibling);
+        return true;
+    }
+
+    function getTotalsFromVisibleGridRows() {
+        var out = { total: 0, count: 0 };
+        // Pick the most relevant data-grid table (Amasty grid can render multiple tables over time).
+        var $table = $('.admin__data-grid-wrap table.data-grid').filter(function () {
+            return $(this).find('tbody tr').length > 0;
+        }).last();
+        if ($table.length === 0) {
+            $table = $('table.data-grid').filter(function () {
+                return $(this).find('tbody tr').length > 0;
+            }).last();
+        }
+        if ($table.length === 0) return out;
+
+        // Find "Grand Total" column by either data-index or header text.
+        var grandTotalColIndex = -1;
+        $table.find('thead th').each(function (i) {
+            var dataIndex = ($(this).attr('data-index') || '').toLowerCase();
+            if (dataIndex === 'base_grand_total' || dataIndex === 'grand_total') {
+                grandTotalColIndex = i;
+                return false;
+            }
+        });
+        if (grandTotalColIndex < 0) {
+            $table.find('thead th').each(function (i) {
+                var text = ($(this).text() || '').toLowerCase().replace(/\s+/g, ' ').trim();
+                if (text === 'grand total' || text.indexOf('grand total') !== -1) {
+                    grandTotalColIndex = i;
+                    return false;
+                }
+            });
+        }
+
+        var $rows = $table.find('tbody tr').filter(function () {
+            var $tr = $(this);
+            return !$tr.hasClass('data-grid-tr-no-data') &&
+                !$tr.hasClass('data-grid-tr-no-data-row') &&
+                $tr.find('td').length > 0 &&
+                $tr.is(':visible');
+        });
+
+        $rows.each(function () {
+            var $row = $(this);
+            var $cell = null;
+            if (grandTotalColIndex >= 0) {
+                $cell = $row.find('td').eq(grandTotalColIndex);
+            }
+            if (!$cell || $cell.length === 0) {
+                $cell = $row.find('td[data-index="base_grand_total"], td[data-index="grand_total"]').first();
+            }
+            if (!$cell || $cell.length === 0) {
+                // Fallback: find the first currency-like value in the row.
+                $row.find('td').each(function () {
+                    var t = ($(this).text() || '').trim();
+                    if (t.match(/[^\d\s,.-]?\s*\d{1,3}(,\d{3})*(\.\d{2})/)) {
+                        $cell = $(this);
+                        return false;
+                    }
+                });
+                if (!$cell || $cell.length === 0) return;
+            }
+
+            // Prefer the common cell content wrapper if present.
+            var text = ($cell.find('.data-grid-cell-content').text() || $cell.text() || '').trim();
+            var amount = parseFloat(text.replace(/[^\d.-]/g, ''));
+            if (!isNaN(amount)) {
+                out.total += amount;
+                out.count++;
+            }
+        });
+
+        return out;
+    }
+
+    function addBottomTotal() {
+        if ($('#quote-grid-total-bottom').length === 0) {
+            var html = '<div id="quote-grid-total-bottom" class="grid-total-container bottom" style="display: none;">Total: <span class="total-amount">$0.00</span></div>';
+            var $wrap = $('.admin__data-grid-wrap').first();
+            if ($wrap.length) {
+                $wrap.after(html);
+            } else {
+                $('body').find('.page-content').append(html);
+            }
+        }
+    }
+
+    function paramsFromObject(obj) {
+        var parts = [];
+        if (obj.filters && typeof obj.filters === 'object') {
+            Object.keys(obj.filters).forEach(function(k) {
+                if (k === 'placeholder' || obj.filters[k] === '' || obj.filters[k] == null) return;
+                var v = obj.filters[k];
+                if (typeof v === 'object' && v !== null && (v.from !== undefined || v.to !== undefined)) {
+                    if (v.from) parts.push('filters[' + k + '][from]=' + encodeURIComponent(v.from));
+                    if (v.to) parts.push('filters[' + k + '][to]=' + encodeURIComponent(v.to));
+                } else {
+                    parts.push('filters[' + k + ']=' + encodeURIComponent(String(v)));
+                }
+            });
+        }
+        if (obj.paging && typeof obj.paging === 'object') {
+            if (obj.paging.pageSize != null) parts.push('paging[pageSize]=' + encodeURIComponent(obj.paging.pageSize));
+            if (obj.paging.current != null) parts.push('paging[current]=' + encodeURIComponent(obj.paging.current));
+        }
+        if (obj.sorting && typeof obj.sorting === 'object') {
+            if (obj.sorting.field) parts.push('sorting[field]=' + encodeURIComponent(obj.sorting.field));
+            if (obj.sorting.direction) parts.push('sorting[direction]=' + encodeURIComponent(obj.sorting.direction));
+        }
+        return parts.length ? parts.join('&') : '';
+    }
+
+    function normalizeGridTotalParams(raw) {
+        if (!raw || typeof raw !== 'string') return '';
+        raw = raw.trim();
+        if (raw.charAt(0) === '?') raw = raw.slice(1);
+        if (!raw) return '';
+
+        if (raw.indexOf('data=') !== -1 || raw.indexOf('data%3D') !== -1) {
+            var dataMatch = raw.match(/data=([^&]*)/) || raw.match(/data%3D([^&]*)/);
+            if (dataMatch && dataMatch[1]) {
+                try {
+                    var decoded = decodeURIComponent(dataMatch[1].replace(/\+/g, ' '));
+                    var obj = typeof decoded === 'string' && decoded.charAt(0) === '{' ? JSON.parse(decoded) : null;
+                    if (obj && typeof obj === 'object') return paramsFromObject(obj);
+                } catch (e) {}
+                return '';
+            }
+        }
+
+        var allowed = [];
+        raw.split('&').forEach(function(pair) {
+            var eq = pair.indexOf('=');
+            if (eq === -1) return;
+            var key = pair.substring(0, eq);
+            var keyDec = decodeURIComponent(key.replace(/\+/g, ' '));
+            if (keyDec === 'form_key' || keyDec === 'data' || keyDec === 'isAjax') return;
+            if (keyDec.indexOf('filters[') === 0 || keyDec.indexOf('paging[') === 0 || keyDec.indexOf('sorting[') === 0 || keyDec === 'namespace') {
+                allowed.push(pair);
+            }
+        });
+        return allowed.join('&');
+    }
+
+    function fetchTotal(queryString) {
+        var url = getUrl();
+        if (!url) return;
+
+        var q = normalizeGridTotalParams(queryString || '');
+        if (queryString && q === '' && String(queryString).indexOf('data=') !== -1) {
+            return;
+        }
+        if (q === '') {
+            return;
+        }
+
+        url = url + (url.indexOf('?') !== -1 ? '&' : '?') + q;
+
+        var qStr = (q || '') + ' ' + (queryString || '');
+        var hasFilters = (qStr.indexOf('filters[') !== -1 || qStr.indexOf('filters%5B') !== -1);
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                var total = 0, count = 0;
+                if (data && data.grid_total) {
+                    total = parseFloat(data.grid_total.total_amount || data.grid_total.base_total_amount) || 0;
+                    count = parseInt(data.grid_total.total_count, 10) || 0;
+                }
+                // Fallback: if backend returns 0 while rows are visible, trust visible grid values.
+                if (total === 0) {
+                    var domTotals = getTotalsFromVisibleGridRows();
+                    if (domTotals.count > 0 && domTotals.total > 0) {
+                        total = domTotals.total;
+                        if (count <= 0) {
+                            count = domTotals.count;
+                        }
+                    }
+                }
+                updateDisplay(total, resolveDisplayCount(count));
+                if (hasFilters) setGridTotalVisible(true);
+
+                // If we still show 0, try again after grid finishes rendering.
+                if (total === 0) {
+                    setTimeout(function () {
+                        var domTotals2 = getTotalsFromVisibleGridRows();
+                        if (domTotals2.count > 0 && domTotals2.total >= 0) {
+                            updateDisplay(domTotals2.total, resolveDisplayCount(domTotals2.count));
+                            if (hasFilters) setGridTotalVisible(true);
+                        }
+                    }, 800);
+                    setTimeout(function () {
+                        var domTotals3 = getTotalsFromVisibleGridRows();
+                        if (domTotals3.count > 0 && domTotals3.total >= 0) {
+                            updateDisplay(domTotals3.total, resolveDisplayCount(domTotals3.count));
+                            if (hasFilters) setGridTotalVisible(true);
+                        }
+                    }, 1800);
+                }
+            },
+            error: function() {
+                var domTotals = getTotalsFromVisibleGridRows();
+                updateDisplay(domTotals.total, resolveDisplayCount(domTotals.count));
+                if (hasFilters) setGridTotalVisible(true);
+            }
+        });
+    }
+
+    function scheduleFetchTotal(queryString) {
+        var q = normalizeGridTotalParams(queryString || '');
+        if (!q) return;
+        if (fetchTotalDebounceTimer) clearTimeout(fetchTotalDebounceTimer);
+        lastFetchParams = q;
+        fetchTotalDebounceTimer = setTimeout(function() {
+            fetchTotalDebounceTimer = null;
+            fetchTotal(lastFetchParams);
+        }, 280);
+    }
+
+    function buildGridTotalParamsFromDom() {
+        var params = ['namespace=amasty_quote_grid'];
+        var $container = $('.admin__data-grid-filters-wrap').first();
+        if ($container.length === 0) {
+            return params.join('&');
+        }
+
+        function normalizeFilterName(name) {
+            name = (name || '').trim();
+            if (!name) return '';
+            if (name.indexOf('filters[') === 0) {
+                return name;
+            }
+            // created_at[from] => filters[created_at][from]
+            var m = name.match(/^([^\[]+)\[([^\]]+)\]$/);
+            if (m && m[1] && m[2]) {
+                return 'filters[' + m[1] + '][' + m[2] + ']';
+            }
+            // status => filters[status], store_id => filters[store_id], etc.
+            return 'filters[' + name + ']';
+        }
+
+        $container.find('input[name], select[name], textarea[name]').each(function () {
+            var name = ($(this).attr('name') || '').trim();
+            if (!name || name.indexOf('placeholder') !== -1) {
+                return;
+            }
+            var value = ($(this).val() || '').toString().trim();
+            if (value === '') {
+                return;
+            }
+            var normalizedName = normalizeFilterName(name);
+            if (!normalizedName) {
+                return;
+            }
+            params.push(encodeURIComponent(normalizedName) + '=' + encodeURIComponent(value));
+        });
+
+        return params.join('&');
+    }
+
+    function recalcFromDomAndShow() {
+        var domTotals = getTotalsFromVisibleGridRows();
+        if (domTotals.count >= 0) {
+            updateDisplay(domTotals.total, resolveDisplayCount(domTotals.count));
+            setGridTotalVisible(true);
+            moveTopTotalAfterRecordsFound();
+        }
+    }
+
+    function scheduleDomRecalcBurst() {
+        [120, 450, 900, 1500].forEach(function (delay) {
+            //setTimeout(recalcFromDomAndShow, delay);
+            setTimeout(moveTopTotalAfterRecordsFound, delay + 40);
+        });
+    }
+
+    function scheduleBackendRefreshFromDomFilters() {
+        [220, 700, 1400].forEach(function (delay) {
+            setTimeout(function () {
+                var q = buildGridTotalParamsFromDom();
+                if (q) {
+                    scheduleFetchTotal(q);
+                }
+            }, delay);
+        });
+    }
+
+    addBottomTotal();
+
+    $(document).on('dcwQuoteGridTotalUpdate', function(e, queryString) {
+        setTimeout(function() { scheduleFetchTotal(queryString); }, 80);
+        setTimeout(function() { scheduleFetchTotal(queryString); }, 500);
+        scheduleDomRecalcBurst();
+        scheduleBackendRefreshFromDomFilters();
+    });
+
+    // Explicitly handle removing filter chips/reset/clear so totals update right away.
+    $(document).on('click', '[data-action="grid-filter-remove-chip"], [data-action="grid-filter-reset"], .action-clear', function () {
+        scheduleDomRecalcBurst();
+        scheduleBackendRefreshFromDomFilters();
+        setTimeout(function () {
+            // Trigger backend recompute if a grid request query is available in the URL.
+            if (window.location.search && (window.location.search.indexOf('filters[') !== -1 || window.location.search.indexOf('namespace=') !== -1)) {
+                var q = normalizeGridTotalParams(window.location.search);
+                if (q) scheduleFetchTotal(q);
+            }
+        }, 300);
+    });
+
+    $(document).ajaxComplete(function(e, xhr, settings) {
+        var url = (settings.url || '').toLowerCase();
+        if (url.indexOf('dcwquoteordergridtotal') !== -1 || url.indexOf('gridtotal') !== -1) return;
+        var fullUrl = (settings.url || '') + (typeof settings.data === 'string' ? '?' + settings.data : '');
+        if (fullUrl.indexOf('namespace=amasty_quote_grid') !== -1) {
+            var raw = '';
+            if (settings.url && settings.url.indexOf('?') !== -1) {
+                raw = settings.url.substring(settings.url.indexOf('?') + 1);
+            }
+            if (settings.data && typeof settings.data === 'string') {
+                var d = settings.data.trim();
+                raw = raw ? raw + '&' + d : d;
+            }
+            var q = normalizeGridTotalParams(raw ? '?' + raw : raw);
+            if (q) scheduleFetchTotal(q);
+            scheduleDomRecalcBurst();
+            scheduleBackendRefreshFromDomFilters();
+        }
+    });
+
+    $(document).ready(function() {
+        if (window.location.search && (window.location.search.indexOf('filters[') !== -1 || window.location.search.indexOf('namespace=') !== -1)) {
+            var q = normalizeGridTotalParams(window.location.search);
+            if (q) scheduleFetchTotal(q);
+        }
+
+        // Always attempt DOM totals after initial render.
+        setTimeout(function () {
+            var domTotals = getTotalsFromVisibleGridRows();
+            if (domTotals.count > 0) {
+                updateDisplay(domTotals.total, resolveDisplayCount(domTotals.count));
+                setGridTotalVisible(true);
+            }
+            moveTopTotalAfterRecordsFound();
+        }, 1200);
+
+        [300, 900, 1800].forEach(function (delay) {
+            setTimeout(moveTopTotalAfterRecordsFound, delay);
+        });
+    });
+
+    // Watch grid DOM changes and recalc totals if they appear later.
+    if (typeof MutationObserver !== 'undefined') {
+        var obs = new MutationObserver(function () {
+            var domTotals = getTotalsFromVisibleGridRows();
+            if (domTotals.count > 0) {
+                //updateDisplay(domTotals.total, resolveDisplayCount(domTotals.count));
+                //setGridTotalVisible(true);
+            }
+            moveTopTotalAfterRecordsFound();
+        });
+        setTimeout(function () {
+            var target = document.querySelector('.admin__data-grid-wrap') ||
+                document.querySelector('[data-role="grid"]') ||
+                document.querySelector('table.data-grid');
+            if (target) {
+                obs.observe(target, { childList: true, subtree: true });
+            }
+        }, 800);
+    }
+});
+</script>
+

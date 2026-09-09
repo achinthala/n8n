@@ -1,0 +1,35 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\RedditPixel\Common */
+
+/** @var \WeltPixel\GA4\Helper\RedditPixelTracking $redditPixelHelper */
+$redditPixelHelper = $this->helper('WeltPixel\GA4\Helper\RedditPixelTracking');
+?>
+<?php if ($redditPixelHelper->isRedditPixelTrackingEnabled()) : ?>
+    <script>
+        let allowGa4ServicesReddit = window.ga4AllowServices ?? true;
+        if (allowGa4ServicesReddit) {
+            const {fetch: originalFetchReddit} = window;
+            window.fetch = async (...args) => {
+                let [resource, config] = args;
+                let response = await originalFetchReddit(resource, config);
+
+                if ((typeof resource == 'string') && resource.search('/customer\/section\/load/') > 0) {
+                    response.clone().json().then(data => {
+                        if (data.wp_ga4 && data.wp_ga4.redditpixel) {
+                            const redditPixel = JSON.parse(data.wp_ga4.redditpixel);
+                            for (index in redditPixel) {
+                                if (redditPixel[index].eventData) {
+                                    rdt(redditPixel[index].track, redditPixel[index].eventName, redditPixel[index].eventData);
+                                } else {
+                                    rdt(redditPixel[index].track, redditPixel[index].eventName);
+                                }
+                            }
+                        }
+                    });
+                }
+                return response;
+            };
+        }
+    </script>
+<?php endif; ?>

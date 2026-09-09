@@ -1,0 +1,367 @@
+<?php
+/**
+ * Copyright © Incstores, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/** @var \Incstores\ViewShippingRates\Block\Adminhtml\Index $block */
+?>
+
+<div class="page-main-actions">
+    <div class="page-actions-inner">
+        <div class="page-actions-buttons">
+            <button type="button" class="action-primary" id="get-rates-btn">
+                <span><?= $block->escapeHtml(__('Run Shipping Quote')) ?></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="admin__page-section admin__page-section-first">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml(__('Shipping Quote Request')) ?></span>
+    </div>
+
+    <div class="admin__page-section-content">
+        <div class="admin__page-section-item">
+            <form id="shipping-rates-form">
+
+                <!-- Request Type -->
+                <div class="form-group">
+                    <select id="request_type" name="Request Type" required>
+                        <option value="" disabled selected><?= $block->escapeHtml('Request Type') ?></option>
+                        <?php foreach ($block->getRequestTypeOptions() as $option): ?>
+                            <option value="<?= $block->escapeHtml($option['value']) ?>">
+                                <?= $block->escapeHtml($option['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <!-- Transaction Id -->
+                <div class="form-group">
+                    <input type="text" id="transaction_id" name="transaction_id" placeholder="Transaction Id" style="display: none;">
+                </div>
+
+                <!-- Ship To and From Address -->
+                <div id="shippingAddresses" class="form-groups-container" style="display: none;">
+                    <fieldset id="shipToAddress">
+                        <legend>Ship To Address</legend>
+                        <input type="text" id="ship_to_zipcode" name="ship_to_zipcode" placeholder="Zipcode" />
+                        <input type="text" id="ship_to_street" name="ship_to_street" placeholder="Street" />
+                        <input type="text" id="ship_to_city" name="ship_to_city" placeholder="City" />
+                        <input type="text" id="ship_to_state" name="ship_to_state" placeholder="State" />
+                    </fieldset>
+                    <fieldset id="shipFromAddress">
+                        <legend>Ship From Address</legend>
+                        <input type="text" id="ship_from_zipcode" name="ship_from_zipcode" placeholder="Zipcode" />
+                        <input type="text" id="ship_from_street" name="ship_from_street" placeholder="Street" />
+                        <input type="text" id="ship_from_city" name="ship_from_city" placeholder="City" />
+                        <input type="text" id="ship_from_state" name="ship_from_state" placeholder="State" />
+                    </fieldset>
+                </div>
+
+                <!-- Delivery Options -->
+                <fieldset id="delivery-options" style="display: none;">
+                    <legend><?=$block->escapeHtml(__('Delivery Options')) ?></legend>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="residential" name="residential" value="residential" checked="checked">
+                        <span><?= $block->escapeHtml(__('Residential'))?></span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="lift_gate_required" name="lift_gate_required" value="lift_gate_required" checked="checked">
+                        <span><?= $block->escapeHtml(__('Lift Gate Required'))?></span>
+                    </div>
+                    <div class="checkbox-label">
+                        <input type="checkbox" id="delivery_notification" name="delivery_notification" value="delivery_notification" checked="checked">
+                        <span><?= $block->escapeHtml(__('Delivery Notification'))?></span>
+                    </div>
+                </fieldset>
+
+                <!-- Simple Shipping Request Parameters -->
+                <fieldset id="simple-request-parameters">
+                    <legend>Simple Shipping Request Parameters</legend>
+                    <select id="weight_class" name="weight_class" class="admin__control-select">
+                        <option value=""><?= $block->escapeHtml(__('-- Weight Class --')) ?></option>
+                        <?php foreach ($block->getWeightClassOptions() as $option): ?>
+                            <option value="<?= $block->escapeHtml($option['value']) ?>">
+                                <?= $block->escapeHtml($option['label']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                        <input type="text" id="total_weight" name="total_weight" placeholder="Total Weight" />
+                    </select>
+                </fieldset>
+
+                <!-- Product Shipping Request Parameters -->
+                <fieldset id="product-request-parameters">
+                    <legend>Product Shipping Request Parameters</legend>
+                    <select id="product_name" name="product_name" class="admin__control-select">
+                    </select>
+                    <select id="sku" name="sku" class="admin__control-select">
+                        <option value=""><?= $block->escapeHtml(__('-- Sku --')) ?></option>
+                    </select>
+                    <input type="number" id="unit_weight" name="unit_weight" placeholder="Unit Weight" min="1" step="1" />
+                    <input type="number" id="quantity" name="quantity" placeholder="Quantity" min="1" step="1" />
+                </fieldset>
+
+                <!-- Quote Address Selection (shown when quote has no shipping address) -->
+                <fieldset id="quote-request-parameters" style="display: none;">
+                    <legend>Quote Address Selection</legend>
+                    <div id="address-selection-container" class="form-group" style="display: none;">
+                        <label for="selected_address_id" class="admin__field-label">
+                            <span><?= $block->escapeHtml(__('Select Shipping Address')) ?></span>
+                        </label>
+                        <select id="selected_address_id" name="selected_address_id" class="admin__control-select">
+                            <option value=""><?= $block->escapeHtml(__('-- Select Address --')) ?></option>
+                        </select>
+                        <div class="admin__field-note">
+                            <span><?= $block->escapeHtml(__('This quote does not have a shipping address. Please select from the customer\'s saved addresses.')) ?></span>
+                        </div>
+                        <div id="selected-address-preview" class="address-preview" style="display: none;">
+                            <div class="admin__field-note">
+                                <strong><?= $block->escapeHtml(__('Selected Address:')) ?></strong>
+                                <div id="address-preview-content"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Use Selected Address Button -->
+                        <div class="admin__field admin__field-option" style="margin-top: 15px;">
+                            <button type="button" id="use-selected-address-btn" class="action-secondary" style="display: none;">
+                                <span><?= $block->escapeHtml(__('Use Selected Address')) ?></span>
+                            </button>
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="admin__page-section results-section" style="display: none;">
+    <div class="admin__page-section-title">
+        <span class="title"><?= $block->escapeHtml(__('Results')) ?></span>
+    </div>
+
+    <div class="admin__page-section-content">
+        <div id="api-status" class="api-status-container">
+            <!-- Status information will be populated here -->
+        </div>
+
+        <div id="results-summary">
+            <!-- Results summary will be populated here -->
+        </div>
+
+        <div id="results-table-container">
+            <!-- Results table will be populated here -->
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <div class="admin__data-grid-loading-mask">
+            <div class="admin__data-grid-loader">
+                <span><?= $block->escapeHtml(__('Loading...')) ?></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add CSS for new result renderers -->
+<style>
+    .shipping-rates-container {
+        position: relative;
+    }
+    
+    /* Simple Results Styling */
+    .simple-rates-table .simple-rate-row {
+        background-color: #e8f5e8;
+    }
+    
+    .simple-rates-table .invalid-rate {
+        background-color: #ffeaea !important;
+    }
+    
+    .simple-results-controls {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+    }
+    
+    /* All Results Styling */
+    .all-rates-table .all-rate-row {
+        background-color: #e8f5e8;
+    }
+    
+    .all-rates-table .invalid-rate {
+        background-color: #ffeaea !important;
+    }
+    
+    .all-results-controls {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+    }
+    
+    .grouped-results .group-header {
+        background: #ddd;
+        padding: 10px;
+        cursor: pointer;
+        border-bottom: 1px solid #ccc;
+    }
+    
+    .grouped-results .group-header:hover {
+        background: #ccc;
+    }
+    
+    .status-valid {
+        color: green;
+        font-weight: bold;
+    }
+    
+    .status-invalid {
+        color: red;
+        font-weight: bold;
+    }
+    
+    .best-rate-label {
+        color: green;
+        font-weight: bold;
+    }
+    
+    /* Address Selection Styling */
+    #address-selection-container {
+        margin-top: 15px;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+    }
+    
+    .address-preview {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #e8f5e8;
+        border: 1px solid #c3e6c3;
+        border-radius: 4px;
+    }
+    
+    #address-preview-content {
+        margin-top: 5px;
+        font-family: monospace;
+        white-space: pre-line;
+    }
+    
+    #selected_address_id {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    #use-selected-address-btn {
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        background-color: #1979c3;
+        color: white;
+        border: 1px solid #1979c3;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    
+    #use-selected-address-btn:hover {
+        background-color: #145a8b;
+        border-color: #145a8b;
+    }
+    
+    #use-selected-address-btn:disabled {
+        background-color: #ccc;
+        border-color: #ccc;
+        cursor: not-allowed;
+    }
+    
+    /* Ship To Address Section Styling */
+    .ship-to-section {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .ship-to-section h5 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .address-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    
+    .address-field {
+        display: flex;
+        font-size: 12px;
+    }
+    
+    .address-field .field-label {
+        font-weight: 600;
+        color: #666;
+        min-width: 60px;
+    }
+    
+    .address-field .field-value {
+        color: #333;
+        font-family: monospace;
+        background-color: #fff;
+        padding: 2px 6px;
+        border-radius: 2px;
+        border: 1px solid #e0e0e0;
+        flex: 1;
+        margin-left: 5px;
+    }
+    
+    .address-field .field-value:empty:before {
+        content: "(empty)";
+        color: #999;
+        font-style: italic;
+    }
+</style>
+
+<script>
+    require([
+        'jquery',
+        'Incstores_ViewShippingRates/js/shippingRatesCoordinator'
+    ], function ($, coordinator) {
+        'use strict';
+
+        coordinator.initialize({
+            // New separated endpoints
+            getSimpleRatesUrl: '<?= $block->escapeJs($block->getUrl("viewshippingrates/ajax/getSimpleRates")) ?>',
+            getAllRatesUrl: '<?= $block->escapeJs($block->getUrl("viewshippingrates/ajax/getAllRates")) ?>',
+            getQuoteRatesUrl: '<?= $block->escapeJs($block->getUrl("viewshippingrates/ajax/getQuoteRates")) ?>',
+            getOrderRatesUrl: '<?= $block->escapeJs($block->getUrl("viewshippingrates/ajax/getOrderRates")) ?>',
+            getCustomerAddressesUrl: '<?= $block->escapeJs($block->getUrl("viewshippingrates/ajax/getCustomerAddresses")) ?>',
+            // Product-related URLs
+            getProductsUrl: '<?= $block->escapeJs($block->getGetProductsUrl()) ?>',
+            getQuoteUrl: '<?= $block->escapeJs($block->getGetQuoteUrl()) ?>',
+            getOrderUrl: '<?= $block->escapeJs($block->getUrl("viewshippingrates/ajax/getOrder")) ?>'
+            <?php $initParams = $block->getInitParams(); ?>
+            <?php if (!empty($initParams)): ?>
+            , initParams: <?= /* @noEscape */ json_encode($initParams) ?>
+            <?php endif; ?>
+        });
+    });
+</script>

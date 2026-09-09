@@ -1,0 +1,504 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Instagram Feed Hyva Compatibility
+ */
+declare(strict_types=1);
+
+use Amasty\InstagramFeed\Block\Widget\Feed\Slider;
+use Amasty\InstagramFeedHyva\ViewModel\ComponentsRegistry;
+use Amasty\InstagramFeedHyva\ViewModel\Posts as PostsViewModel;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\SvgIcons as SvgIconsAlias;
+use Magento\Framework\Escaper;
+
+/** @var Slider $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var PostsViewModel $viewModelPosts */
+$viewModelPosts = $viewModels->require(PostsViewModel::class);
+
+/** @var ComponentsRegistry $viewModelPosts */
+$componentRegistry = $viewModels->require(ComponentsRegistry::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+// phpcs:disable Magento2.PHP.LiteralNamespaces.LiteralClassUsage
+/** @var SvgIconsAlias $customSvgIcons */
+$customSvgIcons = $viewModels->require('Amasty\InstagramFeedHyva\ViewModel\VirtualSvgIcons');
+
+$uniqId = uniqid();
+$postsIndent = (int)$block->getPadding();
+$postSizeNumber = $block->getPostSizeNumber();
+$columnsCount = $block->getColumnsCount();
+$rowsCount = $block->getRowsCount();
+$maxPostsPerSlide = $rowsCount > 1 ? $columnsCount * $rowsCount : $columnsCount;
+$sliderId = Slider::HTML_ID . $uniqId;
+$isLoopEnabled = (bool)$block->getData('infinity_loop');
+$isSliderInLoop =  $isLoopEnabled && $columnsCount > 1 && $rowsCount <= 1;
+// phpcs:disable Generic.Files.LineLength.TooLong
+?>
+
+<style>
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> {
+        max-width: <?=(int)($columnsCount * ($postsIndent + $postSizeNumber) - $postsIndent)?>px;
+    }
+    @media only screen and (max-width: 400px) {
+        #<?= $escaper->escapeHtmlAttr($sliderId) ?> {
+            max-width: <?=(int)(2 * ($postsIndent + $postSizeNumber) - $postsIndent)?>px;
+        }
+    }
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> .swiper-container .swiper-wrapper {
+        max-height: <?= (int)($postSizeNumber * $rowsCount + $postsIndent * $rowsCount - $postsIndent) ?>px;
+    }
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> .swiper-container .aminst-feed-post {
+        max-width: <?= (int)$postSizeNumber ?>px;
+        max-height: <?= (int)$postSizeNumber ?>px;
+    }
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> figure.-standard_resolution {
+        position: relative;
+        overflow: hidden;
+    }
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> figure.-standard_resolution a.aminst-feed-link {
+       padding-top: 100%;
+    }
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> figure.-standard_resolution img,
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> figure.-standard_resolution video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> figure .aminst-feed-video-wrapper,
+    #<?= $escaper->escapeHtmlAttr($sliderId) ?> figure .aminst-feed-img-wrapper {
+        width: <?= (int)$postSizeNumber ?>px;
+        height: <?= (int)$postSizeNumber ?>px;
+    }
+</style>
+
+<?= /** @noEscape  */ $componentRegistry->renderOnce('main') ?>
+<?= /** @noEscape  */ $componentRegistry->renderOnce('swiper') ?>
+
+<section
+    x-data="amInstagramSlider_<?= $escaper->escapeJs($uniqId) ?>()"
+    x-init="initialize()"
+    x-bind="eventListeners"
+    x-spread="eventListeners"
+    x-defer="interact"
+    id="am_widget_<?= $escaper->escapeHtmlAttr($sliderId); ?>"
+    class="mb-4"
+    role="group"
+    title="<?= $escaper->escapeHtml(__('Instagram slider %1', $block->getTitle())) ?>"
+    aria-labelledby="aminst-slider-heading-<?= $escaper->escapeHtmlAttr($uniqId) ?>"
+>
+    <template x-if="posts.length">
+        <div>
+            <?php if ($block->getTitle()): ?>
+                <div class="aminst-block-title relative flex items-center pt-6 pb-1 mx-auto mb-6">
+                    <h3 class="text-2xl font-medium text-gray-900 title-font mx-auto"
+                        role="heading"
+                        aria-label="<?= $escaper->escapeHtml($block->getTitle()) ?>"
+                        id="aminst-slider-heading-<?= $escaper->escapeHtmlAttr($uniqId) ?>"
+                    >
+                        <?= $escaper->escapeHtml($block->getTitle()) ?>
+                    </h3>
+                </div>
+            <?php endif ?>
+
+            <div
+                class="aminst-feed-slider-container aminst-feed-wrapper text-center
+                    relative m-0 mx-auto <?= ($block->isPaginationShow() && $rowsCount > 1) ? 'pb-6' : ''?>"
+                id="<?= $escaper->escapeHtmlAttr($sliderId) ?>"
+            >
+                <div
+                    class="swiper-container overflow-hidden relative
+                        <?= ($block->isPaginationShow() && $rowsCount > 1) ? 'mb-4' : ''?>"
+                    title="<?= $escaper->escapeHtml(__("Instagram slider")) ?>"
+                >
+                    <span
+                        class="sr-only"
+                        tabindex="-1"
+                    >
+                        <?= $escaper->escapeHtml(__('Navigating through the elements of the carousel is possible using the tab key. You can skip the carousel or go straight to carousel navigation using the skip links.')) ?>
+                    </span>
+                    <a
+                        href="#slider-end-<?= $escaper->escapeHtmlAttr($sliderId); ?>"
+                        class="action skip sr-only focus:not-sr-only focus:absolute focus:z-30 focus:bg-white top-1 left-1"
+                    >
+                        <?= $escaper->escapeHtml(__('Press to skip carousel')) ?>
+                    </a>
+                    <button
+                        type="button"
+                        class="action skip sr-only focus:not-sr-only focus:absolute focus:z-30 focus:bg-white top-1 left-1"
+                        @click.prevent="skipCarouselToNavigation('.aminst-feed-posts-nav-<?= $escaper->escapeHtmlAttr($sliderId); ?>')"
+                    >
+                        <?= $escaper->escapeHtml(__('Press to go to carousel navigation')) ?>
+                    </button>
+                    <?php if ($block->isButtonsShow() && $rowsCount === 1): ?>
+                        <template x-if="isSwiperLoaded">
+                            <div class="aminst-feed-posts-nav-<?= $escaper->escapeHtmlAttr($sliderId); ?>">
+                                <div
+                                    class="swiper-button-prev"
+                                    role="button"
+                                    tabindex="0"
+                                    title="<?= $escaper->escapeHtmlAttr(__('Previous slide')) ?>"
+                                ></div>
+                                <div
+                                    class="swiper-button-next"
+                                    role="button"
+                                    tabindex="0"
+                                    title="<?= $escaper->escapeHtmlAttr(__('Next slide')) ?>"
+                                ></div>
+                            </div>
+                        </template>
+                    <?php endif ?>
+                    <article class="aminst-feed-posts swiper-wrapper flex">
+                        <template x-for="post in posts">
+                            <figure class="aminst-feed-post swiper-slide -<?= $escaper->escapeHtml($block->getPostSize()) ?>"
+                                    aria-roledescription="<?= $escaper->escapeHtml(__('This is a slide for Instagram posts')) ?>"
+                            >
+                                <a
+                                    class="aminst-feed-link flex h-full overflow-hidden transition focus:border-2 focus:border-solid focus:border-black
+                                        -<?= /* @noEscape */ $block->isShowDescription() ? 'en-desc' : 'dis-desc' ?>"
+                                    :href="post.permalink"
+                                    <?php if ($block->isPopupEnabled()): ?>
+                                        @click.prevent="showInPopup($event.currentTarget)"
+                                        aria-haspopup="dialog"
+                                        tabindex="0"
+                                    <?php endif ?>
+
+                                    target="_blank"
+                                >
+                                    <template x-if="post.media_type === 'VIDEO'">
+                                        <div class="aminst-feed-video-wrapper">
+                                            <video
+                                                autoplay muted loop class="aminst-feed-img w-full h-full transition-all object-cover"
+                                                :poster="post.media_url"
+                                                :src="post.media_url"
+                                            ></video>
+                                            <div
+                                                class="aminst-feed-watch flex items-center flex-col justify-center absolute
+                                                    inset-0 antialiased text-sm"
+                                            >
+                                                <img
+                                                    class="aminst-feed-play-video"
+                                                    alt="Play Video"
+                                                    src="<?= $escaper->escapeUrl($block->getPlayLogoUrl()) ?>"
+                                                />
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <template x-if="post.media_type !== 'VIDEO'">
+                                        <div class="aminst-feed-img-wrapper">
+                                            <img
+                                                    class="aminst-feed-img w-full h-full transition-all object-cover"
+                                                    :src="post.media_url"
+                                                    :alt="`<?= $escaper->escapeHtmlAttr(__('Instagram Image for slide')) ?> ${post.post_id}`"
+                                                    loading="lazy"
+                                            />
+                                        </div>
+                                    </template>
+                                        <?php if ($block->isShowDescription()): ?>
+                                            <figurecaption
+                                                class="aminst-feed-comment-cont hidden items-center justify-center
+                                                    content-center flex-wrap text-base text-white absolute
+                                                    inset-0 opacity-0 transition-all border border-solid
+                                                    border-aminst-light md:flex"
+                                            >
+                                                <p class="aminst-feed-review flex items-center justify-center basis-full mb-5">
+                                                    <template x-if="post.like_count !== '0'">
+                                                        <span class="aminst-feed-likes flex items-center justify-center mx-4">
+                                                            <?= $heroicons->heartHtml('w-5 h-5 mr-1') ?>
+                                                            <span x-text="post.like_count"></span>
+                                                        </span>
+                                                    </template>
+
+                                                    <span class="aminst-feed-comments flex items-center justify-center mx-4">
+                                                        <?= $heroicons->chatHtml('w-5 h-5 mr-1') ?>
+                                                        <span x-text="post.comments_count"></span>
+                                                    </span>
+                                                </p>
+                                                <p
+                                                    class="aminst-feed-caption basis-full px-2.5
+                                                        text-center leading-tight text-xs"
+                                                    x-text="post.caption"
+                                                ></p>
+                                            </figurecaption>
+                                        <?php endif; ?>
+                                </a>
+
+                                <a
+                                    class="aminst-relation-link absolute w-full left-0 bottom-0 p-2 flex focus:border-2 focus:border-solid focus:border-black
+                                        justify-between items-center transition"
+                                    x-show="post.product_data"
+                                    :href="post.product_data?.product_url || '#'"
+                                >
+                                    <span
+                                        class="aminst-title text-white text-xs truncate invisible mr-2"
+                                        x-text="post.product_data?.product_name || ''"
+                                    ></span>
+                                    <?php if ($escaper->escapeHtml($block->getPostSize()) === 'thumbnail'): ?>
+                                        <span
+                                            class="aminst-button text-xs bg-gray-200 rounded-full w-5 h-5"
+                                        >
+                                            <?= $heroicons->eyeHtml('w-5 h-5 p-1 text-gray-500') ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <div class="w-20 flex justify-end">
+                                            <div class="w-8">
+                                                <?= $customSvgIcons->renderHtml('arrow', 'text-white h-4 w-6 arrow') ?>
+                                                <?= $customSvgIcons->renderHtml('arrow_l', 'text-white h-4 w-8 hidden arrow_l') ?>
+                                            </div>
+                                            <span
+                                                class="see-details hidden w-20 text-white text-xs border
+                                                    border-white rounded py-1 px-2 whitespace-nowrap"
+                                            >
+                                                <?= $escaper->escapeHtml(__('See Details')) ?>
+                                            </span>
+                                        </div>
+                                    <?php endif ?>
+                                </a>
+                            </figure>
+                        </template>
+                    </article>
+                </div>
+                <div class="swiper-pagination aminst-feed-posts-nav-<?= $escaper->escapeHtmlAttr($sliderId); ?>"></div>
+            </div>
+        </div>
+    </template>
+
+    <div class="fixed left-0 top-0 w-full h-full z-50" x-show="popup">
+        <div class="fixed left-0 top-0 w-full h-full bg-white opacity-75"></div>
+        <div class="fixed flex justify-center items-center text-left z-10 inset-x-0 top-0 pt-1">
+            <div
+                @click.away.outside="closePopup()"
+                role="dialog"
+                aria-modal="true"
+                aria-label="<?= $escaper->escapeHtml(__('Instagram Post Modal')) ?>"
+                class="inline-block bg-white shadow-xl rounded-lg p-10 max-h-screen overflow-auto m-5"
+            >
+                <div class="flex justify-end">
+                    <button
+                        @click="closePopup()"
+                        type="button"
+                        tabindex="0"
+                        class="-mt-10 -mr-4 text-gray-400 hover:text-gray-500 focus:outline-black focus:text-gray-500
+                            transition ease-in-out duration-150"
+                        aria-label="<?= $escaper->escapeHtml(__('Close')) ?>"
+                        role="button"
+                    >
+                        <?= $heroicons->xHtml() ?>
+                    </button>
+                </div>
+                <div x-html="popup"></div>
+            </div>
+        </div>
+    </div>
+    <?= /** @noEscape  */ $componentRegistry->render('hyvaLoading') ?>
+    <span id="slider-end-<?= $escaper->escapeHtmlAttr($sliderId); ?>" tabindex="-1"></span>
+</section>
+
+<script>
+    'use strict';
+
+    function amInstagramSlider_<?= $escaper->escapeJs($uniqId) ?>() {
+        const SWIPER_SETTINGS = {
+            on: {
+                init(swiper) {
+                    const maxPostsPerSlide = <?= (int)$escaper->escapeJs($maxPostsPerSlide) ?>;
+                    const isEnterOrSpace = event => event.code === "Enter" || event.code === "Space";
+
+                    const prev = swiper.el.parentElement.querySelector('.swiper-button-prev'),
+                        next = swiper.el.parentElement.querySelector('.swiper-button-next'),
+                        bullets = swiper.pagination.bullets;
+
+                    if (bullets.length) {
+                        bullets.each((bullet, index) => {
+                            bullet.setAttribute('tabindex', 0);
+                            bullet.setAttribute('role', 'button');
+                            bullet.setAttribute('aria-label', `<?= $escaper->escapeHtml(__('Go to page')) ?> ${index + 1}`);
+
+                            bullet.addEventListener('keydown', event => {
+                                isEnterOrSpace(event) && bullet.click();
+                            });
+                        })
+                    }
+
+                    const $el = swiper.$el[0];
+                    $el.querySelectorAll('.swiper-slide-duplicate a').forEach(element => {
+                        element.setAttribute('tabindex', '-1');
+                    });
+
+                    prev?.addEventListener('keydown', event => {
+                        isEnterOrSpace(event) && swiper.slidePrev();
+                    });
+
+                    next?.addEventListener('keydown', event => {
+                        isEnterOrSpace(event) && swiper.slideNext();
+                    });
+
+                    <?php if ($isLoopEnabled): ?>
+                    prev?.addEventListener('click', () => {
+                        swiper.slidePrev();
+                    });
+
+                    next?.addEventListener('click', () => {
+                        swiper.slideNext();
+                    });
+
+                    AlpineObservResume();
+                    <?php endif; ?>
+
+                    <?php if ($block->isAutoplayEnabled()): ?>
+                    const slidesWrapper = swiper.el.querySelector('article');
+
+                    slidesWrapper.addEventListener('focusin', () => {
+                        swiper.autoplay.stop();
+                    });
+
+                    slidesWrapper.addEventListener('focusout', () => {
+                        swiper.autoplay.start();
+                    });
+                    <?php endif; ?>
+
+                    swiper.el.addEventListener('focus', event => {
+                        const slideEl = event.target.closest(`.${swiper.params.slideClass}, swiper-slide`);
+                        if (!slideEl || !swiper.slides.includes(slideEl)) {
+                            return;
+                        }
+
+                        const currentSlideIndex = swiper.slides.indexOf(slideEl);
+                        const isActive = currentSlideIndex === swiper.activeIndex;
+                        const isVisible = swiper.params.watchSlidesProgress
+                            && swiper.visibleSlides
+                            && swiper.visibleSlides.includes(slideEl);
+
+                        if (isActive || isVisible || (
+                            event.sourceCapabilities
+                            && event.sourceCapabilities.firesTouchEvents
+                        )) {
+                            return;
+                        }
+
+                        const scrollType = swiper.isHorizontal() ? 'scrollLeft' : 'scrollTop';
+                        swiper.el[scrollType] = 0;
+
+                        if (currentSlideIndex % maxPostsPerSlide === 0) {
+                            swiper.params.grid.rows > 1
+                                ? swiper.slideNext()
+                                : swiper.slideTo(currentSlideIndex);
+                        }
+                    }, true);
+                },
+            },
+            <?php if ($rowsCount > 1): ?>
+            slidesPerGroup: <?= (int)$escaper->escapeJs($columnsCount) ?>,
+            grid: {
+                rows: <?= (int)$escaper->escapeJs($rowsCount) ?>,
+                fill: 'row'
+            },
+            <?php endif; ?>
+            <?php if ($block->isAutoplayEnabled()): ?>
+            autoplay: {
+                delay: <?= (int)$escaper->escapeJs($block->getAutoplaySpeed()) ?>,
+                disableOnInteraction: false,
+                pauseOnMouseEnter: true
+            },
+            <?php endif; ?>
+            breakpoints: {
+                200: {
+                    slidesPerView: 2
+                },
+                350: {
+                    slidesPerView: 2
+                },
+                768: {
+                    slidesPerView: 6
+                }
+            },
+            spaceBetween: <?= (int)$escaper->escapeJs($postsIndent) ?>,
+            loop: <?= $escaper->escapeJs($isSliderInLoop ? 'true' : 'false') ?> ,
+            <?php if ($block->isPaginationShow() && $rowsCount > 1): ?>
+            pagination: {
+                el: '#<?= $escaper->escapeHtmlAttr($sliderId) ?> .swiper-pagination',
+                clickable: true,
+            },
+            <?php endif; ?>
+            <?php if (!$isLoopEnabled): ?>
+            navigation: {
+                nextEl: '#<?= $escaper->escapeHtmlAttr($sliderId) ?> .swiper-button-next',
+                prevEl: '#<?= $escaper->escapeHtmlAttr($sliderId) ?> .swiper-button-prev'
+            },
+            <?php endif; ?>
+            a11y: {
+                enabled: false
+            },
+            init: true
+        };
+
+        return window.amInstagramPostsFeedComponentWrapper({
+            widgetSettings: {
+                posts_limit: <?= (int)$escaper->escapeJs($block->getPostsLimit()) ?>,
+            },
+            postPerPage: <?= (int)$escaper->escapeJs($block->getPostsLimit()) ?>,
+            sortField: '<?= $escaper->escapeJs($block->getSort()) ?>',
+            isSwiperLoaded: true,
+            selectors: {
+                sliderContainer: '#am_widget_<?= $escaper->escapeHtmlAttr($sliderId); ?> .swiper-container'
+            },
+
+            skipCarouselToNavigation(navSelector) {
+                const element = document.querySelector(navSelector);
+
+                if (element) {
+                    const button = element.querySelector('[role="button"]:not([disabled])');
+                    this.$nextTick(() => button && button.focus({preventScroll: true}))
+                }
+            },
+
+            afterPostsLoaded() {
+                if (!this.posts.length) {
+                    return;
+                }
+
+                //AlpineObservStop();
+
+                queueMicrotask(() => {
+                    if (this.swiper) {
+                        this.swiper.update();
+                        AlpineObservResume();
+
+                        return;
+                    }
+
+                    if ('pauseMutationObserver' in Alpine && SWIPER_SETTINGS.loop) {
+                        try {
+                            document.querySelector(this.selectors.sliderContainer)
+                                .querySelectorAll('.aminst-feed-post')
+                                .forEach((slide, slideIndex) => {
+                                    slide.setAttribute('x-data', `{post: ${JSON.stringify(this.posts[slideIndex])}, isSwiperLoaded: true}`)
+                                });
+                        } catch (e) { }
+                    }
+
+                    this.swiper = new Swiper(
+                        this.selectors.sliderContainer,
+                        SWIPER_SETTINGS
+                    );
+                })
+            },
+            eventListeners: {
+                ['@amInstSwiperLoaded.window']() {
+                    this.isSwiperLoaded = true;
+                }
+            }
+        });
+    }
+</script>

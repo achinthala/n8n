@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_po_review" translate="label" sortOrder="920" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>Purchase Order Review (PO + Zendesk)</label>
+            <tab>sales</tab>
+            <resource>Dcw_PurchaseOrderReview::config</resource>
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="subtotal_threshold" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum Base Subtotal for PO</label>
+                    <comment>PO payment is shown only when quote base subtotal (pre-tax, pre-shipping) is greater than or equal to this amount.</comment>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                </field>
+                <field id="allow_guest_po" translate="label comment" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Allow Guest Checkout with PO</label>
+                    <comment>When Yes, guests who meet the subtotal threshold can choose PO. Use with caution.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+            <group id="checkout" translate="label" sortOrder="15" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Checkout</label>
+                <field id="shipping_modal_cms_block" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>PO shipping modal — CMS block identifier</label>
+                    <comment>CMS block (Content → Blocks): filtered **Content** is the modal body; **Block Title** is the modal heading. Default identifier: po_shipping_modal.</comment>
+                </field>
+            </group>
+            <group id="zendesk" translate="label" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Zendesk API</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable API Ticket Creation</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="subdomain" translate="label comment" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Zendesk Subdomain</label>
+                    <comment>Only the subdomain (e.g. "mycompany" for mycompany.zendesk.com).</comment>
+                </field>
+                <field id="email" translate="label comment" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Zendesk API User Email</label>
+                    <comment>Agent/bot account email used for Basic auth with API token.</comment>
+                </field>
+                <field id="api_token" translate="label" type="obscure" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Zendesk API Token</label>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                </field>
+            </group>
+            <group id="fallback" translate="label" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Fallback Email</label>
+                <field id="email" translate="label comment" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Fallback Recipient</label>
+                    <comment>Used when Zendesk API ticket creation fails. Subject line includes "Pending PO Review".</comment>
+                </field>
+            </group>
+        </section>
+        <section id="payment" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="dcw_po_gateway" translate="label" sortOrder="960" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Purchase Order (Custom Gateway)</label>
+                <field id="active" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="title" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Title</label>
+                </field>
+                <field id="sort_order" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Sort Order</label>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @category  Dotcomweavers
+ * @package   Hyva_ClassyLlamaAvaTax
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+   <module name="Hyva_ClassyLlamaAvaTax" setup_version="1.0.0" >
+        <sequence>
+            <module name="ClassyLlama_AvaTax" />
+            <module name="Hyva_Theme" />
+        </sequence>
+    </module>
+</config>

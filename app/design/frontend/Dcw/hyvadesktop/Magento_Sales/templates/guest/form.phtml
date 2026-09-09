@@ -1,0 +1,203 @@
+<?php
+/**
+ * Copyright © Dotcom Weavers. All rights reserved.
+ * Track Your Order - Look up by Order Number design.
+ * Theme override for Magento_Sales::guest/form.phtml
+ */
+
+/** @var \Magento\Sales\Block\Widget\Guest\Form $block */
+$validateOrderUrl = $block->getUrl('trackorder/order/validate', ['_secure' => true, '_nosid' => true]);
+$loginUrl = $block->getUrl('customer/account/login');
+$createAccountUrl = $block->getUrl('customer/account/create');
+?>
+<div class="track_order_info max-w-[340px] mx-auto mt-[40px]">
+    <form class="form form-orders-search"
+          id="oar-widget-orders-and-returns-form"
+          action="<?= $block->escapeUrl($block->getActionUrl()) ?>"
+          method="post" name="guest_post"
+          data-validate-url="<?= $block->escapeUrl($validateOrderUrl) ?>"
+          x-data="orderIdValidation()">
+        <?= $block->getBlockHtml('formkey') ?>
+        <div class="mb-6 info">
+            <h2 class="text-[26px] leading-[20px] mb-[25px] font-semibold text-[#1E1E1E]"><?= $block->escapeHtml(__('Look up by Order Number')) ?></h2>
+            <div class="field mb-4">
+                <label class="label block font-normal mb-2 text-base text-left text-[#1E1E1E]" for="oar-order-id">
+                    <span><?= $block->escapeHtml(__('Order ID')) ?></span>
+                </label>
+                <div class="control">
+                    <input type="text"
+                           class="form-input w-full rounded"
+                           id="oar-order-id"
+                           name="oar_order_id"
+                           placeholder="<?= $block->escapeHtmlAttr(__('e.g. 0123456789')) ?>"
+                           required
+                           x-model="orderId"
+                           @blur="validateOrderId()"
+                           @input="orderIdValid = null; orderIdError = ''"
+                           :class="{ 'border-red-500': orderIdError }">
+                    <p class="text-red-600 text-sm mt-1 text-left error" x-show="orderIdError" x-transition x-cloak>
+                        <span x-text="orderIdError"></span>
+                        <button type="button"
+                                x-show="isTechnicalError"
+                                @click="submitWithoutValidation($event)"
+                                class="block mt-2 text-sm underline text-primary hover:no-underline">
+                            <?= $block->escapeHtml(__('Submit anyway')) ?>
+                        </button>
+                    </p>
+                </div>
+            </div>
+            <div class="field mb-4" x-show="orderId.trim()" x-transition x-cloak>
+                <label class="label block font-medium mb-2 text-left" for="oar_email">
+                    <span><?= $block->escapeHtml(__('Email')) ?></span>
+                </label>
+                <div class="control">
+                    <input type="email"
+                           class="form-input w-full rounded"
+                           id="oar_email"
+                           name="oar_email"
+                           x-model="email"
+                           required
+                           :required="orderId.trim().length > 0"/>
+                </div>
+            </div>
+            <div class="actions-toolbar">
+                <div class="primary w-full">
+                    <button type="submit"
+                            title="<?= $block->escapeHtml(__('Continue')) ?>"
+                            class="action submit primary btn btn-primary w-full py-3 rounded font-medium disabled:opacity-50"
+                            :disabled="isValidating || !orderId.trim() || !email.trim()"
+                            @click.prevent="handleSubmit($event)">
+                        <span x-show="!isValidating"><?= $block->escapeHtml(__('Continue')) ?></span>
+                        <span x-show="isValidating"><?= $block->escapeHtml(__('Validating...')) ?></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="account border-t border-[#D9D9D9] pt-5">
+            <p class="text-center text-base text-[#303030] leading-[16px] mb-5"><?= $block->escapeHtml(__('Have an account?')) ?></p>
+            <a href="<?= $block->escapeUrl($loginUrl) ?>"
+               class="sign block w-full rounded-[8px] text-center h-[42px] leading-[42px] py-0 px-4 bg-[#FFBD62] text-[#1E1E1E] text-[16px] font-normal mb-5">
+                <?= $block->escapeHtml(__('Sign in to Your Account')) ?>
+            </a>
+            <a href="<?= $block->escapeUrl($createAccountUrl) ?>"
+               class="create block text-center text-[14px] underline hover:no-underline text-[#1D466A] font-normal">
+                <?= $block->escapeHtml(__('Create Account')) ?>
+            </a>
+        </div>
+    </form>
+</div>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('orderIdValidation', () => ({
+        orderId: '',
+        email: '',
+        orderIdError: '',
+        isValidating: false,
+        orderIdValid: null,
+        isTechnicalError: false,
+
+        getValidateUrl() {
+            const form = document.getElementById('oar-widget-orders-and-returns-form');
+            return form?.dataset?.validateUrl || '';
+        },
+
+        async validateOrderId() {
+            const id = (this.orderId || '').trim();
+            this.orderIdError = '';
+            this.orderIdValid = null;
+            this.isTechnicalError = false;
+
+            if (id === '') {
+                return;
+            }
+
+            const validateUrl = this.getValidateUrl();
+            if (!validateUrl) {
+                this.orderIdError = '<?= $block->escapeJs(__('Unable to validate. Please try again.')) ?>';
+                this.orderIdValid = false;
+                this.isTechnicalError = true;
+                return;
+            }
+
+            this.isValidating = true;
+            try {
+                const url = new URL(validateUrl);
+                url.searchParams.set('order_id', id);
+                const formKeyInput = document.querySelector('input[name="form_key"]');
+                if (formKeyInput?.value) {
+                    url.searchParams.set('form_key', formKeyInput.value);
+                }
+                const response = await fetch(url.toString());
+                const contentType = response.headers.get('content-type');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('Server returned non-JSON response');
+                }
+                const data = await response.json();
+                this.orderIdValid = data.exists === true;
+                this.isTechnicalError = false;
+                if (!data.exists) {
+                    this.orderIdError = (data.message || '<?= $block->escapeJs(__('Order ID does not exist. Please check and try again.')) ?>');
+                }
+            } catch (e) {
+                this.orderIdError = '<?= $block->escapeJs(__('Unable to validate. Please try again.')) ?>';
+                this.orderIdValid = false;
+                this.isTechnicalError = true;
+            }
+            this.isValidating = false;
+        },
+
+        submitWithoutValidation(event) {
+            event.target.closest('form').submit();
+        },
+
+        async handleSubmit(event) {
+            const form = event.target.closest('form');
+            const orderIdInput = document.getElementById('oar-order-id');
+            const emailInput = document.getElementById('oar_email');
+            const orderId = (orderIdInput?.value || '').trim();
+            const email = (emailInput?.value || '').trim();
+            this.orderId = orderId;
+
+            if (orderId === '') {
+                this.orderIdError = '<?= $block->escapeJs(__('Please enter an Order ID.')) ?>';
+                return;
+            }
+
+            if (this.orderIdValid === null || this.orderIdValid === undefined) {
+                await this.validateOrderId();
+            }
+
+            if (this.orderIdValid === false) {
+                return;
+            }            
+
+            if (emailInput) {
+
+                // 1. Empty check
+                if (email.trim() === '') {
+                    this.orderIdError = '';
+                    emailInput.focus();
+                    emailInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    emailInput.reportValidity(); // shows "Please fill out this field"
+                    return;
+                }
+
+                // 2. Invalid email format check
+                if (!emailInput.checkValidity()) {
+                    emailInput.focus();
+                    emailInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    emailInput.reportValidity(); // shows "Please include an '@'..."
+                    return;
+                }
+            }
+
+            if (this.orderIdValid === true) {
+                form.submit();
+            }
+        }
+    }));
+});
+</script>

@@ -1,0 +1,33 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\MetaPixel\Purchase */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+?>
+
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled() && $metaPixelHelper->shouldMetaPixelEventBeTracked(\WeltPixel\GA4\Model\Config\Source\MetaPixel\TrackingEvents::EVENT_ADD_PAYMENT_INFO)) :
+    ?>
+    <script>
+        if (window.ga4AllowServices) {
+            fbq('track', 'AddPaymentInfo', {
+                method_title: '<?= addslashes(str_replace('"', '&quot;', $block->getPaymentMethodTitle())) ?>'
+            });
+        }
+    </script>
+<?php endif; ?>
+
+<?php if ($metaPixelHelper->isMetaPixelTrackingEnabled() && $metaPixelHelper->shouldMetaPixelEventBeTracked(\WeltPixel\GA4\Model\Config\Source\MetaPixel\TrackingEvents::EVENT_PURCHASE)) :
+    ?>
+    <script>
+        if (window.ga4AllowServices) {
+            fbq('track', 'Purchase', {
+                content_type: "product",
+                content_ids: [<?= $block->getContentIds() ?>],
+                contents: <?= $block->getContents() ?>,
+                value: <?= $block->getValue() ?>,
+                currency: "<?= $metaPixelHelper->getCurrencyCode() ?>"
+            });
+        }
+    </script>
+<?php endif; ?>

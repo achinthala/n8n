@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="left">
+            <referenceContainer name="extra_customer_info">
+                <block class="Amasty\RequestQuote\Block\Adminhtml\Quote\View" name="request_quote_view_admin_assistance" template="Dcw_RequestQuote::quote/view/admin_assistance.phtml"/>
+            </referenceContainer>
+            <referenceContainer name="extra_quote_info">
+                <block class="Amasty\RequestQuote\Block\Adminhtml\Quote\View" name="request_quote_reserved_order_id" template="Dcw_RequestQuote::quote/view/reserved_order_id.phtml"/>
+            </referenceContainer>   
+        </referenceBlock>
+        <!-- Add lock status warning -->
+        <referenceContainer name="content">
+            <block class="Dcw\RequestQuote\Block\Adminhtml\Quote\View\LockStatus" 
+                   name="quote.view.lock.status" 
+                   template="Dcw_RequestQuote::quote/view/lock_status.phtml"
+                   before="amasty_quote_view"/>
+        </referenceContainer>
+        <!-- Add change logs in the content area -->
+        <referenceContainer name="content">
+            <block class="Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\ChangeLog" 
+                   name="quote.change_log" 
+                   template="Dcw_RequestQuote::quote/edit/change_log.phtml"
+                   after="amasty_quote_view"/>
+        </referenceContainer>
+    </body>
+</page>

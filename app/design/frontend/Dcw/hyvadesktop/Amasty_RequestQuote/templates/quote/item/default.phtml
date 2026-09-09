@@ -1,0 +1,120 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/** @var \Magento\Checkout\Block\Cart\Item\Renderer $block */
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\RequestQuote\ViewModel\Data as RequestQuoteViewModel;
+
+$item = $block->getItem();
+$sampleProductBlock = $block->getLayout()->createBlock(\Dcw\SampleProduct\Block\SampleData::class);
+$calculatedPriceData = null;
+
+try {
+    if ($viewModels) {
+        /** @var RequestQuoteViewModel $requestQuoteViewModel */
+        $requestQuoteViewModel = $viewModels->require(RequestQuoteViewModel::class);
+        
+        // Get quote from item
+        $quote = $item->getQuote();
+        
+        // Get calculated price using ViewModel method
+        $calculatedPriceData = $requestQuoteViewModel->getCalculatedPriceForItem($item, $quote, true);
+
+        // echo "<pre>";
+        // print_r($calculatedPriceData);
+        // echo "</pre>";
+    }
+} catch (\Exception $e) {
+    // Silent fail - don't display calculated price if there's an error
+}
+?>
+<tr id="order-item-row-<?= $escaper->escapeHtml($item->getId()) ?>">
+    <td class="col name" data-th="<?= $escaper->escapeHtml(__('Product Name')) ?>">
+        <strong class="product name product-item-name">
+            <?= $escaper->escapeHtml($sampleProductBlock->getCartItemName($item)) ?>
+        </strong>
+        <?php if ($options = $block->getOptionList()): ?>
+            <dl class="item-options">
+                <?php foreach ($options as $option): 
+                    if ($option['label']=="Configurable Product Id" || 
+                    $option['label']== "Configurable Product Url" || 
+                    $option['label']=="Configurable Product Image" || 
+                    $option['label'] == "Product Name") {
+                        continue;
+                    }
+                ?>
+                    <?php $_formatedOptionValue = $block->getFormatedOptionValue($option) ?>
+					<?php if($option['label']!=""){?>
+                            <dt class="opt-labs"><?= $escaper->escapeHtml($option['label']) ?>:</dt>
+							<?php }  else {?>
+							<dt class="opt-labs no-labels"></dt>
+							<?php } ?>
+                    <dd>
+                        <?php if (isset($_formatedOptionValue['full_view'])): ?>
+                            <?= /* @noEscape */ $_formatedOptionValue['full_view'] ?>
+                        <?php else: ?>
+                            <?= /* @noEscape */ $_formatedOptionValue['value'] ?>
+                        <?php endif; ?>
+                    </dd>
+                <?php endforeach; ?>
+            </dl>
+        <?php endif;?>
+        <?php $addtInfoBlock = $block->getProductAdditionalInformationBlock(); ?>
+        <?php if ($addtInfoBlock): ?>
+            <?= $addtInfoBlock->setItem($item)->toHtml() ?>
+        <?php endif; ?>
+        <?= $escaper->escapeHtml($item->getDescription()) ?>
+    </td>
+    <td class="col sku"
+        data-th="<?= $escaper->escapeHtml(__('SKU')) ?>">
+            <?= /* @escapeNotVerified */ $escaper->escapeHtml($item->getSku()) ?>
+    </td>
+    <td class="col price qty" data-th="<?= $escaper->escapeHtml(__('Original Price')) ?>">
+        <span class="price-excluding-tax">
+            <span class="cart-price">
+                <span class="price">
+                    <?= $block->getOriginalPriceHtml($item) ?>
+                </span>
+            </span>
+        </span>
+    </td>
+    <td class="col price qty" data-th="<?= $escaper->escapeHtml(__('Requested Price')) ?>">
+        <span class="price-excluding-tax">
+            <span class="cart-price">
+                <?= $block->getRequestedPriceHtml($item) ?>
+            </span>
+        </span>
+    </td>
+    <?php
+    $approvedPrice = $block->getIsApprovedPriceShowed()
+        ? $block->getUnitPriceHtml($item)
+        : $escaper->escapeHtml(__('N/A'));
+    ?>
+    <td class="col price qty" data-th="<?= $escaper->escapeHtml(__('Approved Price')) ?>">
+        <span class="price-excluding-tax">
+            <span class="cart-price">
+                <span class="price">
+                    <?= /* @noEscape */ $approvedPrice ?>
+                </span>
+            </span>
+        </span>
+    </td>
+    <td class="col qty" data-th="<?= $escaper->escapeHtml(__('Qty')) ?>">
+        <span><?= $escaper->escapeHtml($block->getQty()) ?></span>
+    </td>
+    <td class="col price qty" data-th="<?= $escaper->escapeHtml(__('Discount Amount')) ?>">
+        <span class="price-excluding-tax">
+            <span class="cart-price">
+                <span class="price">
+                    <?= $block->getDiscountPriceHtml($item) ?>
+                </span>
+            </span>
+        </span>
+    </td>
+    <td class="col subtotal" data-th="<?= $escaper->escapeHtml(__('Subtotal')) ?>">
+        <span><?= $block->getRowTotalHtml($item) ?></span>
+    </td>
+</tr>

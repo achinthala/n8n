@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- File: view/adminhtml/ui_component/sales_order_grid.xml -->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+
+    <columns name="sales_order_columns">
+
+        <column name="entity_id" class="Dcw\LineItemUpdateESD\Ui\Component\Listing\Column\OrderLink">
+            <settings>
+                <label translate="true">Update ESD for Line Item</label>
+                <sortable>true</sortable>
+                <filter>text</filter>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+            </settings>
+        </column>
+
+    </columns>
+</listing>

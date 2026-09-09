@@ -1,0 +1,125 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/**
+ * @var \Magento\Company\Block\Company\CompanyProfile $block
+ */
+$company = $block->getCustomerCompany();
+?>
+<?php if ($block->isViewAccountAllowed()): ?>
+<div class="block block-company-profile-account">
+    <div class="block-title">
+        <strong><?= $block->escapeHtml(__('Account Details')) ?></strong>
+    </div>
+    <div class="block-content">
+        <div class="box box-account-information">
+            <div class="box-content">
+            
+        <div class="information item">
+            <label class="label" for="jobtitle">
+                <strong><?= $block->escapeHtml(__('Membership ID:')) ?></strong>
+                <span><?=$block->escapeHtml($company->getCompanyId())?></span>
+            </label>
+        </div>
+             
+        <div class="information item">
+            <label class="label" for="jobtitle">
+                <strong><?= $block->escapeHtml(__('Dedicated Toll Free Number:')) ?></strong>
+                <span><?=$block->escapeHtml($company->getTollFreeNumber())?></span>
+            </label>
+        </div>    
+
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php if ($block->isViewAddressAllowed()): ?>
+<div class="block block-company-profile-address">
+    <div class="block-title">
+        <strong><?= $block->escapeHtml(__('Legal Address')) ?></strong>
+    </div>
+    <div class="block-content">
+        <div class="box box-address-information">
+            <div class="box-content">
+                <address>
+                    <?php if (!$block->isCompanyAddressDisplayed($company)): ?>
+                        <?= $block->escapeHtml(
+                            __('You have no other address entries in your address book.')
+                        ); ?><br />
+                    <?php else: ?>
+                        <?php if (!empty($company->getStreet())): ?>
+                            <?= $block->escapeHtml($block->getCompanyStreetLabel($company)) ?><br />
+                        <?php endif; ?>
+                        <?= $block->escapeHtml($block->getCompanyAddressString($company)) ?><br />
+                        <?= $block->escapeHtml($block->getCompanyCountryLabel($company)) ?><br />
+                        <?= $block->escapeHtml(__('T: %1', $company->getTelephone())) ?>
+                    <?php endif; ?>
+                    <br />
+                </address>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+<?php if ($block->isViewContactsAllowed()): ?>
+<div class="block block-company-profile-contacts">
+    <div class="block-title">
+        <strong>
+            <?= $block->escapeHtml(__('Contacts')) ?>
+        </strong>
+    </div>
+    <div class="block-content">
+        <div class="box box-contact-information">
+            <strong class="box-title">
+                <span><?= $block->escapeHtml(__('Company Administrator')) ?></span>
+            </strong>
+            <div class="box-content">
+                <?= $block->escapeHtml($block->getCompanyAdminName($company)) ?><br />
+                <?php $companyAdminJobTitle = $block->getCompanyAdminJobTitle($company); ?>
+                <?php if (!empty($companyAdminJobTitle)): ?>
+                    <?= $block->escapeHtml($companyAdminJobTitle) ?><br />
+                <?php endif; ?>
+                <?= $block->escapeHtml($block->getCompanyAdminEmail($company)) ?>
+            </div>
+        </div>
+
+        <div class="box box-contact-information">
+            <strong class="box-title">
+                <span><?= $block->escapeHtml(__('Sales Representative')) ?></span>
+            </strong>
+            <div class="box-content">
+                <?= $block->escapeHtml($block->getSalesRepresentativeName($company)) ?><br />
+                <?= $block->escapeHtml($block->getSalesRepresentativeEmail($company)) ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="block-content user_table">
+<h4 class=""><?= $block->escapeHtml(__('Unlockable Benfits')) ?></h4>
+        <div class="box box-contact-orderinformation">
+           <div class="information item left">
+            <label class="label" for="jobtitle">
+                <strong><?= $block->escapeHtml(__('Your total orders:')) ?></strong>
+                <span><?=$block->escapeHtml($company->getTotalOrderValue())?></span>
+            </label>
+        </div>
+             
+        <div class="information item right">
+            <label class="label" for="jobtitle">
+                <strong><?=$block->escapeHtml($company->getUnlockNextLevel())?></strong>
+                <span><?= $block->escapeHtml(__('to unlock the next level of savings')) ?></span>
+            </label>
+        </div>    
+        </div>
+
+        <div class="box box-contact-orderinformationcms">
+           <?=$block->getLayout()->createBlock(Magento\Cms\Block\Block::class)
+		   ->setBlockId('order_benefits')->toHtml();?>
+        </div>
+    </div> 

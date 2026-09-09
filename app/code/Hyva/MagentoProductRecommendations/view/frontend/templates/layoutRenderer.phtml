@@ -1,0 +1,668 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\ProductRecommendationsLayout\Block\Renderer;
+
+/**
+ * @var Renderer $block
+ * @var HeroiconsOutline $heroiconsOutline
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+
+$heroiconsOutline = $viewModels->require(HeroiconsOutline::class);
+$pagePlacement = $block->getData('pagePlacement');
+$pagePlacementId = str_replace('-', '_', $pagePlacement);
+?>
+<div x-data="recommendedProducts_<?= /* @noEscape */ $pagePlacementId ?>()"
+     x-init="initProductRecBlock()"
+     id="recs_block_<?= /* @noEscape */ $pagePlacementId ?>"
+     class="products__recommendations">
+    <template x-if="productBanners">
+        <div>
+            <template x-for="banner in productBanners">
+                <div class="product-slider" x-defer="intersect">
+                    <section class="my-12 text-gray-700 body-font"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Recommended products carousel"
+                        aria-roledescription="carousel"
+                        @keydown.arrow-right.prevent="$refs.next.click()"
+                        @keydown.arrow-left.prevent="$refs.prev.click()"
+                    >
+                        <div class="relative">
+                        <div class="flex w-full">
+                            <h3 x-text='banner.storefrontLabel'
+                                class="font-semibold"></h3>
+                        </div>
+                        <div class="relative flex flex-nowrap w-full recommended-slider-items products_slider" data-content-type="recommended-products">
+                            <div class="sr-only"
+                                aria-live="polite"
+                                x-text="'Showing ' + banner.products.length + ' recommended products'">
+                            </div>
+                            <div id="recommended-slider" class="overflow-x-hidden max-slide" data-role="glider-recommended">
+                                <template x-for="product in banner.products">
+                                    <div class="flex shrink-0 w-full js_slide md:w-1/3 lg:w-1/5 xl:w-1/6 recommended-slider-item">
+                                        <form method="post" x-bind:action="createAddToCartUrl(product.productId)"
+                                            @submit.prevent="addToCartRecsEvent($event.target, banner.unitId, product.productId)"
+                                            class="item product product-item product_addtocart_form card card-interactive flex flex-col w-full catergory_slider_content bg-white">
+                                            <input name="form_key" type="hidden" :value="hyva.getFormKey()"/>
+                                            <input type="hidden" name="product" x-bind:value="product.productId">
+                                            <a :href="new URL(product.url, window.location.origin).pathname" @click="recsClickEvent(banner.unitId, product.productId, product.url)"
+                                            class="product photo product-item-photo block cursor-pointer"
+                                            tabindex="-1">
+                                                <div class="product-list-image relative w-full overflow-hidden"
+                                                     x-data="recProductImage(product)"
+                                                     :class="{ 'is-hovered': hovered }"
+                                                     x-on:mouseenter="onEnter()"
+                                                     x-on:mousemove.debounce.80ms="onMove()"
+                                                     x-on:mouseleave="onLeave()">
+                                                    <img class="product-list-image-primary hover:shadow-sm object-contain w-full"
+                                                         loading="eager"
+                                                         x-bind:alt="product.image?.label"
+                                                         x-bind:title="product.image?.label"
+                                                         x-bind:src="primarySrc"
+                                                         width="360"
+                                                         height="360"
+                                                         decoding="async"
+                                                         fetchpriority="high"
+                                                         style="position: static !important;">
+                                                    <template x-if="hoverUrl && hovered">
+                                                        <img class="product-list-image-hover absolute inset-0 w-full h-full object-contain pointer-events-none"
+                                                             x-bind:src="hoverUrl"
+                                                             loading="lazy"
+                                                             decoding="async"
+                                                             fetchpriority="low"
+                                                             width="360"
+                                                             height="360"
+                                                             x-bind:alt="product.image?.label"
+                                                             aria-hidden="true">
+                                                    </template>
+                                                </div>
+                                            </a>
+                                            <div class="product-info flex flex-col flex-grow">
+                                                <div
+                                                    class="items-center justify-center font-semibold ">
+                                                    <a :href="new URL(product.url, window.location.origin).pathname" class="product-item-link text-size16 text-black font-bold no-underline relative block cursor-pointer"
+                                                    @click="recsClickEvent(banner.unitId, product.productId, product.url)"
+                                                    x-text="product.name"></a>
+                                                </div>
+
+                                                <div class="ratings" data-nosnippet>
+                                                    <div data-bv-show="rating_summary"
+                                                    x-bind:data-bv-product-id="product.sku"
+                                                    x-bind:data-bv-redirect-url="product.url">
+                                                    </div>
+                                                </div>
+                                                    
+                                                <template x-if="product.prices">
+                                                    <div class="pt-1 text-gray-900 price-box price-final_price" x-bind:data-product-id="product.productId">
+                                                        <span class="normal-price">
+                                                            <span class="price-container price-final_price">
+                                                                <!-- <span x-show="product.prices.minimum.final !== product.prices.maximum.final"
+                                                                    class="price-start-label"><?= $escaper->escapeHtml(__('Starting From:')) ?></span> -->
+                                                                <span id="product-price" class="price-wrapper ">
+                                                                    <!-- <span class="price" x-text="hyva.formatPrice(product.prices.minimum.final)"></span> -->
+                                                                    <div x-data="productPricing(product)">
+                                                                        <div :class="priceContainerClasses" 
+                                                                            :itemprop="schema ? 'offers' : ''" 
+                                                                            :itemscope="schema ? true : false" 
+                                                                            :itemtype="schema ? 'http://schema.org/Offer' : ''">
+
+                                                                            <!-- Price Wrapper -->
+                                                                            <span :id="priceId" 
+                                                                                :data-label="priceDisplayLabel" 
+                                                                                :data-price-amount="priceAmount" 
+                                                                                :data-price-type="priceType" 
+                                                                                :class="priceWrapperClasses">
+                                                                                <template x-if="priceType === 'finalPrice' && product.type === 'configurable'">
+                                                                                    <span class="price-start-label">Starting From:</span>
+                                                                                </template>
+
+                                                                                <!-- Adjusted Price Logic -->
+                                                                                <template x-if="calculatorType && (coverage > 0 || (width > 0 && length > 0 && height > 0))">
+                                                                                    <span>
+                                                                                        <template x-if="minPriceVolume > 0">
+                                                                                            <span>
+                                                                                                <template x-if="regularPrice > specialPrice && specialPrice > 0">
+                                                                                                    <span x-text="formatCurrency(specialPrice / minPriceVolume)"></span>
+                                                                                                </template>
+                                                                                                <template x-if="!(regularPrice > specialPrice && specialPrice > 0)">
+                                                                                                    <span x-text="formatCurrency(regularPrice / minPriceVolume)"></span>
+                                                                                                </template>
+                                                                                                <span x-text="'/' + calculatorType"></span>
+                                                                                            </span>
+                                                                                        </template>
+                                                                                    </span>
+                                                                                </template>
+                                                                                <template x-if="!calculatorType || minPriceVolume <= 0">
+                                                                                    <span class="price">
+                                                                                        <span x-text="formatCurrency(displayValue)"></span>
+                                                                                        <span x-text="displayValueType"></span>
+                                                                                    </span>
+                                                                                </template>
+                                                                            </span>
+
+                                                                            <!-- MRP and Discount -->
+                                                                            <!-- <template x-if="regularPrice > specialPrice && product.type === 'configurable'">
+                                                                                <span class="price-mrp">
+                                                                                    <template x-if="minPriceVolume > 0 && calculatorType">
+                                                                                        <span class="price-mrp-new">
+                                                                                            <span x-text="formatCurrency(regularPrice / minPriceVolume)"></span>
+                                                                                            <span x-text="'/' + calculatorType"></span>
+                                                                                        </span>
+                                                                                        <span class="savePrice" x-text="'Save ' + discountPercentage + '%'"></span>
+                                                                                    </template>
+                                                                                    <template x-if="!(minPriceVolume > 0 && calculatorType)">
+                                                                                        <span class="price-mrp-new">
+                                                                                            <span x-text="formatCurrency(regularPrice)"></span>
+                                                                                            <span>/each</span>
+                                                                                        </span>
+                                                                                        <span class="savePrice" x-text="'Save ' + discountPercentage + '%'"></span>
+                                                                                    </template>
+                                                                                </span>
+                                                                            </template> -->
+
+                                                                            <!-- Adjustments -->
+                                                                            <template x-if="adjustmentsHtml">
+                                                                                <span x-html="adjustmentsHtml"></span>
+                                                                            </template>
+
+                                                                            <!-- Schema -->
+                                                                            <template x-if="schema">
+                                                                                <meta itemprop="price" :content="priceAmount" />
+                                                                                <meta itemprop="priceCurrency" :content="priceCurrency" />
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>                                                                   
+                                                                </span>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </template>
+                                                    <!-- End of product price -->
+                                            </div>                                            
+                                        </form>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="carousel-nav flex items-center justify-center">
+                                <button aria-label="Previous" aria-controls="recommended-slider" x-ref="prev" class="glider-prev1"></button> 
+                                <button aria-label="Next" aria-controls="recommended-slider" x-ref="next" class="glider-next1"></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                </div>
+            </template>
+        </div>
+    </template>
+</div>
+
+<script>
+    function recommendedProducts_<?= /* @noEscape */ $pagePlacementId ?>() {
+        return {
+            productBanners: [],
+            pagePreconfiguredDeferred: {},
+            bannerPlacement: '<?= /* @noEscape */ $pagePlacement ?>',
+            allProductIds: '',
+            initProductRecBlock: function (placement) {
+                let self = this;
+                window.magentoStorefrontEvents.subscribe.recsResponseReceived(function () {
+                    let recsData = window.magentoStorefrontEvents.context.getRecommendations();
+                    self.renderProductRecs(recsData);
+                });
+            },
+            renderProductRecs: function (recsData) {
+                let self = this;
+                let allProductIds = [];
+
+                recsData.units.sort((a, b) => a.displayOrder - b.displayOrder);
+
+                recsData.units.forEach(function (unit, index) {
+                    if (unit.pagePlacement === self.bannerPlacement) {
+                        self.productBanners.push(unit);
+
+                        // Collect all product IDs from this unit
+                        if (unit.products && unit.products.length > 0) {
+                            unit.products.forEach(function(product) {
+                                allProductIds.push(product.productId);
+                            });
+                        }
+
+                        /** @todo move event outside of recsResponseReceived event **/
+                        window.magentoStorefrontEvents.publish.recsUnitRender(
+                            unit.unitId, magentoStorefrontEvents.context
+                        );
+                    }
+                });
+
+                // Store comma-separated product IDs
+                self.allProductIds = allProductIds.join(',');
+                
+                // Fetch calculated prices and hover images for all products at once
+                if (self.allProductIds) {
+                    self.fetchAllCalculatedPrices(self.allProductIds);
+                    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                        self.fetchAllHoverImages(self.allProductIds);
+                    }
+                }
+            },
+            fetchAllHoverImages: function (productIds) {
+                const baseUrl = "<?= $escaper->escapeJs($block->getBaseUrl()) ?>";
+                const fetchUrl = baseUrl + 'hyvaproductrecommendation/product/listhoverimage/productId/' + productIds;
+
+                if (!window.hoverImagesCachePromise) {
+                    window.hoverImagesCachePromise = fetch(fetchUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            window.hoverImagesCache = data.success && data.hoverImages
+                                ? data.hoverImages
+                                : {};
+                            return window.hoverImagesCache;
+                        })
+                        .catch(() => {
+                            window.hoverImagesCache = {};
+                            return window.hoverImagesCache;
+                        });
+                }
+
+                return window.hoverImagesCachePromise;
+            },
+            fetchAllCalculatedPrices: function(productIds) {
+                var baseUrl = "<?php echo $block->getBaseUrl();?>";
+                var fetchUrl = baseUrl + 'hyvaproductrecommendation/product/calculatedprice/productId/' + productIds;
+                
+                // Create a promise that other components can wait for
+                if (!window.calculatedPricesCachePromise) {
+                    window.calculatedPricesCachePromise = fetch(fetchUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Store the price data globally so productPricing can access it
+                            if (!window.calculatedPricesCache) {
+                                window.calculatedPricesCache = {};
+                            }
+                            window.calculatedPricesCache = data;
+                            return data;
+                        })
+                        .catch(error => {
+                            console.log('Error fetching calculated prices:', error);
+                            return {};
+                        });
+                }
+                return window.calculatedPricesCachePromise;
+            },
+            addToCartRecsEvent: function (e, unitId, productId) {
+                // requires recommendationsContext to be set
+                magentoStorefrontEvents.publish.recsItemAddToCartClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => e.submit(), 500);
+            },
+            scrollViewEvent: function (unitId) {
+                magentoStorefrontEvents.publish.recsUnitView(
+                    unitId, magentoStorefrontEvents.context
+                );
+            },
+            recsClickEvent: function (unitId, productId, productUrl) {
+                magentoStorefrontEvents.publish.recsItemClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                //setTimeout(() => window.location.href = productUrl, 500);
+            },
+            createAddToCartUrl: function (productId) {
+                const currentLocationUENC = encodeURIComponent(
+                    this.encodeUenc(BASE_URL),
+                );
+                return BASE_URL +
+                    "checkout/cart/add/uenc/" +
+                    currentLocationUENC +
+                    "/product/" +
+                    productId
+            },
+            encodeUenc: function (value) {
+                const regex = /=/gi;
+                return btoa(value).replace(regex, ",");
+            },
+        }
+    }
+</script>
+<script>
+    'use strict';
+(() => {
+    const initCarousels = (elements) => {
+        if (typeof Glider === 'undefined') {
+            console.error("Glider.js is not loaded.");
+            return;
+        }
+
+        elements.forEach((carousel) => {
+            const gliderElement = carousel.querySelector('[data-role="glider-recommended"]');
+            if (!gliderElement) {
+                console.warn("Glider element not found.");
+                return;
+            }
+
+            const gliderPrev = carousel.querySelector('.glider-prev1');
+            const gliderNext = carousel.querySelector('.glider-next1');
+
+            const totalSlides = gliderElement.querySelectorAll('.js_slide').length;
+
+            // Hide arrows if slides are 6 or less
+            if (totalSlides <= 6) {
+                if (gliderPrev) gliderPrev.style.display = 'none';
+                if (gliderNext) gliderNext.style.display = 'none';
+            } else {
+                if (gliderPrev) gliderPrev.style.display = '';
+                if (gliderNext) gliderNext.style.display = '';
+            }
+            // Initialize Glider
+            const glider = new Glider(gliderElement, {
+                slidesToShow: 6,
+                slidesToScroll: 1,
+                scrollLock: false,
+                draggable: true,
+                dragVelocity: 1.3,
+                arrows: {
+                    prev: gliderPrev,
+                    next: gliderNext,
+                },
+                responsive: [
+                    { breakpoint: 768, settings: { slidesToShow: 2, slidesToScroll: 1 } },
+                    { breakpoint: 1024, settings: { slidesToShow: 4, slidesToScroll: 1 } },
+                    { breakpoint: 1366, settings: { slidesToShow: 6, slidesToScroll: 1} },
+                ],
+            });
+          
+            const preventDraggingOnInputs = (gliderElement) => {
+                gliderElement.querySelectorAll('select, input').forEach((el) => {
+                    el.addEventListener('mousedown', (event) => {                        
+                        event.stopPropagation(); // Prevent Glider drag from starting
+                    });
+
+                    el.addEventListener('touchstart', (event) => {
+                        event.stopPropagation(); // Prevent drag on touch devices
+                    });
+                });
+            };
+
+            // Call this inside initCarousels after Glider initialization
+            preventDraggingOnInputs(gliderElement);
+            
+            // Add event listener to handle the disabled class
+            gliderElement.addEventListener('glider-refresh', () => {
+                requestAnimationFrame(() => {
+                    const hasNext = gliderElement.scrollWidth - gliderElement.scrollLeft > gliderElement.clientWidth;
+                    const hasPrev = gliderElement.scrollLeft > 0;
+
+                    gliderNext.classList.toggle('disabled', !hasNext);
+                    gliderPrev.classList.toggle('disabled', !hasPrev);
+                    gliderNext.setAttribute('aria-disabled', !hasNext);
+                    gliderPrev.setAttribute('aria-disabled', !hasPrev);
+                });
+            });
+
+            // Force a refresh to ensure state is accurate on initialization
+            glider.refresh();
+        });
+    };
+
+    const loadGliderScript = (callback) => {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = "<?php echo $block->getViewFileUrl('Magento_PageBuilder::js/glider.min.js')?>";
+        script.addEventListener('load', callback);
+        document.head.appendChild(script);
+    };
+
+    const observeCarousels = () => {
+        const observer = new MutationObserver((mutationsList) => {
+            let found = false;
+
+            for (const mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                if (node.nodeType === 1) {
+                    const carousels = node.querySelectorAll?.('[data-content-type="recommended-products"]');
+                    if (carousels.length) {
+                    found = true;
+                    requestAnimationFrame(() => {
+                        observer.disconnect();
+                        initCarousels(carousels);
+                    });
+                    break;
+                    }
+                }
+                }
+            }
+            if (found) break;
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadGliderScript(() => {
+            // Check if carousels are already in the DOM
+            const carouselElements = document.querySelectorAll('[data-content-type="recommended-products"]');
+            if (carouselElements.length > 0) {
+                initCarousels(carouselElements);
+            } else {
+                // Use MutationObserver to wait for dynamic content
+                observeCarousels();                
+            }
+        });
+    });
+})();
+</script>
+
+<script>
+    function recProductImage(product) {
+        return {
+            hovered: false,
+            over: false,
+            hoverTimer: null,
+            hoverUrl: null,
+            isDesktopHover: window.matchMedia('(hover: hover) and (pointer: fine)').matches,
+            primarySrc() {
+                const url = product.image?.url || '';
+                if (!url) {
+                    return '';
+                }
+                return url + (url.includes('?') ? '&' : '?') + 'width=428&height=210';
+            },
+            init() {
+                if (!this.isDesktopHover) {
+                    return;
+                }
+                this.resolveHoverUrl();
+            },
+            resolveHoverUrl() {
+                const id = String(product.productId);
+                const apply = (url) => {
+                    if (url) {
+                        this.hoverUrl = url;
+                    }
+                };
+
+                if (window.hoverImagesCache?.[id]) {
+                    apply(window.hoverImagesCache[id]);
+                    return;
+                }
+
+                if (window.hoverImagesCachePromise) {
+                    window.hoverImagesCachePromise.then(() => apply(window.hoverImagesCache?.[id]));
+                }
+            },
+            onEnter() {
+                if (!this.isDesktopHover || !this.hoverUrl) {
+                    return;
+                }
+                this.over = true;
+                clearTimeout(this.hoverTimer);
+                this.hoverTimer = setTimeout(() => {
+                    if (this.over) {
+                        this.hovered = true;
+                    }
+                }, 80);
+            },
+            onMove() {
+                if (!this.isDesktopHover || !this.over || !this.hoverUrl) {
+                    return;
+                }
+                this.hovered = true;
+            },
+            onLeave() {
+                this.over = false;
+                this.hovered = false;
+                clearTimeout(this.hoverTimer);
+            },
+            destroy() {
+                clearTimeout(this.hoverTimer);
+            },
+        };
+    }
+
+    function productPricing(product) {
+        return {
+            // Variables
+            regularPrice: 0,
+            specialPrice: 0,
+            calculatorType: '',
+            coverage: 0,
+            width: 0,
+            length: 0,
+            height: 0,
+            minPriceVolume: 0,
+            displayValue: 0,
+            priceAmount: 0,
+            priceType: 'finalPrice',
+            priceCurrency: 'USD',
+            discountPercentage: 0,
+            adjustmentsHtml: '', // Placeholder for adjustment logic
+            schema: true,
+            displayValueType: '/each',
+
+            // Dynamic Classes
+            priceContainerClasses: 'price-container',
+            priceWrapperClasses: 'price-wrapper',
+            priceId: '', // Add logic for dynamic IDs if needed
+            priceDisplayLabel: '',
+
+            // Initialization
+            init() {
+                // Load product attributes
+                //console.log("product==="+JSON.stringify(product));
+                const attributes = product.attributes;
+
+                // Regular and Special Prices
+                this.regularPrice = product.prices.minimum.regular || 0;
+                this.specialPrice = product.prices.minimum.final || this.regularPrice;
+
+                // Calculator Type and Dimensions
+                this.calculatorType = attributes.incstores_pim_calculator_type || '';
+                this.coverage = attributes.config_coverage || 0;
+                this.width = (attributes.incstores_pim_width_inches || 0) / 12;
+                this.length = (attributes.incstores_pim_length_inches || 0) / 12;
+                this.height = (attributes.incstores_pim_height_inches || 0) / 12;
+
+                // Calculate Price per Volume
+                if (this.calculatorType && (this.coverage > 0 || (this.width > 0 && this.length > 0 && this.height > 0))) {
+                    if (this.calculatorType === 'case') {
+                        this.minPriceVolume = this.coverage;
+                    } else {
+                        this.minPriceVolume = this.width * this.length * this.height;
+                    }
+
+                    if (this.minPriceVolume > 0) {
+                        const pricePerUnit =
+                            this.regularPrice > this.specialPrice && this.specialPrice > 0
+                                ? this.specialPrice / this.minPriceVolume
+                                : this.regularPrice / this.minPriceVolume;
+
+                        this.displayValue = pricePerUnit;
+                    }
+                } else {
+                    this.displayValue = this.regularPrice;
+                }
+
+                const productId = product.productId;
+                const self = this;
+
+                // Wait for the batch price cache to be ready
+                if (window.calculatedPricesCachePromise) {
+                    window.calculatedPricesCachePromise.then(() => {
+                        // Now the cache should be populated
+                        if (window.calculatedPricesCache && window.calculatedPricesCache[productId]) {
+                            let productData = window.calculatedPricesCache[productId];
+                            if (productData.success && productData.priceData && productData.priceData.price) {
+                                let customPrice = productData.priceData.price;
+                                let calType = productData.priceData.calType;
+                                self.displayValue = customPrice;
+                                self.displayValueType = '/' + calType;
+                                if (calType == 'none') {
+                                    self.displayValueType = '';
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    // Fallback: fetch individual product price if batch call was not initiated
+                    var baseUrl = "<?php echo $block->getBaseUrl();?>";
+                    var fetchUrl = baseUrl + 'hyvaproductrecommendation/product/calculatedprice/productId/' + productId;
+
+                    fetch(fetchUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                let customPrice = data.priceData.price;
+                                if (data.priceData.price) {
+                                    let calType = data.priceData.calType;
+                                    self.displayValue = customPrice;
+                                    self.displayValueType = '/' + calType;
+                                    if (calType == 'none') {
+                                        self.displayValueType = '';
+                                    }
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error);
+                        });
+                }
+
+                // Calculate Discount
+                if (this.regularPrice > this.specialPrice) {
+                    const savePrice = this.regularPrice - this.specialPrice;
+                    this.discountPercentage = Math.round((savePrice * 100) / this.regularPrice);
+                }
+            },
+
+            // Utility Functions
+            formatCurrency(value) {
+                value = Number(String(value).replace(/,/g, ''));
+                return `$${value.toFixed(2)}`;
+            },
+        };
+    }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let relatedProducts = document.querySelector(".related-products-section");
+        let recommendations = document.querySelector(".products__recommendations");
+
+        if (relatedProducts && recommendations) {
+            relatedProducts.parentNode.insertBefore(recommendations, relatedProducts.nextSibling);
+        }
+    });
+</script>

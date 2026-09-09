@@ -1,0 +1,233 @@
+<?php
+use Hyva\Theme\ViewModel\ProductPage;
+
+/** @var Dcw\DesignerTool\Block\Index  $block */
+/** @var Escaper $escaper */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+$customerFormBlock = $block->getLayout()->createBlock(\ParadoxLabs\TokenBase\Block\Customer\Form::class);
+$code = $block->escapeHtmlAttr($customerFormBlock->getCode()); 
+$shippingAddess = $block->getCurrentQuote()->getShippingAddress();
+?>
+<div class="dummy-cc-form" style="display:none">
+    <div class="step-panel-frm cc-each-frm-wrapper">
+        <div class="step-panel-heading">Your Credit Card and Debit Cards</div>
+    <div class="cc-card-body">
+        <h2 class="cart_ending_heading">Card Ending in <span>XXXX</span></h2>
+        <div class="cc_msg_sec"></div>
+        <h2 class="cart_info_title">Card Information</h2>
+        <?= $block->getBlockHtml('formkey'); ?>
+        <input type="hidden" name="id" value="" />
+        <input type="hidden" name="method" value="<?= $code; ?>" />
+        <?php if ($customerFormBlock->getMethod()->isAcceptJsEnabled() === true): ?>
+            <input type="hidden" name="payment[acceptjs_key]" id="acceptjs-key" value="" />
+            <input type="hidden" name="payment[acceptjs_value]" id="acceptjs-value" value="" />
+            <input type="hidden" name="payment[cc_last4]" id="cc-last4" value="" />
+            <?php if ($customerFormBlock->getMethod()->getConfigData('can_store_bin') == 1): ?>
+                <input type="hidden" name="payment[cc_bin]" id="cc-bin" value="" />
+            <?php endif; ?>
+        <?php endif; ?>
+        <?php $_ccType = $customerFormBlock->getCard()->getType() ?>
+        <input type="hidden" name="payment[cc_type]" id="cc-type" value="<?= $block->escapeHtmlAttr($_ccType); ?>" />
+        <div class="field field-cc_card_number required">
+            <label class="label" for="">
+                <span>Card Number</span>
+            </label>
+            <div class="control">
+                <input type="text" id="" name="payment[cc_number]" value="" title="Card Number" class="input-text card-number required-entry">
+            </div>
+        </div>
+        <div class="field field-expiration-date required">
+            <label class="label" for="">
+                <span>Expiration Date</span>
+            </label>
+            <div class="control">
+                <select id="" name="payment[cc_exp_month]" required class="input-text required-entry sp_month">
+                    <option value="">Month</option>
+                    <?php for ($i = 1; $i <= 12; $i++) {?>
+                        <option value="<?= /* @noEscape */ str_pad($i, 2, '0', STR_PAD_LEFT); ?>"><?= /* @noEscape */ str_pad($i, 2, '0', STR_PAD_LEFT); ?></option>
+                    <?php }?>
+                </select>
+            </div>
+            <div class="control">
+                <select id="" name="payment[cc_exp_year]" required class="input-text required-entry sp_year">
+                    <option value="">Year</option>
+                    <?php 
+                    $year_i = $block->getCurrentDateTime('Y');
+                    for ($i = 1; $i <= 20; $i++) {
+                    ?>
+                        <option value="<?= /* @noEscape */ $year_i; ?>"><?= /* @noEscape */ $year_i; ?></option>
+                    <?php 
+                        $year_i = $year_i + 1;
+                    }
+                    ?>
+                </select>
+            </div>
+        </div>
+        <div class="field field-cc_cid required">
+            <label class="label" for="">
+                <span>Security Code</span>
+            </label>
+            <div class="control">
+                <input type="text" id="" name="payment[cc_cid]" value="" title="Security Code" class="input-text required-entry">
+            </div>
+        </div>
+        <div class="field field-cc_payment required">
+            <label class="label" for="cc_payment">
+                <span>Payment Amount:</span>
+            </label>
+            <div class="control">
+            <input type="hidden" name="cc_payment"  title="Payment Amount" 
+                class="input-text required-entry" value="0">
+                <input type="text" name="cc_payment_display"  title="Payment Amount" 
+                class="input-text cc_payment_display required-entry" value="<?= /* @noEscape */ $productViewModel->format(0,false) ?>">
+            </div>
+        </div>
+
+        <h2 class="cart_info_title">Billing Information</h2>
+        
+        <div class="choice field checkbox billing_shipping_same_sec">
+            <input type="checkbox" class="checkbox billing_shipping_same" checked>
+            <label class="label" for="billing-shipping-same-splitpayment">
+                <span>My billing & shipping address are same</span>
+            </label>
+        </div>
+        
+        <div class="billing-address-container">
+            <div class="field field-name-firstname required">
+                <label class="label" for=""><span>First Name</span></label>
+                <div class="control">
+                    <input type="text" id="" name="billing[firstname]" value="<?= /* @noEscape */ $shippingAddess->getFirstname()?>" title="First Name" class="input-text required-entry" aria-required="true" >
+                </div>
+            </div>
+            <div class="field field-name-lastname required">
+                <label class="label" for=""><span>Last Name</span></label>
+                <div class="control">
+                    <input type="text" id="" name="billing[lastname]" value="<?= /* @noEscape */ $shippingAddess->getLastname()?>" title="Last Name" class="input-text required-entry" data-validate="{required:true}" aria-required="true">
+                </div>
+            </div>
+            <div class="field company">
+                <label class="label" for=""><span>Company</span></label>
+                <div class="control">
+                    <input type="text" name="billing[company]" id="" title="Company" value="<?= /* @noEscape */ $shippingAddess->getCompany()?>" class="input-text ">
+                </div>
+            </div>
+            <?php 
+            $_streetValidationClass = $block->escapeHtmlAttr($block->customerAddressHelper()->getAttributeValidationClass('street')); 
+            $shipping_street = $shippingAddess->getStreet();
+            ?>
+            <div class="field street required">
+                <label for="street" class="label"><span><?= $block->escapeHtml(__('Address Line 1')) ?></span></label>
+                <div class="control">
+                    <input type="text" name="billing[street][]" value="<?= /* @noEscape */ $shipping_street[0]?>" title="Street Address" id="street" class="input-text <?= $_streetValidationClass ?>"  />
+                    <div class="nested">
+                        <?php $_streetValidationClass = trim(str_replace('required-entry', '', $_streetValidationClass)); ?>
+                        <?php for ($_i = 1, $_n = $block->customerAddressHelper()->getStreetLines(); $_i < $_n; $_i++): ?>
+                            <?php $lineNo = (int)($_i+1); ?>
+                            <div class="field additional">
+                                <label class="label" for="street_<?= $lineNo ?>">
+                                    <span><?= $block->escapeHtml(__('Address Line %1', $lineNo)) ?></span>
+                                </label>
+                                <div class="control">
+                                    <input type="text" name="billing[street][]" value="<?= /* @noEscape */ !empty($shipping_street[$_i])?$shipping_street[$_i]:''?>" title="<?= $block->escapeHtmlAttr(__('Street Address %1', $lineNo)) ?>" id="street_<?= $lineNo ?>" class="input-text <?= $_streetValidationClass ?>">
+                                </div>
+                            </div>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+            </div>
+
+            <?php $countryBlock = $block->getLayout()->createBlock('Magento\Directory\Block\Data');?>
+            
+            <div class="field country required">
+                <label class="label" for="country"><span><?= $block->escapeHtml(__('Country')) ?></span></label>
+                <div class="control">
+                    <?= $countryBlock->getCountryHtmlSelect($defValue = $shippingAddess->getCountryId(), $name = 'billing[country_id]', $id = '', $title = 'Country');?>
+                </div>
+            </div>
+            
+            <div class="field region_sec required">
+                <label class="label" for="region_id"><span><?= $block->escapeHtml(__('State/Province')) ?></span></label>
+                <div class="control">
+                    <?php /*<select id="region_id" name="billing[region_id]" title="<?= $block->escapeHtmlAttr(__('State/Province')) ?>" class="validate-select region_id">
+                        <option value=""><?= $block->escapeHtml(__('Please select a region, state or province.')) ?></option>
+                    </select>*/?>
+                    <?php // $countryBlock->getRegionSelect($defValue = $shippingAddess->getRegionId(), $name = 'billing[region_id]', $id = '', $title = 'State/Province');?>
+                    <?php 
+                    if (!empty($block->getRegionsOfCountry($shippingAddess->getCountryId()))) {
+                        $region_dropdown_show = 1;
+                        $regions = $block->getRegionsOfCountry($shippingAddess->getCountryId());
+                    ?>
+                        <select id="region_id" name="billing[region_id]" title="<?= $block->escapeHtmlAttr(__('State/Province')) ?>" class="input-text required-entry region_id">
+                            <?php foreach ($regions as $region) { 
+                                if ($region['value'] == $shippingAddess->getRegionId()) {
+                                    $is_selected = 'selected';
+                                } else {
+                                    $is_selected = '';
+                                }
+                            ?>
+                                <option value="<?= /* @noEscape */ $region['value']?>" <?= /* @noEscape */ $is_selected?>><?= /* @noEscape */ $region['title']?></option>
+                            <?php }?>
+                        </select>
+                    <?php } else {
+                        $region_dropdown_show = 0;
+                    ?>
+                        <select id="region_id" name="billing[region_id]" title="<?= $block->escapeHtmlAttr(__('State/Province')) ?>" class="input-text required-entry region_id" style="display:none">
+                        </select>
+                    <?php }
+                    if (!empty($shippingAddess->getRegion()) && $region_dropdown_show == 0) {
+                        $region_input_val = $shippingAddess->getRegion();
+                    } else {
+                        $region_input_val = '';
+                    }
+                    ?>
+                    <input type="text" id="" name="billing[region]" value="<?= /* @noEscape */ $region_input_val;?>"  title="<?= $block->escapeHtmlAttr(__('State/Province')) ?>" class="input-text region required-entry" <?= /* @noEscape */ ($region_dropdown_show == 1)?'style="display:none"':''?>/>
+                </div>
+            </div>
+
+            <div class="field city required">
+                <label class="label" for=""><span>City</span></label>
+                <div class="control">
+                    <input type="text" name="billing[city]" value="<?= /* @noEscape */ $shippingAddess->getCity()?>" title="<?= $block->escapeHtmlAttr(__('City')) ?>" class="input-text required-entry" id="city">
+                </div>
+            </div>
+
+            <?php $postCodeValidationClass = $block->escapeHtmlAttr($block->customerAddressHelper()->getAttributeValidationClass('postcode')); ?>
+            <div class="field zip required">
+                <label for="" class="label">
+                    <span>Postcode</span>
+                </label>
+                <div class="control">
+                    <input type="text"
+                        name="billing[postcode]"
+                        value="<?= /* @noEscape */ $shippingAddess->getPostcode()?>"
+                        title="Postcode"
+                        id=""
+                        class="input-text validate-zip-international required-entry
+                            <?= $escaper->escapeHtmlAttr($postCodeValidationClass) ?>">
+                </div>
+            </div>
+
+            <?php $phoneValidation = $block->customerAddressHelper()->getAttributeValidationClass('telephone'); ?>
+            <div class="field telephone<?php if (strpos($phoneValidation, 'required') !== false): ?> required<?php endif; ?>">
+                <label class="label" for="telephone"><span><?= $block->escapeHtml(__('Phone Number')) ?></span></label>
+                <div class="control">
+                    <input type="text" name="billing[telephone]" value="<?= /* @noEscape */ $shippingAddess->getTelephone()?>" title="Phone Number" class="input-text <?= $block->escapeHtmlAttr($phoneValidation) ?>" id="telephone">
+                </div>
+            </div>
+        </div>
+
+        <div class="field field-action">
+            <?php /*if (!empty($block->getCurrentCustomer()->getId())) {?>
+                <button type="button" class="save-cc-btn" title="Cannot save until all required fields are valid.">Save</button>
+                <button type="button" class="update-cc-btn" style="display:none" title="Cannot update until all required fields are valid.">Update</button>
+            <?php }
+            <div class="cc_saved_msg" style="display:none">Saved</div>
+            <div class="cc_updated_msg" style="display:none">Updated</div>*/?>
+            <button type="button" class="remove-cc-btn">Remove</button>
+        </div>
+    </div>
+    </div>
+</div>

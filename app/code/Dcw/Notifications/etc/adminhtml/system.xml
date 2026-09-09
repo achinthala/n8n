@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_notifications_config" translate="label" sortOrder="140" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Notifications</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_Notifications::config</resource>
+            <group id="notification" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Flooring Inc Benefits Bar</label>
+                <field id="availability" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Availability Notification</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="business_hour_start" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Business Hour Start</label>
+                    <backend_model>Dcw\Notifications\Model\Config\CronConfig</backend_model>
+                    <validate>validate-digits</validate>
+                    <comment>hour (0 - 23)</comment>
+                </field>
+                <field id="business_hour_end" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Business Hour End</label>
+                    <backend_model>Dcw\Notifications\Model\Config\CronConfig</backend_model>
+                    <validate>validate-digits</validate>
+                    <comment>hour (0 - 23)</comment>
+                </field>                
+                <field id="days_off" translate="label" type="multiselect" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Days off in a week</label>
+                    <source_model>Magento\Config\Model\Config\Source\Locale\Weekdays</source_model>
+                </field>
+            </group>            
+            <group id="notification4" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>Global Marketing Banner</label>
+                <field id="notification4_text" translate="label" type="textarea" sortOrder="1" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Global Notification</label>
+                </field>  
+                <field id="global_notification_4_start_time" translate="label" type="date" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Global Notification Start Time (DateTime Format)</label>
+                    <frontend_model>Dcw\Notifications\Block\Adminhtml\System\Config\Date</frontend_model>
+                </field>    
+                <field id="global_notification_4_end_time" translate="label" type="date" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Global Notification End Time (DateTime Format)</label>
+                    <frontend_model>Dcw\Notifications\Block\Adminhtml\System\Config\Date</frontend_model>
+                </field>        
+            </group>			
+        </section>
+    </system>
+</config>

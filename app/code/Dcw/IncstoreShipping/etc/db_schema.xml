@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="sales_order_item" resource="sales" engine="innodb" comment="Sales Order Item">
+        <column xsi:type="varchar" name="incstore_item_shipping" nullable="true" length="255" comment="incstore_item_shipping"/>
+        <column xsi:type="longtext" name="pdp_line_item" nullable="true" comment="Pdp line item"/>
+    </table>
+    <table name="quote_item">
+      <column xsi:type="varchar" name="incstore_item_shipping" nullable="true" length="255" comment="incstore_item_shipping"/>
+      <column xsi:type="text" name="shipping_metadata" nullable="true" comment="shipping metadata"/>
+      <column xsi:type="longtext" name="pdp_line_item" nullable="true" comment="Pdp line item"/>
+    </table>
+</schema>

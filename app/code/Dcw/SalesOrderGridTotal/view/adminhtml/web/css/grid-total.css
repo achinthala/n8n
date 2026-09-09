@@ -1,0 +1,53 @@
+/**
+ * Grid Total Styles
+ */
+.grid-total-container {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    text-align: right;
+}
+
+.grid-total-container.bottom {
+    margin-top: 15px;
+    margin-bottom: 0;
+}
+
+.grid-total-container .total-label {
+    color: #666;
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+.grid-total-container .total-amount {
+    color: #1979c3;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.grid-total-container .total-count {
+    color: #666;
+    font-weight: 500;
+    margin-left: 10px;
+}
+
+.grid-total-container .grid-total-refresh {
+    margin-left: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+div#grid-total-bottom{
+    text-align: right;
+}
+
+.admin__data-grid-header-row:last-child .col-xs-10 .row .col-xs-3{
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 20px;
+    align-items: center;
+}
+
+div#grid-total-top{
+    width: auto;
+}

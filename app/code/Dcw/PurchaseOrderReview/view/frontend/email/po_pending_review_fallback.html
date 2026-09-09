@@ -1,0 +1,10 @@
+<!--@subject {{trans "Pending PO Review"}} @-->
+{{template config_path="design/email/header_template"}}
+
+<p><strong>{{trans "Pending PO Review"}}</strong></p>
+<p>{{trans "Zendesk API was unavailable; please create a ticket manually from the content below."}}</p>
+<p><strong>{{trans "Order:"}}</strong> {{var order.getIncrementId()}}</p>
+<hr/>
+<div>{{var body_html|raw}}</div>
+
+{{template config_path="design/email/footer_template"}}

@@ -1,0 +1,50 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ */
+
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Catalog\Block\Product\Image;
+use Magento\Framework\Escaper;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+/** @var Image $block */
+/** @var Escaper $escaper */
+
+$customAttributes = $block->getCustomAttributes() ?: [];
+$listIndex = isset($customAttributes['list_index']) ? (int) $customAttributes['list_index'] : null;
+$firstRowPreloadCount = isset($customAttributes['first_row_preload_count'])
+    ? (int) $customAttributes['first_row_preload_count']
+    : null;
+$productId = (int) $block->getProductId();
+$product = $customViewModel->getLoadProduct($productId);
+$productName = $product ? $product->getName() : $block->getLabel();
+$listImageDimension = $customViewModel->getCategoryListImageDimension();
+$primaryImageUrl = $customViewModel->getCategoryListImageUrl($block->getImageUrl());
+$isFirstRowImage = $listIndex !== null
+    && $firstRowPreloadCount !== null
+    && $listIndex < $firstRowPreloadCount;
+$isEagerImage = ($customAttributes['loading'] ?? '') === 'eager'
+    || ($customAttributes['fetchpriority'] ?? '') === 'high'
+    || $isFirstRowImage;
+?>
+<div class="product-list-image product-list-image--mobile relative w-full overflow-hidden">
+    <img class="hover:shadow-sm object-contain w-full <?= $escaper->escapeHtmlAttr($block->getClass()) ?>"
+         x-data=""
+         @update-gallery-<?= $productId ?>.window="$root.src = $event.detail"
+         src="<?= $escaper->escapeUrl($primaryImageUrl) ?>"
+         loading="<?= $isEagerImage ? 'eager' : 'lazy' ?>"
+         decoding="async"
+         fetchpriority="<?= $isEagerImage ? 'high' : 'low' ?>"
+         width="<?= $escaper->escapeHtmlAttr($listImageDimension) ?>"
+         height="<?= $escaper->escapeHtmlAttr($block->getHeight()) ?>"
+         alt="<?= $escaper->escapeHtmlAttr($productName) ?>"
+         title="<?= $escaper->escapeHtmlAttr($productName) ?>"
+         style="position: static !important;" />
+</div>

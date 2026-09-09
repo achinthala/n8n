@@ -1,0 +1,63 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Customer\Block\Account\Dashboard\Address;
+use Magento\Framework\Escaper;
+
+/** @var Address $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+?>
+<div class="block block-dashboard-addresses">
+    <div class="block-title">
+        <span class=""><?= $escaper->escapeHtml(__('Address Book')) ?></span>
+        <a class="action edit inline-block underline"
+           href="<?= $escaper->escapeUrl($block->getAddressBookUrl()) ?>"><span><?= $escaper->escapeHtml(
+               __('Manage Addresses')
+           ) ?></span></a>
+    </div>
+    <div class="block-content">
+        <div class="flex flex-wrap">
+                    <div class="grow">
+                        <h2 class="text-size18 font-semibold">
+                            <span><?= $escaper->escapeHtml(__('Default Billing Address')) ?></span>
+                        </h2>
+                        <address>
+                            <?= $block->getPrimaryBillingAddressHtml() ?>
+                        </address>
+                        <a
+                            class="font-normal text-size16"
+                            href="<?= $escaper->escapeUrl($block->getPrimaryBillingAddressEditUrl()) ?>"
+                            data-ui-id="default-billing-edit-link"><span><?= $escaper->escapeHtml(
+                                __('Edit Address')
+                            ) ?></span>
+                        </a>
+                    </div>
+                    <div class="grow">
+                        <h2 class="text-size18 font-semibold">
+                            <span><?= $escaper->escapeHtml(__('Default Shipping Address')) ?></span>
+                        </h2>
+                        <address>
+                            <?= $block->getPrimaryShippingAddressHtml() ?>
+                        </address>
+                        <a
+                            class="font-normal text-size16"
+                            href="<?= $escaper->escapeUrl($block->getPrimaryShippingAddressEditUrl()) ?>"
+                            data-ui-id="default-billing-edit-link"><span><?= $escaper->escapeHtml(
+                                __('Edit Address')
+                            ) ?></span>
+                        </a>
+                    </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,261 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\HeroiconsSolid;
+use Hyva\Theme\ViewModel\ProductCompare;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Wishlist;
+use Magento\Catalog\Block\Product\AbstractProduct;
+use Magento\Catalog\Helper\Output as CatalogOutputHelper;
+use Magento\Catalog\ViewModel\Product\OptionsData as ProductOptionsData;
+use Magento\Framework\Escaper;
+use Magento\Catalog\Model\Product;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundHelper
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var AbstractProduct $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var ProductListItem $productListItemViewModel */
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+
+/** @var CatalogOutputHelper $catalogOutputHelper */
+$catalogOutputHelper = $this->helper(CatalogOutputHelper::class);
+
+/** @var ProductCompare $compareViewModel */
+$compareViewModel = $viewModels->require(ProductCompare::class);
+/** @var Wishlist $wishlistViewModel */
+$wishlistViewModel = $viewModels->require(Wishlist::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var HeroiconsSolid $heroiconsSolid */
+$heroiconsSolid = $viewModels->require(HeroiconsSolid::class);
+
+$productOptionsViewmodel = $viewModels->require(ProductOptionsData::class);
+
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+/** @var Magento\Catalog\Model\Product $product */
+$product = $block->getData('product');
+$imageDisplayArea = $block->getData('image_display_area');
+$templateType = $block->getData('template_type');
+$viewMode = $block->getData('view_mode');
+$showDescription = $block->getData('show_description');
+$showAddToWishlist = $wishlistViewModel->isEnabled();
+$showAddToCompare = $compareViewModel->showInProductList();
+$viewIsGrid = $viewMode === 'grid';
+
+if (!$product) {
+    return '';
+}
+$productId = (int)$product->getId();
+$productAttributeOptions = $customViewModel->getConfigurableAttributeOptions($product);
+$configOptionCount = count($productAttributeOptions);
+$productUrl = $product->getProductUrl();
+$options = $productOptionsViewmodel->getOptionsData($product);
+$uniqueId = '_' . uniqid();
+$hideDetails       = $block->getData('hide_details') ?: false;
+$hideRatingSummary = $block->getData('hide_rating_summary') ?: false;
+$imageCustomAttributes = $product->getData('image_custom_attributes')
+    ?? $block->getData('image_custom_attributes')
+    ?? [];
+$attribute = $customViewModel->getAttributeByCode('incstores_pim_color_axis');
+$attributeId = $attribute->getAttributeId();
+$getBrandLogo = $customViewModel->getBrandLogo($productId);
+$request = $customViewModel->getRequest();
+$actionfullname = $request->getFullActionName();
+$optionIdvalue = $product->getQuickShip();
+
+$swatchimageval = false;
+
+if($optionIdvalue!=""){
+    $swatchimageval = $customViewModel->getSwatchImage($optionIdvalue);
+}
+?>
+
+<?php if ($product->isSaleable()): ?>
+<form method="post"
+    action="<?= $escaper->escapeUrl($productViewModel->getAddToCartUrl($product, ['useUencPlaceholder' => true])) ?>"
+    class="item product product-item product_addtocart_form flex flex-col pr-4 m-0 w-full relative align-top <?= $viewIsGrid ? '' : 'md:flex-row' ?>
+    <?= $swatchimageval ? 'avail-freeship': 'not-avail-freeship'  ?>"
+    <?php if ($product->getOptions()): ?>
+    enctype="multipart/form-data"
+    <?php endif; ?>
+>
+    <?= /** @noEscape */ $block->getBlockHtml('formkey') ?>
+    <input type="hidden" name="product" value="<?= (int)$productId ?>"/>
+    <?php foreach ($options as $optionItem): ?>
+    <input type="hidden"
+           name="<?= $escaper->escapeHtml($optionItem['name']) ?>"
+           value="<?= $escaper->escapeHtml($optionItem['value']) ?>">
+    <?php endforeach; ?>
+    <?php else: ?>
+        <!-- item product product-item card card-interactive flex flex-col w-full -->
+<div class="item product product-item product_addtocart_form flex flex-col pr-4 m-0 w-full relative align-top <?= $viewIsGrid ? '' : 'md:flex-row' ?> <?= $swatchimageval ? 'avail-freeship': 'not-avail-freeship'  ?>">
+<?php endif; ?>
+<div class="catergory_slider_content bg-white">
+    <?php if (!empty($product->getAttributeText('incstores_pim_home_page_feature_flag')) || $product->getIsBestseller() == 1) {?>
+        <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-icon-<?php echo $product->getId();?>">
+            <div class="product_lebel_container absolute left-0 top-0">
+                <?php if (!empty($product->getAttributeText('incstores_pim_home_page_feature_flag'))) {?>
+                    <span class="product_lebel newarrival_label <?= str_replace(" ","",strtolower($product->getAttributeText('incstores_pim_home_page_feature_flag')))?> text-size12 font-semibold text-white text-center"><?= $product->getAttributeText('incstores_pim_home_page_feature_flag')?></span>
+                <?php }?>
+                <?php if ($product->getIsBestseller() == 1) {?>
+                    <span class="product_lebel bestseller_label text-size12 font-semibold text-white text-center">Best Seller</span>
+                <?php }?>
+            </div>
+        </a>
+    <?php }?>
+    <?php /* Product Image */ ?>
+    <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-new-<?php echo $product->getId();?>"
+        class="product photo product-item-photo block mx-auto w-full <?= $viewIsGrid ? '' : 'md:w-2/6 md:mb-0 md:mr-5' ?>"
+        tabindex="-1"
+    >
+        <?= $block->getImage($product, $imageDisplayArea)
+            ->setTemplate('Magento_Catalog::product/list/image.phtml')
+            ->setData('custom_attributes', $imageCustomAttributes)
+            ->setProductId($productId)
+            ->toHtml(); ?>
+    </a>
+    <div class="product-info flex flex-col grow py-3 px-5">
+        <?php if ($getBrandLogo) {?>
+            <div class="brand_logo_listpage"><?= /* @noEscape */ $getBrandLogo ?></div>
+        <?php } else { ?>
+            <div class="brand_logo_listpage"></div>
+        <?php } ?>
+            <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-name-<?php echo $product->getId();?>">
+                <?php $productNameStripped = $block->stripTags($product->getName(), null, true); ?>
+                <div class="text-primary product-name <?= $viewIsGrid ? '' : 'md:text-left' ?>">
+                    <span class="product-item-link text-size16 text-black font-bold no-underline relative block"
+                       href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-nname-<?php echo $product->getId();?>">
+                        <?= /* @noEscape */ $catalogOutputHelper->productAttribute($product, $product->getName(), 'name') ?>
+                    </span>
+                </div>
+
+                <?php //if (!$hideRatingSummary): ?>
+                    <div class="ratings <?= $viewIsGrid ? '' : 'md:mx-0 md:w-auto' ?>" data-nosnippet>
+                        <div data-bv-show="rating_summary"
+                            data-bv-product-id="<?= $product->getSku(); ?>"
+                            data-bv-redirect-url="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                        </div>
+                    </div>
+                <?php //endif; ?>
+
+                <?php if ($product->isAvailable() && !$hideDetails && $viewMode=='list'): ?>
+                    <?= $block->getProductDetailsHtml($product) ?>
+                <?php endif; ?>
+
+                <?php if ($showDescription): ?>
+                <div class="mt-2 mb-1 items-center justify-center text-primary text-center <?= $viewIsGrid ? '' : 'md:text-left' ?>">
+                    <?= /* @noEscape */ $productViewModel->getShortDescriptionForProduct($product) ?>
+                </div>
+                <?php endif; ?>
+        </a>
+
+        <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-pblock-<?php echo $product->getId();?>"class="priceBlock">
+            <div class="pt-0 pb-0 text-gray-900">
+                <?= /* @noEscape */ $productListItemViewModel->getProductPriceHtml($product) ?>
+            </div>
+        </a>
+		  <!-- <script>
+			'use strict';
+
+			  const initPriceBox_<?= (int)$productId ?> = () => {
+				return {
+				  updatePrice(priceData) {
+						let regularPriceLabel="";
+						if(priceData.querySelector('.price-box')){
+							regularPriceLabel = priceData.querySelector('.price-box');
+						}
+						let regularPriceElement = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=finalPrice].price-wrapper .price')){
+							regularPriceElement = priceData.querySelector('.price-box .price-container [data-price-type=finalPrice].price-wrapper .price');
+						}
+						let basePriceElement = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=basePrice].price-wrapper .price')){
+							basePriceElement = priceData.querySelector('.price-box .price-container [data-price-type=basePrice].price-wrapper .price');
+						}
+						const pid = '<?= (int)$productId ?>';
+						let finalpricevalue = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=finalPrice]')){
+							finalpricevalue = priceData.querySelector('.price-box .price-container [data-price-type=finalPrice]').getAttribute('data-price-amount');
+						}
+						let basepricevalue = "";
+						if(priceData.querySelector('.price-box .price-container [data-price-type=basePrice]')){
+							 basepricevalue =  priceData.querySelector('.price-box .price-container [data-price-type=basePrice]').getAttribute('data-price-amount');
+						}
+						if(finalpricevalue && basepricevalue && regularPriceLabel && finalpricevalue < basepricevalue){
+							regularPriceLabel.classList.add('hidden');
+						} else {
+							if(regularPriceLabel){
+								regularPriceLabel.classList.remove('hidden');
+							}
+						}
+						if(regularPriceElement){
+							regularPriceElement.innerText = hyva.formatPrice(finalpricevalue);
+						}
+						if(basepricevalue){
+							basePriceElement && (basePriceElement.innerText = hyva.formatPrice(basePriceElement));
+						}
+
+                   }
+				}
+			  }
+	   </script> -->
+
+    </div>
+</div>
+<?php if ($product->isSaleable()): ?>
+</form>
+<?php else: ?>
+</div>
+<?php endif; ?>
+
+<script>
+    // Function to check if a specific value is present in the URL's product_list_order parameter
+    function isValueInQueryParam(param, value) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramValue = urlParams.get(param);
+        return paramValue === value;
+    }
+    // Function to update the display of product label containers based on URL parameters
+    function updateDisplay() {
+        var hasBestsellerParam = isValueInQueryParam('product_list_order', 'sort_by_bestseller');
+        var productLabelContainers = document.querySelectorAll('.page-with-filter .product_lebel_container');
+        if (productLabelContainers.length > 0) {
+            productLabelContainers.forEach(function(container) {
+                if (hasBestsellerParam) {
+                    container.classList.add('active');
+                } else {
+                    container.classList.remove('active');
+                }
+            });
+        }
+    }
+    // Run updateDisplay when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', updateDisplay);
+    // Polling to check for dynamic content changes
+    function startPolling() {
+        setInterval(updateDisplay, 0); // Check every second
+    }
+    startPolling();
+</script>

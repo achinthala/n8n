@@ -1,0 +1,62 @@
+#====================================================================================================================================================#
+#                This is a patch file. You can apply it using "patch -p1 < diff.patch" or revert it using "patch -R -p1 < diff.patch"                #
+#                                                        (c) Created by Amasty Team 06-08-2024                                                       #
+#====================================================================================================================================================#
+diff --git a/vendor/amasty/module-extra-fee/Model/FeeRepository.php b/vendor/amasty/module-extra-fee/Model/FeeRepository.php
+index 74a5d0f..372bb75 100644
+--- a/vendor/amasty/module-extra-fee/Model/FeeRepository.php
++++ b/vendor/amasty/module-extra-fee/Model/FeeRepository.php
+@@ -17,6 +17,8 @@ use Amasty\Extrafee\Model\ResourceModel\Fee\CollectionFactory as FeeCollectionFa
+ use Amasty\Extrafee\Model\ResourceModel\Fee\Grid\Collection;
+ use Amasty\Extrafee\Model\ResourceModel\ExtrafeeQuote\CollectionFactory as FeeQuoteCollectionFactory;
+ use Magento\Framework\Api\DataObjectHelper;
++use Magento\Framework\App\ObjectManager;
++use Magento\Framework\App\RequestInterface;
+ use Magento\Framework\Api\Search\FilterGroup;
+ use Magento\Framework\Api\SearchCriteriaInterface;
+ use Magento\Framework\Data\Collection\AbstractDb;
+@@ -67,6 +69,11 @@ class FeeRepository implements FeeRepositoryInterface
+      */
+     private $fees;
+
++    /**
++     * @var RequestInterface
++     */
++    private $request;
++
+     public function __construct(
+         ResourceFee $resource,
+         FeeFactory $feeFactory,
+@@ -77,7 +84,8 @@ class FeeRepository implements FeeRepositoryInterface
+         DataObjectProcessor $dataObjectProcessor,
+         \Amasty\Extrafee\Model\Rule\RuleRepository $ruleRepository,
+         FeeQuoteCollectionFactory $feeQuoteCollectionFactory,
+-        TotalFactory $totalFactory
++        TotalFactory $totalFactory,
++        RequestInterface $request = null // TODO move to not optional
+     ) {
+         $this->resource = $resource;
+         $this->feeFactory = $feeFactory;
+@@ -89,6 +97,7 @@ class FeeRepository implements FeeRepositoryInterface
+         $this->ruleRepository = $ruleRepository;
+         $this->feeQuoteCollectionFactory = $feeQuoteCollectionFactory;
+         $this->totalFactory = $totalFactory;
++        $this->request = $request ?? ObjectManager::getInstance()->get(RequestInterface::class);
+     }
+
+     /**
+@@ -206,6 +215,14 @@ class FeeRepository implements FeeRepositoryInterface
+         }
+
+         $address->setCollectShippingRates(true);
++
++        if ($this->request->getControllerName() === "order_create"
++            && $this->request->getModuleName() === "sales"
++            && $address->getShippingMethod() === 'amasty_quote_custom_fee_amasty_quote_custom_fee'
++        ) {
++            $address->setCollectShippingRates(false);
++        }
++
+         $address->collectShippingRates();
+         $address->setData('total_qty', $quote->getData('items_qty'));
+         $address->setData('base_subtotal', $quote->getData('base_subtotal'));

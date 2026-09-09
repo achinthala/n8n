@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="quote" resource="checkout" engine="innodb" comment="Quote">
+        <column xsi:type="smallint" name="dcw_failed_payment_attempts" unsigned="true" nullable="false"
+                default="0" comment="Failed place-order attempts (checkout)"/>
+        <column xsi:type="smallint" name="dcw_fraud_flag" unsigned="true" nullable="false"
+                default="0" comment="0 none, 1 address mismatch $1K+, 2 failed payments"/>
+    </table>
+    <table name="sales_order" resource="sales" engine="innodb" comment="Sales Order">
+        <column xsi:type="text" name="dcw_pending_review_reasons" nullable="true"
+                comment="JSON array of pending review reason codes"/>
+        <column xsi:type="smallint" name="dcw_fraud_flag" unsigned="true" nullable="false"
+                default="0" comment="0 none, 1 address mismatch $1K+, 2 failed payments"/>
+    </table>
+    <table name="orderrestriction_rules" resource="default" engine="innodb" comment="OrderRestrictions Rules Table">
+        <column xsi:type="varchar" name="apply_type" nullable="false" length="32" default="restriction"
+                comment="restriction|pending_review"/>
+    </table>
+</schema>

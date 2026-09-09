@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="checkout">
+            <group id="tokenbase" translate="label" type="text" sortOrder="500" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>ParadoxLabs Payment Module Settings</label>
+                <field id="clean_old_cards" translate="label" type="select" sortOrder="100" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Prune archived cards</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[All cards (including for guests and 'do not save') are always stored internally. If yes, those records will be permanently removed after they've been inactive for a certain period of time. We strongly recommend this.]]></comment>
+                </field>
+                <field id="clean_old_cards_after" translate="label" type="text" sortOrder="105" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Prune archived cards after</label>
+                    <comment><![CDATA[Amount of time to remove archived cards after. Default is 180 days, the maximum linked refund period.]]></comment>
+                </field>
+                <field id="save_order_after_payment" translate="label" type="select" sortOrder="150" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Save new order immediately after payment</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[
+                        By default, Magento does not save an order during checkout until after all processing has completed successfully.
+                        However, this allows poorly coded integrations to prevent the order going through, even after payment has been processed.
+                        Enabling this setting will save the order immediately after payment processes successfully, ensuring you have the order even if post-processing fails.
+                        NOTE: Allowing orders to go through without successful post-processing can have major and negative ramifications on integrations.
+                        Do not enable this unless you are confident it's worth the risk. Use at your own risk; support will not cover problems
+                        caused by use of this setting.
+                    ]]></comment>
+                </field>
+                <field id="heading_security" translate="label" sortOrder="175" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Security Settings</label>
+                    <frontend_model>Magento\Config\Block\System\Config\Form\Field\Heading</frontend_model>
+                    <attribute type="shared">1</attribute>
+                </field>
+                <field id="enable_public_api" translate="label" type="select" sortOrder="200" showInDefault="1" showInWebsite="0" showInStore="0" canRestore="1">
+                    <label>Enable public API</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[If 'Yes', Magento's REST and GraphQL APIs will allow customer card management. Only enable this if you use them.]]></comment>
+                </field>
+                <field id="paymentinfo_require_order" translate="label" type="select" sortOrder="300" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Require an order to access My Payment Options</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[If 'Yes', customers will only be able to add/edit payment options on their account after placing an order. We strongly recommend this.]]></comment>
+                </field>
+                <field id="failure_limit" translate="label" type="text" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Max checkout errors per session</label>
+                    <comment><![CDATA[Block a customer from checkout after they fail to submit an order this many times within the time below. This is to help block card testing attacks. Default is 5.]]></comment>
+                </field>
+                <field id="failure_window" translate="label" type="text" sortOrder="500" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Max checkout errors timeframe (sec)</label>
+                    <comment><![CDATA[The amount of time to record and block for checkout errors (for the setting above), in seconds. Default is 86400, one day.]]></comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

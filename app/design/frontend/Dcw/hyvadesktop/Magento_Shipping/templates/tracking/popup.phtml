@@ -1,0 +1,109 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+use Magento\Shipping\Block\Tracking\Popup;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Dcw\Checkout\ViewModel\Data as CheckoutViewModel;
+
+/** @var Escaper $escaper */
+/** @var Popup $block */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var ViewModelRegistry $viewModels */
+/** @var CheckoutViewModel $checkoutViewModel */
+$checkoutViewModel = $viewModels->require(CheckoutViewModel::class);
+
+// Get the textarea data from Magento system config
+$trackingData = $checkoutViewModel->getTrackingLinks();
+
+// Process each line and generate links
+$trackingLinks = [];
+if (isset($trackingData) && !empty($trackingData)) {
+    // Explode data by new lines
+    $lines = explode("\n", trim($trackingData));
+    foreach ($lines as $line) {
+        $parts = explode(":", $line, 2);
+        
+        if (count($parts) === 2) {
+            $carrierName = trim($parts[0]);
+            $trackingLinks[$carrierName] = trim($parts[1]);
+        }
+    }
+}
+
+$results = $block->getTrackingInfo();
+?>
+<div class="page tracking container">
+    <?php if (!empty($results)): ?>
+        <?php foreach ($results as $shipId => $result): ?>
+            <?php if ($shipId): ?>
+                <div class="order subtitle caption">
+                    <?= /* @noEscape */ $escaper->escapeHtml(__('Shipment #')) . $shipId ?>
+                </div>
+            <?php endif; ?>
+            <?php if (!empty($result)): ?>
+                <?php foreach ($result as $counter => $track): ?>
+                    <?php
+                    $shipmentTitle = $shipmentNumber = "";
+                    
+                    if (isset($track) && $track['title']) {
+                        $shipmentTitle = $track['title'];
+                    }
+
+                    if (isset($track) && $track['number']) {
+                        $shipmentNumber = $track['number'];
+                    }
+
+                    $shipmentLink = "";
+
+                    if (!empty($trackingLinks) && isset($trackingLinks[$shipmentTitle]) && $shipmentNumber) {
+                        $shipmentLink = str_replace("{{TRACKNUM}}", $shipmentNumber, $trackingLinks[$shipmentTitle]);
+                    }
+                    ?>
+                    <div class="table-wrapper">
+                        <?php
+                            $shipmentBlockIdentifier = $shipId . '.' . $counter;
+                            $block->addChild('shipping.tracking.details.' . $shipmentBlockIdentifier, Template::class, [
+                                'track' => $track,
+                                'template' => 'Magento_Shipping::tracking/details.phtml',
+                                'storeSupportEmail' => $block->getStoreSupportEmail()
+                            ]);
+                        ?>
+                        <?= /* @noEscape */ $block->getChildHtml('shipping.tracking.details.' .
+                            $shipmentBlockIdentifier) ?>
+                    </div>
+                    <?php if (is_object($track) && !empty($track->getProgressdetail())): ?>
+                        <?php
+                            $block->addChild(
+                                'shipping.tracking.progress.' . $shipmentBlockIdentifier,
+                                Template::class,
+                                ['track' => $track, 'template' => 'Magento_Shipping::tracking/progress.phtml']
+                            );
+                        ?>
+                        <?= /* @noEscape */ $block->getChildHtml('shipping.tracking.progress.' .
+                            $shipmentBlockIdentifier) ?>
+                    <?php endif; ?>
+                    <?php if ($shipmentLink) { ?>
+                        <a href="<?php echo $shipmentLink;?>" target="_blank">track here</a>
+                    <?php } ?>
+                    
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="message info empty">
+                    <div><?= $escaper->escapeHtml(__('There is no tracking available for this shipment.')) ?></div>
+                </div>
+            <?php endif; ?>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <div class="message info empty">
+            <div><?= $escaper->escapeHtml(__('There is no tracking available.')) ?></div>
+        </div>
+    <?php endif; ?>
+</div>

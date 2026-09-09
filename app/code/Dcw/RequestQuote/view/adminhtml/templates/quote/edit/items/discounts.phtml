@@ -1,0 +1,86 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */ /** @var \Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\Items\Discounts $block */ 
+$quoteId = $block->getQuoteId();
+$oldDiscount = $block->getAppliedDiscount();
+$logDiscountUrl = $block->getLogDiscountUrl();
+$isLockedByCustomer = $block->isLockedByCustomer();
+?>
+<div class="amquote-field-block">
+    <label for="discount" class="amquote-label"><?= $escaper->escapeHtml(__('Additional Discount (%)')) ?></label>
+    <input id="discount"
+           name="quote[discount]"
+           data-price-modificator="discount"
+           data-old-discount="<?= $escaper->escapeHtmlAttr(sprintf("%.2f", $oldDiscount)) ?>"
+           value="<?= $escaper->escapeHtml(sprintf("%.2f", $oldDiscount)) ?>"
+           class="amquote-input admin__control-text validate-digits-range digits-range-0-100"
+           type="number"
+           min="0"
+           max="100"
+        <?= /* @noEscape */ ($block->getAppliedSurcharge() || !$block->canApplyDiscounts() || $isLockedByCustomer) ? 'disabled="disabled" readonly="readonly"' : '' ?> />
+</div>
+<div class="amquote-field-block">
+    <label for="surcharge" class="amquote-label"><?= $escaper->escapeHtml(__('Additional Surcharge (%)')) ?></label>
+    <input id="surcharge"
+           name="quote[surcharge]"
+           data-price-modificator="surcharge"
+           value="<?= $escaper->escapeHtml(sprintf("%.2f", $block->getAppliedSurcharge())) ?>"
+           class="amquote-input admin__control-text validate-digits-range digits-range-0-100"
+           type="number"
+           min="0"
+           max="100"
+        <?= /* @noEscape */ ($block->getAppliedDiscount() || !$block->canApplyDiscounts() || $isLockedByCustomer) ? 'disabled="disabled" readonly="readonly"' : '' ?> />
+</div>
+<div class="amquote-field-block">
+    <label for="flatDiscount" class="amquote-label"><?= $escaper->escapeHtml(__('Flat Discount')) ?></label>
+    <input id="flatDiscount"
+           class="amquote-input admin__control-text validate-digits-range digits-range-0-100"
+           type="number"
+           min="0"
+           max="100"
+        <?= /* @noEscape */ (!$block->canApplyDiscounts() || $isLockedByCustomer) ? 'disabled="disabled" readonly="readonly"' : '' ?> />
+</div>
+<script>
+    require(['jquery', 'jquery/ui', 'mage/translate'], function($, $ui, $t){
+        jQuery(document).ready( function() {
+            var canApplyFullDiscount = <?= $block->canApplyFullDiscount() ? 'true' : 'false' ?>;
+            // Make it available globally for other scripts
+            window.canApplyFullDiscount = canApplyFullDiscount;
+            var discountInput = jQuery('#discount');
+            
+            // Validate discount input on change/blur
+            discountInput.on('change blur', function() {
+                var discountValue = parseFloat($(this).val()) || 0;
+                
+                // Check if discount is 100% or more and admin doesn't have permission
+                if (discountValue >= 100 && !canApplyFullDiscount) {
+                    alert($t('You do not have permission to apply 100% discounts.'));
+                    $(this).val(0);
+                    $(this).focus();
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            document.getElementById('flatDiscount').addEventListener('focusout', function () {
+                const value = this.value;
+                var subtotal = $(".quoteSubtotal").val();
+                var subtotalFloat = parseFloat(subtotal.replace(/[$,]/g, ''));
+
+                var percent = ((value*100)/subtotalFloat);
+
+                // Validate the calculated percent
+                if (percent >= 100 && !canApplyFullDiscount) {
+                    alert($t('You do not have permission to apply 100% discounts.'));
+                    percent = 0;
+                }
+
+                $("#discount").val(percent);
+            });
+        });
+    });
+</script>

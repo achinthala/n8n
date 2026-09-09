@@ -1,0 +1,17 @@
+diff --git a/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php b/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php
+index 7279f56cf..8a7fd6785 100644
+--- a/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php
++++ b/vendor/opensearch-project/opensearch-php/src/OpenSearch/Connections/Connection.php
+@@ -658,6 +658,12 @@ class Connection implements ConnectionInterface
+         }
+ 
+         $responseBody = $this->convertBodyToString($response['body'], $statusCode, $exception);
++
++        // Skip all BadRequest400Exception responses
++        if ($statusCode === 400) {
++            return;
++        }
++
+         if ($statusCode === 401) {
+             $exception = new Unauthorized401Exception($responseBody, $statusCode);
+         } elseif ($statusCode === 403) {

@@ -1,0 +1,43 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundThis
+
+/**
+ * Category view template
+ *
+ * @var $block \Magento\Catalog\Block\Category\View
+ */
+?>
+<div data-mst-nav-filter="" data-mst-nav-cache-key="" data-mst-attribute="" class="mst-nav__label" x-data="initLabelRenderer()">
+ 
+    <?php if ($_topFilter = $block->getCurrentCategory()->getTopFilter()) : ?>
+
+        <?php
+        $topfilterhtml=$this->helper(Magento\Catalog\Helper\Output::class)->categoryAttribute(
+            $block->getCurrentCategory(),
+            $_topFilter,
+            'description'
+        );
+        $topfilterhtml=str_replace('<a','<span data-element="filter" @click="handleClick"> <a class="special-filters"',$topfilterhtml);
+        $topfilterhtml=str_replace("</a>","</a></span>",$topfilterhtml);
+        ?>
+
+        <div class="category-top-filter">
+            <?= /* @noEscape */ $topfilterhtml ?>
+        </div>
+    <?php endif; ?>
+</div>
+<script>
+    const elements = document.querySelectorAll(".special-filters");
+    elements.forEach(function(element) { 
+        let staticBlockUrl = '';
+        staticBlockUrl = element.getAttribute("href");
+        element.setAttribute("data-link-url", staticBlockUrl);
+        element.setAttribute("rel", "nofollow");
+    });
+</script>

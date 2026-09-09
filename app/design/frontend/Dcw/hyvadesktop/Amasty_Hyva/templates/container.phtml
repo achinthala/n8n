@@ -1,0 +1,26 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Hyva Theme Base Package (System)
+ */
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var $block Template */
+/** @var $escaper Escaper */
+$childItems = $block->getChildNames();
+?>
+<?php if (!empty($childItems)): ?>
+<div class="container hidden">
+    <div class="pt-2 pb-2 flex flex-row items-end justify-end">
+        <?php foreach ($childItems as $childName): ?>
+            <div class="pl-3">
+                <?= /** @noEscape  */ $block->getChildHtml($childName) ?>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>

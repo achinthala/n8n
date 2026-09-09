@@ -1,0 +1,21 @@
+{
+    "name": "hyva-themes/magento2-bsscommerce-social-login",
+    "description": "Hyvä Themes Compatibility module for Bss_SocialLogin",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "require": {
+        "magento/framework": "*",
+        "hyva-themes/magento2-compat-module-fallback": "*",
+        "bsscommerce/module-sociallogin": "*",
+        "bsscommerce/hyva-compat-base": "*"
+    },
+    "license": "see LICENSE.md",
+    "autoload": {
+        "files": [
+            "src/registration.php"
+        ],
+        "psr-4": {
+            "Hyva\\BssSocialLogin\\": "src/"
+        }
+    }
+}

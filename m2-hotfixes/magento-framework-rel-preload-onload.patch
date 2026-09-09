@@ -1,0 +1,24 @@
+diff --git a/vendor/magento/framework/View/Page/Config/Renderer.php b/vendor/magento/framework/View/Page/Config/Renderer.php
+index 80f6fcbf..f793837e 100644
+--- a/vendor/magento/framework/View/Page/Config/Renderer.php
++++ b/vendor/magento/framework/View/Page/Config/Renderer.php
+@@ -336,6 +336,9 @@ class Renderer implements RendererInterface
+             } else {
+                 $attributes = ' ' . $attributes;
+             }
++            if (str_contains(mb_strtolower((string)$attributes), 'rel="preload"')) {
++                $attributes .= ' onload="this.onload=null;this.rel=\'stylesheet\'"';
++            }
+         }
+         return $attributes;
+     }
+@@ -354,6 +357,9 @@ class Renderer implements RendererInterface
+         }
+ 
+         if ($contentType === 'css') {
++            if (!empty($attributes) && str_contains(mb_strtolower((string)$attributes), 'rel="preload"')) {
++                return ' type="text/css" ' . ($attributes ?: ' media="all"');
++            }
+             return ' rel="stylesheet" type="text/css" ' . ($attributes ?: ' media="all"');
+         }
+ 

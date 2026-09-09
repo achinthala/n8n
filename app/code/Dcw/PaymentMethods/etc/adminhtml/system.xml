@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="payment" type="text" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1">
+            <group id="checkmo" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <field id="order_status" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" canRestore="1">
+                    <label>New Order Status</label>
+                    <source_model>Dcw\PaymentMethods\Model\Config\Source\Order\Status\NewAndProcessing</source_model>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

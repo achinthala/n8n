@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">dcw_share_cart_listing.dcw_share_cart_listing_data_source</item>
+            <item name="deps" xsi:type="string">dcw_share_cart_listing.dcw_share_cart_listing_data_source</item>
+        </item>
+        <item name="spinner" xsi:type="string">dcw_share_cart_columns</item>
+    </argument>
+    <dataSource name="dcw_share_cart_listing_data_source">
+        <argument name="dataProvider" xsi:type="configurableObject">
+            <argument name="class" xsi:type="string">Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider</argument>
+            <argument name="name" xsi:type="string">dcw_share_cart_listing_data_source</argument>
+            <argument name="primaryFieldName" xsi:type="string">share_id</argument>
+            <argument name="requestFieldName" xsi:type="string">share_id</argument>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="component" xsi:type="string">Magento_Ui/js/grid/provider</item>
+                    <item name="update_url" xsi:type="url" path="mui/index/render"/>
+                    <item name="storageConfig" xsi:type="array">
+                        <item name="indexField" xsi:type="string">share_id</item>
+                    </item>
+                </item>
+            </argument>
+        </argument>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filterSearch name="fulltext"/>
+        <filters name="listing_filters"/>
+        <massaction name="listing_massaction">
+            <action name="revoke">
+                <settings>
+                    <confirm>
+                        <message translate="true">Revoke selected share cart links?</message>
+                        <title translate="true">Revoke Links</title>
+                    </confirm>
+                    <url path="dcw_sharecart/history/massRevoke"/>
+                    <type>revoke</type>
+                    <label translate="true">Revoke</label>
+                </settings>
+            </action>
+        </massaction>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="dcw_share_cart_columns">
+        <selectionsColumn name="ids" sortOrder="0">
+            <settings>
+                <indexField>share_id</indexField>
+            </settings>
+        </selectionsColumn>
+        <column name="share_id" sortOrder="10">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>desc</sorting>
+            </settings>
+        </column>
+        <column name="shared_by_type" component="Magento_Ui/js/grid/columns/select" sortOrder="20">
+            <settings>
+                <filter>select</filter>
+                <options class="Dcw\ShareCart\Model\Config\Source\SharedByType"/>
+                <dataType>select</dataType>
+                <label translate="true">Shared By</label>
+            </settings>
+        </column>
+        <column name="your_name" sortOrder="30">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Your Name</label>
+            </settings>
+        </column>
+        <column name="recipient_name" sortOrder="40">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Recipient's Name</label>
+            </settings>
+        </column>
+        <column name="shared_by_email" sortOrder="50">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Customer Account Email</label>
+            </settings>
+        </column>
+        <column name="recipient_email" sortOrder="60">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Recipient's Email Address</label>
+            </settings>
+        </column>
+        <column name="recipient_phone" sortOrder="70">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Recipient's Phone Number</label>
+            </settings>
+        </column>
+        <column name="custom_message" sortOrder="80">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Custom Message</label>
+            </settings>
+        </column>
+        <column name="sms_consent" component="Magento_Ui/js/grid/columns/select" sortOrder="90">
+            <settings>
+                <filter>select</filter>
+                <options class="Magento\Config\Model\Config\Source\Yesno"/>
+                <dataType>select</dataType>
+                <label translate="true">Transactional Messages Consent</label>
+            </settings>
+        </column>
+        <column name="link_status" component="Magento_Ui/js/grid/columns/select" sortOrder="100">
+            <settings>
+                <filter>select</filter>
+                <options class="Dcw\ShareCart\Model\Config\Source\LinkStatus"/>
+                <dataType>select</dataType>
+                <label translate="true">Link Status</label>
+            </settings>
+        </column>
+        <column name="created_at" sortOrder="110">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Shared At</label>
+            </settings>
+        </column>
+        <column name="expires_at" sortOrder="120">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Expires At</label>
+            </settings>
+        </column>
+        <column name="used_at" sortOrder="130">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Used At</label>
+            </settings>
+        </column>
+        <column name="quote_id" sortOrder="140">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Source Quote ID</label>
+            </settings>
+        </column>
+    </columns>
+</listing>

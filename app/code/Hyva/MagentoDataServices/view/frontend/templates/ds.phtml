@@ -1,0 +1,43 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Magento\DataServices\Block\Context;
+
+/**
+ * @var Context $block
+ */
+?>
+
+<script>
+    window.addEventListener('load', function () {
+        window.magentoStorefrontEvents = magentoStorefrontEvents;
+        magentoStorefrontEvents.context.setStorefrontInstance(
+            <?= /* @noEscape */ $block->getStorefrontInstanceContext(); ?>
+        );
+        magentoStorefrontEvents.context.setMagentoExtension({
+            magentoExtensionVersion: "<?= /* @noEscape */ $block->getExtensionVersion(); ?>",
+        });
+        magentoStorefrontEvents.context.setDataServicesExtension({
+            version: "<?= /* @noEscape */ $block->getExtensionVersion(); ?>",
+        });
+        magentoStorefrontEvents.context.setPage({
+            pageType: "<?= /* @noEscape */ $block->getData('page_type'); ?>"
+        });
+        magentoStorefrontEvents.context.setContext("pageExtended", {
+            action: "<?= /* @noEscape */ $block->getData('step_name'); ?>"
+        });
+
+        <?php if ($block->getCustomerEmail() !== null): ?>
+            let accountContext = magentoStorefrontEvents.context.getAccount() || {};
+            accountContext.emailAddress = "<?= /* @noEscape */ $block->getCustomerEmail(); ?>"
+            magentoStorefrontEvents.context.setAccount(accountContext);
+        <?php endif; ?>
+
+        magentoStorefrontEvents.publish.pageView();
+    });
+</script>

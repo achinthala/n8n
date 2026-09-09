@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Console:etc/console.xsd">
+    <command name="bazaarvoice:ftp:import" class="Dcw\BazaarvoiceFtpImport\Console\Command\ImportCommand">
+        <description>Import Bazaarvoice reviews from FTP server</description>
+    </command>
+    <command name="bazaarvoice:gmc:convert" class="Dcw\BazaarvoiceFtpImport\Console\Command\GmcConvertCommand">
+        <description>Convert Bazaarvoice XML files to GMC format</description>
+    </command>
+</config>

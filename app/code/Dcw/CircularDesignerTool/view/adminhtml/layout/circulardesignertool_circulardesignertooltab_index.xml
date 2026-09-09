@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="formkey"/>
+    <head>
+    	<title>CircularDesignerTool Tab Manager</title>
+    </head>
+    <body>
+    	<referenceBlock name="menu">
+    	    <action method="setActive">
+    	        <argument name="itemId" xsi:type="string">Dcw_CircularDesignerTool::circulardesignertool_circulardesignertooltab</argument>
+    	    </action>
+    	</referenceBlock>
+    	<referenceBlock name="page.title">
+    	    <action method="setPageTitle">
+    	        <argument name="pageTitle" xsi:type="string">CircularDesignerTool Tab Manager</argument>
+    	    </action>
+    	</referenceBlock>
+    	<referenceContainer name="page.main.actions">
+    	    <block class="Magento\Backend\Block\Store\Switcher" name="store_switcher">
+    	        <action method="setUseConfirm">
+    	            <argument name="params" xsi:type="string">0</argument>
+    	        </action>
+    	    </block>
+    	</referenceContainer>
+        <referenceContainer name="content">
+            <block class="Dcw\CircularDesignerTool\Block\Adminhtml\CircularDesignerToolTab" name="admin.block.circulardesignertool.tab.grid.container"/>
+        </referenceContainer>
+    </body>
+</page>

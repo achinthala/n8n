@@ -1,0 +1,182 @@
+<?php
+/**
+ * Quote Lock Status Template
+ * @var \Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\LockStatus $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+
+$lockStatus = $block->getLockStatus();
+$quoteId = $block->getQuoteId();
+$isLocked = $lockStatus && $lockStatus['is_locked'];
+$lockedByType = $isLocked ? ($lockStatus['locked_by_type'] ?? null) : null;
+$lockedByName = $isLocked ? ($lockStatus['locked_by_name'] ?? 'Unknown') : '';
+$currentSessionId = $block->getSessionId();
+$lockSessionId = $isLocked ? ($lockStatus['session_id'] ?? null) : null;
+// Check if locked by another admin (not current admin) or by customer
+$isLockedByOtherAdmin = $isLocked && $lockedByType === 'admin' && $lockSessionId !== $currentSessionId;
+$isLockedByCustomer = $isLocked && $lockedByType === 'customer';
+?>
+<?php if ($quoteId): ?>
+<div id="quote-lock-status" 
+     data-quote-id="<?= $escaper->escapeHtmlAttr($quoteId) ?>"
+     data-status-url="<?= $escaper->escapeUrl($block->getLockStatusUrl()) ?>"
+     data-acquire-url="<?= $escaper->escapeUrl($block->getAcquireLockUrl()) ?>"
+     data-release-url="<?= $escaper->escapeUrl($block->getReleaseLockUrl()) ?>"
+     data-force-unlock-url="<?= $escaper->escapeUrl($block->getForceUnlockUrl()) ?>">
+    <?php if ($isLockedByOtherAdmin || $isLockedByCustomer): ?>
+    <div class="message message-warning warning" id="quote-lock-warning" style="margin-bottom: 20px;">
+        <div data-ui-id="messages-message-warning">
+            <span id="quote-lock-message">
+                <?php if ($isLockedByOtherAdmin): ?>
+                    <?= $escaper->escapeHtml(__('Warning: This quote is currently being edited by %1 (%2).', $lockedByName, 'Admin')) ?>
+                <?php elseif ($isLockedByCustomer): ?>
+                    <?= $escaper->escapeHtml(__('Warning: This quote is currently being edited by customer %1.', $lockedByName)) ?>
+                <?php endif; ?>
+            </span>
+            <button type="button" 
+                    class="action-secondary force-unlock-btn"
+                    style="margin-left: 10px;">
+                <?= $escaper->escapeHtml(__('Force Unlock')) ?>
+            </button>
+        </div>
+    </div>
+    <?php else: ?>
+    <div class="message message-warning warning" id="quote-lock-warning" style="display: none;">
+        <div data-ui-id="messages-message-warning">
+            <span id="quote-lock-message"></span>
+            <button type="button" 
+                    class="action-secondary force-unlock-btn"
+                    style="margin-left: 10px;">
+                <?= $escaper->escapeHtml(__('Force Unlock')) ?>
+            </button>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+
+<script>
+require(['jquery'], function($) {
+    var quoteId = <?= (int) $quoteId ?>;
+    var statusUrl = '<?= $escaper->escapeJs($block->getLockStatusUrl()) ?>';
+    var acquireUrl = '<?= $escaper->escapeJs($block->getAcquireLockUrl()) ?>';
+    var releaseUrl = '<?= $escaper->escapeJs($block->getReleaseLockUrl()) ?>';
+    var forceUnlockUrl = '<?= $escaper->escapeJs($block->getForceUnlockUrl()) ?>';
+    var lockWarning = $('#quote-lock-warning');
+    var lockMessage = $('#quote-lock-message');
+    
+    // Acquire lock when page loads
+    function acquireLock() {
+        $.ajax({
+            url: acquireUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {quote_id: quoteId},
+            success: function(response) {
+                if (response.success) {
+                    // Lock acquired
+                } else if (response.lock_status && response.lock_status.is_locked) {
+                    showLockWarning(response.lock_status);
+                }
+            }
+        });
+    }
+    
+    // Check lock status periodically
+    function checkLockStatus() {
+        $.ajax({
+            url: statusUrl,
+            type: 'GET',
+            dataType: 'json',
+            data: {quote_id: quoteId},
+            success: function(response) {
+                if (response.success && response.lock_status) {
+                    if (response.lock_status.is_locked) {
+                        showLockWarning(response.lock_status);
+                    } else {
+                        hideLockWarning();
+                    }
+                }
+            }
+        });
+    }
+    
+    function showLockWarning(lockStatus) {
+        // Only show warning if locked by another admin (not current admin)
+        var currentSessionId = '<?= $escaper->escapeJs($currentSessionId) ?>';
+        var lockSessionId = lockStatus.session_id || null;
+        var isLockedByOtherAdmin = lockStatus.locked_by_type === 'admin' && lockSessionId && lockSessionId !== currentSessionId;
+        
+        if (isLockedByOtherAdmin) {
+            var message = '<?= $escaper->escapeJs(__('Warning: This quote is currently being edited by %1 (%2).')) ?>';
+            message = message.replace('%1', lockStatus.locked_by_name || 'Unknown');
+            message = message.replace('%2', 'Admin');
+            lockMessage.text(message);
+            lockWarning.show();
+        } else if (lockStatus.locked_by_type === 'customer') {
+            var message = '<?= $escaper->escapeJs(__('Warning: This quote is currently being edited by customer %1.')) ?>';
+            message = message.replace('%1', lockStatus.locked_by_name || 'Customer');
+            lockMessage.text(message);
+            lockWarning.show();
+        } else {
+            hideLockWarning();
+        }
+    }
+    
+    function hideLockWarning() {
+        lockWarning.hide();
+    }
+    
+    function forceUnlockQuote() {
+        if (!confirm('<?= $escaper->escapeJs(__('Are you sure you want to force unlock this quote? This will remove all locks on this quote.')) ?>')) {
+            return;
+        }
+        
+        $.ajax({
+            url: forceUnlockUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {quote_id: quoteId},
+            success: function(response) {
+                if (response.success) {
+                    lockWarning.hide();
+                    // Refresh the page to update lock status
+                    location.reload();
+                } else {
+                    alert(response.message || '<?= $escaper->escapeJs(__('Failed to unlock quote.')) ?>');
+                }
+            },
+            error: function() {
+                alert('<?= $escaper->escapeJs(__('An error occurred while unlocking the quote.')) ?>');
+            }
+        });
+    }
+    
+    // Make forceUnlockQuote available globally
+    window.forceUnlockQuote = function() {
+        forceUnlockQuote();
+    };
+    
+    // Initialize on page load
+    $(document).ready(function() {
+        acquireLock();
+        
+        // Bind click handler to force unlock button(s)
+        $('.force-unlock-btn').on('click', function() {
+            forceUnlockQuote();
+        });
+        
+        // Release lock when leaving page
+        $(window).on('beforeunload', function() {
+            $.ajax({
+                url: releaseUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {quote_id: quoteId},
+                async: false
+            });
+        });
+    });
+});
+</script>
+<?php endif; ?>
+

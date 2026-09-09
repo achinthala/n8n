@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Customer\Controller\Ajax\Login">
+        <plugin name="hyva_theme" disabled="true" />
+    </type>
+
+    <type name="Magento\Customer\Controller\Ajax\Login">
+         <plugin name="dcw_ajax_login_formkey_validation" type="Dcw\Checkout\Plugin\Customer\AjaxLoginFormkeyValidationPlugin" sortOrder="29"/>
+    </type>
+
+    <preference for="Magento\Checkout\Controller\Cart\Delete" type="Dcw\Checkout\Controller\Cart\Delete" />
+
+    <type name="Magento\Checkout\Model\CompositeConfigProvider">
+        <arguments>
+            <argument name="configProviders" xsi:type="array">
+                <item name="savings_config_provider" xsi:type="object">Dcw\Checkout\Model\Checkout\ConfigProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="Magento\Checkout\Block\Checkout\LayoutProcessor">
+        <plugin name="dcw_checkout_telephone_layout_validation"
+                type="Dcw\Checkout\Plugin\Checkout\LayoutProcessorPlugin"
+                sortOrder="100"/>
+    </type>
+    <type name="Magento\Checkout\Model\ShippingInformationManagement">
+        <plugin name="dcw_checkout_telephone_shipping_validation"
+                type="Dcw\Checkout\Plugin\Checkout\ShippingInformationManagementPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <type name="Magento\Customer\Helper\Address">
+        <plugin name="dcw_checkout_address_helper_telephone_validation_class"
+                type="Dcw\Checkout\Plugin\Customer\AddressHelperTelephonePlugin"
+                sortOrder="100"/>
+    </type>
+</config>

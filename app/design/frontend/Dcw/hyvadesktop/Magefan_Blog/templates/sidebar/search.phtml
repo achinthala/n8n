@@ -1,0 +1,72 @@
+<?php
+/**
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
+ */
+?>
+<?php
+/**
+ * Blog sidebar search form template
+ *
+ * @var $block \Magefan\Blog\Block\Sidebar\Search
+ * @var $mfSecureRenderer \Magefan\Community\Api\SecureHtmlRendererInterface
+ */
+?>
+
+<?php
+/** @var Hyva\Theme\ViewModel\HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(\Hyva\Theme\ViewModel\HeroiconsOutline::class);
+?>
+
+<div class="blog-search flex items-center w-full gap-2 mb-3">
+    <h2>Search All Articles</h2>
+    <form class="form blog-search relative" id="blog_search_mini_form"
+          action="<?= $block->escapeUrl($block->getFormUrl()) ?>"
+          method="get"
+          >
+        <input id="blog_search"
+            type="text"
+            name="q"
+            value="<?= $block->escapeHtml($block->getQuery()) ?>"
+            placeholder="<?= $block->escapeHtml(__('Search posts here...')) ?>"
+            class="w-full field m-0 pr-10"
+            style="margin: 0;"
+            maxlength="128" role="combobox"
+            aria-haspopup="false"
+            aria-autocomplete="both"
+            autocomplete="off">
+            <?= $heroicons->searchHtml('w-5 h-5 absolute top-3 right-3 hidden') ?>
+    </form>
+</div>
+<?php $script = "
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('blog_search_mini_form');
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            var value = document.getElementById('blog_search').value;
+            if (value) {
+                var a = form.action;
+                window.location = a + ( ('/' != a.charAt(a.length - 1)) ? '/' : '' ) + encodeURI(value) + '/';
+            }
+            return false;
+        });
+    }); 
+"; ?>
+<?= /* @noEscape */ $mfSecureRenderer->renderTag('script', [], $script, false) ?>
+
+<style>
+    .blog-search .action.search:before {
+        -webkit-font-smoothing: antialiased;
+        content: '';
+        margin: 0;
+        vertical-align: top;
+        display: inline-block;
+        overflow: hidden;
+        speak: none;
+        width: 16px;
+        height: 32px;
+        background: url(../../frontend/Magento/luma/en_US/Magefan_Blog/images/search-icon-white.svg) no-repeat -10px -7px;
+        background-size: 35px;
+        opacity: 1;
+    }
+</style>

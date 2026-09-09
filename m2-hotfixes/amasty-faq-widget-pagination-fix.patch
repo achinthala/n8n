@@ -1,0 +1,48 @@
+git diff vendor/amasty/module-faq-product-questions/Block/Adminhtml/Question/Widget/Chooser.php
+diff --git a/vendor/amasty/module-faq-product-questions/Block/Adminhtml/Question/Widget/Chooser.php b/vendor/amasty/module-faq-product-questions/Block/Adminhtml/Question/Widget/Chooser.php
+index bea787559..7b4b34f01 100644
+--- a/vendor/amasty/module-faq-product-questions/Block/Adminhtml/Question/Widget/Chooser.php
++++ b/vendor/amasty/module-faq-product-questions/Block/Adminhtml/Question/Widget/Chooser.php
+@@ -164,13 +164,25 @@ class Chooser extends Extended
+      */
+     public function toHtml()
+     {
+-        /** @var Template $gridHeader * */
+-        $gridHeader = $this->getLayout()
+-            ->createBlock(Template::class)
+-            ->setTemplate(self::HEADER_TEMPLATE)
+-            ->setChooserId($this->getId());
+-
+-        return $gridHeader->toHtml() . parent::toHtml();
++        $headerHtml = '';
++
++        // Only render header on initial load, not on pagination requests
++        // Check for grid pagination/filter/sort parameters to detect subsequent requests
++        $isPaginationRequest = $this->getRequest()->getParam('page')
++            || $this->getRequest()->getParam('limit')
++            || $this->getRequest()->getParam('sort')
++            || $this->getRequest()->getParam('dir')
++            || $this->getRequest()->getParam('filter');
++
++        if (!$isPaginationRequest) {
++            $gridHeader = $this->getLayout()
++                ->createBlock(Template::class)
++                ->setTemplate(self::HEADER_TEMPLATE)
++                ->setChooserId($this->getId());
++            $headerHtml = $gridHeader->toHtml();
++        }
++
++        return $headerHtml . parent::toHtml();
+     }
+ 
+     /**
+@@ -183,7 +195,7 @@ class Chooser extends Extended
+             ['neq' => Visibility::VISIBILITY_NONE]
+         );
+ 
+-        return $this;
++        return parent::_prepareCollection();
+     }
+ 
+     public function getGridUrl(): string
+     

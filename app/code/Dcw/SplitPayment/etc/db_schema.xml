@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="split_payment" resource="default" engine="innodb" comment="split payment">
+        <column xsi:type="int" name="split_payment_id" padding="11" unsigned="true" nullable="false" identity="true" comment="Auto-increment"/>
+        <column xsi:type="int" name="customer_id" padding="11" unsigned="true" nullable="false" comment="customer_id"/>
+        <column xsi:type="varchar" name="customer_email" comment="image" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="card_number" nullable="false" length="255" comment="Only last four digits : E.g. xxxx-xxxx-xxxx-4343" />
+        <column xsi:type="varchar" name="card_name" nullable="false" length="255"/>
+        <column xsi:type="int" name="expiration_month" padding="2" unsigned="true" nullable="false"/>
+        <column xsi:type="int" name="expiration_year" padding="4" unsigned="true" nullable="false"/>
+        <column xsi:type="int" name="cvv" padding="4" unsigned="true" nullable="false"/>
+        <column xsi:type="text" name="public_hash" nullable="false"/>
+        <column xsi:type="varchar" name="payment_method_code" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="255"/>
+        <column xsi:type="text" name="gateway_token" nullable="false"/>
+        <column xsi:type="decimal" name="balance_amount" precision="20" scale="4" nullable="false"/>
+        <column xsi:type="decimal" name="payment_amount" precision="20" scale="4" nullable="false"/>
+        <column xsi:type="smallint" name="is_authorized" padding="2" unsigned="true" nullable="false"/>
+        <column xsi:type="datetime" name="created_at" on_update="false" nullable="false"/>
+        <column xsi:type="datetime" name="updated_at" nullable="false"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="split_payment_id"/>
+        </constraint>
+    </table>
+
+    <table name="split_payment_stored_card" resource="default" engine="innodb" comment="split payment stored card">
+        <column xsi:type="int" name="split_payment_stored_card_id" padding="11" unsigned="true" nullable="false" identity="true" comment="Auto-increment"/>
+        <column xsi:type="int" name="paradoxlabs_stored_card_id" padding="11" unsigned="true" nullable="false" comment="paradoxlabs_stored_card_id"/>
+        <column xsi:type="decimal" name="payment_amount" precision="20" scale="4" nullable="false"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="split_payment_stored_card_id"/>
+        </constraint>
+    </table>
+
+    <table name="split_payment_transaction" resource="default" engine="innodb" comment="split payment transaction">
+        <column xsi:type="int" name="split_payment_transaction_id" padding="11" unsigned="true" nullable="false" identity="true" comment="Auto-increment"/>
+        <column xsi:type="int" name="tokenbase_id" padding="11" unsigned="true" nullable="false" comment="ParadoxLabs_TokenBase Card ID"/>
+        <column xsi:type="int" name="order_id" padding="11" unsigned="true" nullable="false" comment="order_id"/>
+        <column xsi:type="varchar" name="anet_order_number" nullable="false" length="255" comment="AuthorizeNet portal InvoiceNumber"/>
+        <column xsi:type="varchar" name="cc_approval" nullable="false" length="255" comment="authCode"/>
+        <column xsi:type="varchar" name="cc_avs_status" nullable="false" length="255" comment="avsResultCode"/>
+        <column xsi:type="varchar" name="cc_cid_status" nullable="false" length="255" comment="cvvResultCode"/>
+        <column xsi:type="varchar" name="cc_status" nullable="false" length="255" comment="cavvResultCode"/>
+        <column xsi:type="varchar" name="cc_type" nullable="false" length="255" comment="accountType"/>
+        <column xsi:type="varchar" name="cc_exp_month" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="cc_exp_year" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="cc_last_4" nullable="false" length="255"/>
+        <column xsi:type="varchar" name="trans_id" nullable="false" length="255" comment="transId"/>
+        <column xsi:type="varchar" name="trans_type" nullable="false" length="255" comment="authorize / capture"/>
+        <column xsi:type="decimal" name="amount_paid" precision="20" scale="4" nullable="false"/>
+        <column xsi:type="text" name="additional_information" nullable="false"/>
+
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="split_payment_transaction_id"/>
+        </constraint>
+    </table>
+
+</schema>

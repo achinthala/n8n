@@ -1,0 +1,197 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\Framework\Escaper;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+use Dcw\AdvanceSearch\ViewModel\Data as AdvanceSearchModel;
+use Dcw\Spotlight\ViewModel\Data as SpotlightViewModel;
+
+/**
+ * Category view template
+ *
+ * @var $block \Magento\Catalog\Block\Category\View
+ */
+
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+/** @var AdvanceSearchModel $customViewModel */
+$advanceSearchModel = $viewModels->require(AdvanceSearchModel::class);
+/** @var SpotlightViewModel $spotlightViewModel */
+$spotlightViewModel = $viewModels->require(SpotlightViewModel::class);
+
+if(isset($_REQUEST['spotlight']) && $_REQUEST['spotlight']!='') {
+    $spotlightsku = $_REQUEST['spotlight'];
+    $product = $customViewModel->getLoadProductBySku($spotlightsku);
+    
+    if ($product && $product->getId()) {
+        $productId = (int)$product->getId();
+        $parentId = (int)$customViewModel->getParentId($productId);
+        $parentProduct = $customViewModel->getLoadProduct($parentId);
+        $cantoImageHelper = $this->helper('Dcw\ProductImage\Helper\Data');
+        $imageDcwHelper = $this->helper('Magento\Catalog\Helper\Image');
+        $cantoImage = $cantoImageHelper->getMainImageUrl($parentProduct);
+        $uniqueId = '_' . uniqid();
+        $sampleblock= $block->getLayout()->createBlock(Dcw\SampleProduct\Block\SampleData::class);
+        
+        $pricingHelper = $this->helper('Magento\Framework\Pricing\Helper\Data');
+        $calculatePriceArray = $advanceSearchModel->getCalculatedPrice($productId);
+        $calculatedPrice = "";
+
+        if (isset($calculatePriceArray['calType']) && isset($calculatePriceArray['price'])) {
+            $storeId = $product->getStoreId();
+            $cleanPrice = floatval(str_replace(',', '', $calculatePriceArray['price']));
+            if ($calculatePriceArray['calType'] != 'none') {
+                $calculatedPrice = $pricingHelper->currencyByStore($cleanPrice, $storeId, true, false).'/'.$calculatePriceArray['calType'];
+            } else {
+                $calculatedPrice = $pricingHelper->currencyByStore($cleanPrice, $storeId, true, false);
+            }
+        }
+    ?>
+        <script>
+        function addToCartClickVerify() {
+            var qty = 1;
+            var price = '<?php echo $product->getFinalPrice();?>';
+            var selected_option_child_id = '<?php echo $productId; ?>';
+            fetch(BASE_URL+'flooring/index/cartpost?form_key=' + hyva.getFormKey(), {
+                method: "POST",
+                headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                body: "main_product_id=<?= /* @noEscape */ $parentId ?>&product_floor_type=Tire Price&selected_option_child_id="+selected_option_child_id+"&qty="+qty+"&custom_price="+price,
+            })
+            .then(response => {
+                window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+            })
+            .then(data => {
+                window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+            });
+        }
+        </script>
+        <?php echo $spotlightViewModel->getProductInfoJsonLd($product, 'spotlight');?>
+        <div class="spot-light">
+            <div class="catergory_slider_content bg-white mb-6">
+
+            <?php /* Product Image */ ?>
+            <a href="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>?option=<?php echo $_REQUEST['spotlight']; ?>"
+                class="product photo product-item-photo block mx-auto w-full md:w-2/6 md:mb-0 md:mr-5"
+                tabindex="-1"
+            >
+            <?php
+            if ($cantoImage!="") {
+                $imagesDimensionMedium = $cantoImageHelper->getSmallImageDimension();
+                $mainImageData = $cantoImage.'/-B'.$imagesDimensionMedium;
+            } else {
+                $mainImageData = $imageDcwHelper->getDefaultPlaceholderUrl('small_image');
+            }
+        ?>
+            <img class="" src="<?php echo $mainImageData; ?>" alt="<?php echo $parentProduct->getName(); ?>" >
+            </a>
+            <input type="hidden" id="product_name_<?= (int)$productId ?>"  name="product_name_<?= (int)$productId ?>" value="<?= $product->getName() ?>">
+            <input type="hidden" id="product_id_<?= (int)$productId ?>"  name="product_id_<?= (int)$productId ?>" value="<?= $product->getId() ?>">
+            <input type="hidden" id="product_url_<?= (int)$productId ?>" name="product_url_<?= (int)$productId ?>" value="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+
+            <input type="hidden" id="image_url_<?= (int)$productId ?>" name="image_url_<?= (int)$productId ?>" value="<?=/** @noEscape */$mainImageData?>">
+            <div class="product-info flex flex-col grow py-3 px-3">
+                <a href="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>?option=<?php echo $_REQUEST['spotlight']; ?>">
+
+                    <div class="text-primary product-name md:text-left">
+                        <span class="product-item-link text-size18 text-black font-semibold no-underline relative block"
+                            title="<?php echo $parentProduct->getName(); ?>">
+                            <?php echo $parentProduct->getName(); ?>
+                        </span>
+                    </div>
+                </a>
+                <p class="stock-status text-size14 font-medium <?= $product->isAvailable() ? 'in-stock' : 'out-of-stock'; ?>">
+                    <?= $product->isAvailable() ? 'In Stock' : 'Out of Stock'; ?>
+                </p>
+                <?php //if (!$hideRatingSummary): ?>
+                    <div class="ratings" data-nosnippet>
+                        <div data-bv-show="rating_summary"
+                            data-bv-product-id="<?= $parentProduct->getSku(); ?>"
+                            data-bv-redirect-url="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>">
+                        </div>
+                    </div>
+                <?php //endif; ?>
+                <div class="spot-divide">
+                    <div class="spot-innerleft">
+                        <?php if ($calculatedPrice != '') { ?>
+                            <div class="price-label">
+                                <span>Starting From:</span>
+                                <?php echo $calculatedPrice; ?>
+                            </div>
+                        <?php } ?>
+                        <div class="color_counts pt-1">
+                            <?php if ($parentProduct->getTypeId() == 'configurable') {
+                                $config_color_arr = [];
+                                $_children = $parentProduct->getTypeInstance()->getUsedProducts($parentProduct);
+                                foreach($_children as $_child){
+                                    $config_color_arr[] = $_child->getIncstoresPimColorAxis();
+                                }
+                                if(!empty($config_color_arr)){
+                                ?>
+                                <div class="color_count text-size14 font-normal text-black">Available in <?= /* @noEscape */ count(array_unique($config_color_arr))?> colors</div>
+                                <?php
+                                }
+                            }
+                            ?>
+                            <?php  if (!empty($product->getIncstoresPimFeatureBullet1())) {?>
+                                <div class="color_count text-size14 font-normal text-black"><?php echo $product->getIncstoresPimFeatureBullet1();?></div> 
+                            <?php }?>
+                            <?php if (!empty($product->getIncstoresPimFeatureBullet2())) {?>
+                                <div class="color_count text-size14 font-normal text-black"><?php echo $product->getIncstoresPimFeatureBullet2();?></div>
+                            <?php } ?>
+                        </div>
+                    </div>
+                    <div class="spot-innerright">
+                        <?php $color = $product->getAttributeText('incstores_pim_color_axis');
+                        $incstores_pim_variant_axis  = $product->getAttributeText('incstores_pim_variant_axis'); ?>
+                        <div class="text-size12 font-normal text-black spot-edit">
+                            QTY <span>1</span> - <a href="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>?color=<?php echo $product->getIncstoresPimColorAxis(); ?>&incstores_pim_variant_axis=<?php echo $product->getTilesSize(); ?>">edit</a>
+                        </div>
+                        <?php if($incstores_pim_variant_axis!='') { ?>
+                        <div class="text-size12 font-normal text-black spot-edit">
+                            <span><?php echo  $incstores_pim_variant_axis ?></span> - <a href="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>?color=<?php echo $product->getIncstoresPimColorAxis(); ?>&incstores_pim_variant_axis=<?php echo $product->getTilesSize(); ?>">edit</a>
+                        </div>
+                        <?php  } ?>
+                        <?php if($color!='') { ?>
+                        <div class="text-size12 font-normal text-black spot-edit">
+                            Color <span><?php echo $color; ?></span> - <a href="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>?color=<?php echo $product->getIncstoresPimColorAxis(); ?>&incstores_pim_variant_axis=<?php echo $product->getTilesSize(); ?>">edit</a>
+                        </div>
+                        <?php } ?>
+                        <button type="button" form="product_addtocart_form" title="Add to Cart" class="btn btn-primary spot-button" id="product-addtocart-button" onclick="addToCartClickVerify()">
+                            <span class=" sm:blocklg:block">Add to Cart </span>
+                        </button>
+                    </div>
+                    </div>
+                    <div class="spot-bottom">
+                        <?php if ($customViewModel->getSampleBlock($parentId)) { ?>
+                        <div class="orderSampleContent" x-data="{showModal: false, htmlContent: '',pid: <?=$parentId?>}">
+                            <button class="order_btn text-size12 font-medium text-black" type="button" x-on:click="showModal = true,fetchHtmlContent(pid), document.body.classList.add('order_active');"><?= $escaper->escapeHtml(__('Order Free Sample')) ?></button>
+                            <div class="modal order-free-sample-popup" x-show="showModal" style="display:none;">
+                                <div class="modal-overlay" x-on:click="showModal = false"></div>
+                                <button class="closemodal" type="button" x-on:click="showModal = false, document.body.classList.remove('order_active');">Close X</button>
+                                <div class="modal-content">
+                                    <div x-html="htmlContent" class="htmlcontent<?=$parentId?>"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php } ?>
+                        <div class="shop-host flex items-center justify-center gap-4">
+                            <label class="text-size12 text-black font-normal m-0 p-0">QTY: 1</label>
+                            <a href="<?= $escaper->escapeUrl($parentProduct->getProductUrl()) ?>?option=<?php echo $_REQUEST['spotlight']; ?>" class="spot-shopnow">Buy Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<?php
+    }
+} 
+?>

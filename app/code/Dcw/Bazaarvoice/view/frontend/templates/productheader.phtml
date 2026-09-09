@@ -1,0 +1,79 @@
+<?php
+/**
+ * Copyright © Bazaarvoice, Inc. All rights reserved.
+ * See LICENSE.md for license details.
+ */
+?>
+
+<?php /** @var Magento\Framework\View\Element\Template $block */ ?>
+<?php /** @var Bazaarvoice\Connector\ViewModel\Product $viewModel */ ?>
+<?php $viewModel = $block->getViewModel(); ?>
+
+<?php if ($viewModel->isBvEnabled() && $viewModel->getProduct()): ?>
+    <!-- <?= $viewModel->getExtensionInjectionMessage(); ?> -->
+    <?php if ($viewModel->isConfigurable() && $viewModel->getConfigProvider()->isRrChildrenEnabled()): ?>
+        <script type="text/javascript">
+            var bvChildren = <?= $viewModel->getChildrenJson(); ?>;
+            var bvSelected = "<?= $viewModel->getProductSku() ?>";
+            require(["jquery"], function (jQuery) {
+                function bindBvSwatches()
+                {
+                    jQuery('#product-options-wrapper').on('click', '.swatch-option', function () {
+                        var bvCurrent = '';
+                        jQuery('.swatch-attribute').each(function () {
+                            bvCurrent = bvCurrent
+                                + jQuery(this).attr('attribute-id') + '_'
+                                + jQuery(this).attr('option-selected') + '_';
+                        });
+                        console.log(bvCurrent);
+                        if (bvChildren[bvCurrent] != undefined && bvChildren[bvCurrent] != bvSelected) {
+                            var externalId = bvChildren[bvCurrent];
+                            console.log("switching to " + externalId);
+                            bvSelected = bvChildren[bvCurrent];
+                            jQuery('div[data-bv-show=rating_summary]').attr('data-bv-product-id', externalId);
+                            BV.rating_summary.render(jQuery('div[data-bv-show=rating_summary]')[0]);
+                            jQuery('div[data-bv-show=reviews]').attr('data-bv-product-id', externalId);
+                            BV.reviews.render(jQuery('div[data-bv-show=reviews]')[0]);
+                            jQuery('div[data-bv-show=questions]').attr('data-bv-product-id', externalId);
+                            BV.questions.render(jQuery('div[data-bv-show=questions]')[0]);                            
+                        }
+                    });
+                }
+
+                jQuery(document).ready(bindBvSwatches());
+            });
+        </script>
+    <?php endif; ?>
+    <?php if ($viewModel->isDccEnabled()) : ?>
+        <?php $configData = $viewModel->getDccConfig(); ?>
+        <?php if ($viewModel->canShowDebugDetails()) : ?>
+            <!-- <?php print_r(json_encode(json_decode($configData), JSON_PRETTY_PRINT)) ?> -->
+        <?php endif; ?>
+    <?php endif; ?>
+    <script async type="text/javascript">
+        <?php if ($viewModel->isDccEnabled()) : ?>
+            window.bvDCC = <?= $configData ?>;
+        <?php endif; ?>
+        window.bvCallback = function (BV) {
+            if (BV.reviews !== undefined) {
+                BV.reviews.on('show', function () {
+                    <?= $viewModel->getConfigProvider()->getRrDoShowContentJs(); ?>
+                });
+            }
+            if (BV.questions !== undefined) {
+                BV.questions.on('show', function () {
+                    <?= $viewModel->getConfigProvider()->getQaDoShowContentJs(); ?>
+                });
+            }
+            <?php if ($viewModel->isDccEnabled()) : ?>
+                for (var i = 0, len = window.bvDCC.catalogData.catalogProducts.length; i < len; ++i) {
+                    BV.pixel.trackEvent("CatalogUpdate", {
+                        type: 'Product',
+                        locale: window.bvDCC.catalogData.locale,
+                        catalogProducts: [window.bvDCC.catalogData.catalogProducts[i]]
+                    });
+                }
+            <?php endif; ?>
+        };
+    </script>
+<?php endif; ?>

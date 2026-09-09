@@ -1,0 +1,231 @@
+<script>
+    function initLabelRenderer() {
+        return {
+            config: getMstNavConfig(),
+
+            handleClick(e) {
+                // if (e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                // }
+
+                let $item = e.target.closest('[data-element = filter]');
+
+                const link = $item.tagName === 'A' ? $item : $item.querySelector('a');
+
+                if (link.classList.contains('disabled')) {
+                    return;
+                }
+
+                if ($item.tagName !== 'A') {
+                    if (e.target.tagName !== 'INPUT') {
+                        this.toggleCheckbox($item);
+                    }
+                }
+
+                this.toggleSwatch($item);
+                this.showHighLight($item);
+
+                const url = $item.tagName === 'A'
+                    ? $item.href
+                    : $item.querySelector('a').href;
+				
+                initApplier().apply(url, $item);
+				const elements = document.querySelectorAll(".special-filters");
+				const currentUrl = url; 
+                // Replace '&product_list_model=list' with an empty string in the final URL
+               // newFinalUrl = finalUrl.replace('&product_list_mode=list', '');
+                // Get the base URL by splitting before the '?'
+                const baseUrl = currentUrl.split('?')[0]; 
+                // Get the current URL parameters by splitting after the '?'
+                const currentUrlParams = currentUrl.split('?')[1];
+                // Convert the current URL parameters into an array of key-value pairs
+                const currentUrlParamsArray = currentUrlParams.split('&').map(param => param.split('=')); //alert(currentUrlParamsArray);
+
+				// Iterate over the elements and get the href value for each element.
+                let newFinalUrl = "";
+                let finalUrl = "";
+				elements.forEach(function(element) {
+                    let staticBlockUrl = element.getAttribute("data-link-url");
+                    // Get the static block URL parameters by splitting after the '?'
+                    let staticBlockUrlParams = staticBlockUrl.split('?')[1];
+
+                    // Convert the static block URL parameters into an array of key-value pairs
+                    let staticBlockUrlParamsArray = staticBlockUrlParams.split('&').map(param => param.split('='));
+
+                    // Concatenate the two arrays of parameters
+                    let allParamsArray = currentUrlParamsArray.concat(staticBlockUrlParamsArray);
+
+                    // Initialize an empty object to store the revised parameters
+                    let revisedParamsObject = {};
+
+                    // Loop over the array of parameters
+                    for (let [key, value] of allParamsArray) {
+                        // If the key already exists in the object, append the value with a comma separator
+                        if (revisedParamsObject[key]) { 
+                            // Split the existing value by comma and check if it includes the new value
+                            let existingValues = revisedParamsObject[key].split(',');
+                            if (!existingValues.includes(value) && value!='list') {
+                            // If not, append the value with a comma separator
+                            revisedParamsObject[key] += ',' + value;
+                            }
+                            
+                        } else {
+                            // Otherwise, assign the value to the key
+                            revisedParamsObject[key] = value;
+                        }
+                    }
+
+                    // Initialize an empty string to store the revised parameters as a query string
+                    let revisedParamsString = "";
+
+                    // Loop over the object of revised parameters
+                    for (let [key, value] of Object.entries(revisedParamsObject)) {
+                        // Append the key-value pair with a '&' separator
+                        revisedParamsString += key + '=' + value + '&';
+                    }
+
+                    // Remove the trailing '&' from the string
+                    revisedParamsString = revisedParamsString.slice(0, -1);
+
+                    // Construct the final URL by adding the base URL and the revised parameters string with a '?' separator
+                    let finalUrl = baseUrl + '?' + revisedParamsString;
+
+                    // Replace '&product_list_model=list' with an empty string in the final URL
+                    let newFinalUrl = finalUrl.replace('&product_list_mode=list', '');
+                    
+                    // Append '&product_list_model=list' to the new final URL
+                    newFinalUrl += '&product_list_mode=list';
+
+                    element.setAttribute("href", newFinalUrl);
+                    if (link.classList.contains('remove')) {
+                        const removelink = link.href;
+                        const pagebuilderlink = $(this)[0].href;
+                        if(removelink != pagebuilderlink){
+                            const parentElement = $(this).closest('.pagebuilder-column');
+                        if(parentElement){
+                            // console.log(parentElement[0]);
+                            if(parentElement[0].classList.contains('active')){
+                                    // console.log('right');
+                                    parentElement[0].classList.remove("active");
+                            }
+                            }
+                        }
+                    }	
+
+                    // for clear all active class remove
+                    if(link.classList.contains('filter-clear')){ 
+                        var elems = document.querySelectorAll(".pagebuilder-column");
+                        [].forEach.call(elems, function(el) {
+                            el.classList.remove("active");
+                        });
+                    }
+				});
+            },
+
+            showHighLight: function ($el) {
+                if ($el.classList.contains('_checked')) {
+                    $el.classList.add("_highlight");
+					const parentElement = $el.closest('.pagebuilder-column');
+					if(parentElement){
+						parentElement.classList.add("active");
+					}
+                } else {
+                    $el.classList.remove("_highlight");
+					const parentElement = $el.closest('.pagebuilder-column');
+
+					if(parentElement) {
+						parentElement.classList.remove("active");
+					}
+
+                    const anchorElement = $el.querySelector('a');
+
+                    if (anchorElement) {
+                        const relValue = anchorElement.getAttribute('data-link-url');
+                        console.log("data-link-url===="+relValue);
+                        const ogiurl = relValue.split('?')[1];
+                        console.log('Anchor data-link-url value:', ogiurl);
+
+                        if (ogiurl === undefined || ogiurl.trim() === "") {
+                            //do nothing
+                        } else {
+                            const currentUrl = window.location.href;
+                            const baseUrl = currentUrl.split('?')[0]; 
+                            const currentUrlParams = currentUrl.split('?')[1];
+                            console.log('current url value:', currentUrlParams);
+                            const hrefValue = anchorElement.getAttribute('href');
+                            var urlObj = new URL(anchorElement);
+                            var params = new URLSearchParams(urlObj.search);
+                            const keyUrl = ogiurl.split('=')[0];
+
+                            if (ogiurl == currentUrlParams) {
+                                params.delete(keyUrl);
+                            } else {
+                                const ogivalue = ogiurl.split('=')[0];
+                                const ogioldvalue = ogiurl.split('=')[1];
+                                const filUrl = ogioldvalue.split('&')[0];
+                                let sizeValue = params.get(ogivalue);
+
+                                if (sizeValue) {
+                                    let sizes = sizeValue.split(',');
+                                    sizes = sizes.filter(ogivalue => ogivalue !== filUrl);
+                                    let newSizeValue = sizes.join(',');
+                                    params.set(ogivalue, newSizeValue);
+                                }
+                            }
+                            
+                            urlObj.search = params.toString();
+                            var updatedUrl = urlObj.toString();
+                            anchorElement.setAttribute('href',updatedUrl);  
+                        }
+                    }
+                }
+            },
+
+            toggleCheckbox: function ($el) {
+                const $checkbox = $el.querySelector('input[type=checkbox]');
+                const parentElement = $el.closest('.pagebuilder-column');
+
+                if (parentElement) {
+                    parentElement.classList.remove("active");
+                }
+
+                if (!$checkbox) {
+                    return
+                }
+
+                if ($checkbox.disabled) {
+                    return true;
+                }
+
+                $checkbox.checked = !$checkbox.checked;
+            },
+
+            toggleSwatch: function ($el) {
+                if ($el.classList.contains('_checked')) {
+                    $el.classList.remove('_checked');
+					const parentElement = $el.closest('.pagebuilder-column');
+					if(parentElement){
+						parentElement.classList.remove("active");
+					}
+
+                    if ($el.classList.contains('swatch-option-link-layered')) {
+                        $el.classList.remove('ring');
+                        $el.classList.remove('ring-primary');
+                    }
+                } else {
+                    $el.classList.add('_checked');
+					const parentElement = $el.closest('.pagebuilder-column');
+					if (parentElement) {
+						parentElement.classList.add("active");
+					}
+					
+                    if ($el.classList.contains('swatch-option-link-layered')) {
+                        $el.classList.add('ring');
+                        $el.classList.add('ring-primary');
+                    }
+                }
+            }
+        }
+    }
+</script>

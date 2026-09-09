@@ -1,0 +1,4 @@
+input CategoryFilterInput  @doc(description: "Defines the filters to be used in the search. A filter contains at least one attribute, a comparison operator, and the value that is being searched for.")
+{
+    featured_categories: FilterEqualTypeInput @doc(description: "Filter by featured categories.")
+}

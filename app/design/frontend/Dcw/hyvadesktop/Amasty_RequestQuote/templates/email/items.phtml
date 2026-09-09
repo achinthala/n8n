@@ -1,0 +1,39 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/** @var \Amasty\RequestQuote\Block\Email\Items $block */
+?>
+
+<?php $quote = $block->getQuote() ?>
+<?php if ($quote): ?>
+    <?php $items = $quote->getAllItems(); ?>
+    <table class="email-items" border="0" width="100%" cellpadding="0" cellspacing="0" align="center">
+        <thead>
+        <tr>
+            <th class="item-info" style="font-weight: 700;font-size: 16px;line-height: 24px;color: #000000;text-align: left;">
+                    <span style="display: block !important;border-bottom: 1px solid #CFCFCF;padding-bottom: 10px;">
+                <?= /* @noEscape */  __('Items') ?></span>
+            </th>
+            <th class="item-qty" style="font-weight: 700;font-size: 16px;line-height: 24px;color: #000000;text-align: center;width:100px;min-width: 100px;">
+                <span style="display: block !important;border-bottom: 1px solid #CFCFCF;padding-bottom: 10px;"><?= /* @noEscape */  __('Qty') ?></span>
+            </th>
+            <th class="item-price" style="font-weight: 700;font-size: 16px;line-height: 24px;color: #000000;text-align: right;width: 120px;min-width: 120px;box-sizing: border-box !important;">
+                <span style="display: block !important;border-bottom: 1px solid #CFCFCF;padding-bottom: 10px;"><?= /* @noEscape */  __('Price') ?></span>
+            </th>
+        </tr>
+        </thead>
+        <?php foreach ($items as $item): ?>
+            <?php if (!$item->getParentItem()): ?>
+                <tbody>
+                <?= $block->getItemHtml($item) ?>
+                </tbody>
+            <?php endif; ?>
+        <?php endforeach; ?>
+        <tfoot class="order-totals">
+        <?= $block->getChildHtml('quote_totals') ?>
+        </tfoot>
+    </table>
+<?php endif; ?>

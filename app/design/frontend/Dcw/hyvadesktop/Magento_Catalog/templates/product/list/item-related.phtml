@@ -1,0 +1,616 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\HeroiconsSolid;
+use Hyva\Theme\ViewModel\ProductCompare;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Wishlist;
+use Magento\Catalog\Block\Product\AbstractProduct;
+use Magento\Catalog\Helper\Output as CatalogOutputHelper;
+use Magento\Catalog\ViewModel\Product\OptionsData as ProductOptionsData;
+use Magento\Framework\Escaper;
+use Magento\Catalog\Model\Product;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+
+// phpcs:disable Magento2.Templates.ThisInTemplate.FoundHelper
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var AbstractProduct $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var ProductListItem $productListItemViewModel */
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+
+/** @var CatalogOutputHelper $catalogOutputHelper */
+$catalogOutputHelper = $this->helper(CatalogOutputHelper::class);
+
+/** @var ProductCompare $compareViewModel */
+$compareViewModel = $viewModels->require(ProductCompare::class);
+/** @var Wishlist $wishlistViewModel */
+$wishlistViewModel = $viewModels->require(Wishlist::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var HeroiconsSolid $heroiconsSolid */
+$heroiconsSolid = $viewModels->require(HeroiconsSolid::class);
+
+$productOptionsViewmodel = $viewModels->require(ProductOptionsData::class);
+
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+/** @var Magento\Catalog\Model\Product $product */
+$product = $block->getData('product');
+$imageDisplayArea = $block->getData('image_display_area');
+$templateType = $block->getData('template_type');
+$viewMode = $block->getData('view_mode');
+$showDescription = $block->getData('show_description');
+$showAddToWishlist = $wishlistViewModel->isEnabled();
+$showAddToCompare = $compareViewModel->showInProductList();
+$viewIsGrid = $viewMode === 'grid';
+if (!$product) {
+    return '';
+}
+$productId = (int)$product->getId();
+$productAttributeOptions = $customViewModel->getConfigurableAttributeOptions($product);
+$configOptionCount=count($productAttributeOptions);
+$productUrl=$product->getProductUrl();
+$options   = $productOptionsViewmodel->getOptionsData($product);
+$uniqueId = '_' . uniqid();
+$hideDetails       = $block->getData('hide_details') ?: false;
+$hideRatingSummary = $block->getData('hide_rating_summary') ?: false;
+$imageCustomAttributes = $product->getData('image_custom_attributes')
+    ?? $block->getData('image_custom_attributes')
+    ?? [];
+$attribute = $customViewModel->getAttributeByCode('incstores_pim_color_axis');
+$attributeId = $attribute->getAttributeId();
+$getBrandLogo = $customViewModel->getBrandLogo($productId);
+$request = $customViewModel->getRequest();
+$actionfullname = $request->getFullActionName();
+$optionIdvalue = $product->getQuickShip();
+
+$swatchimageval = false;
+
+if($optionIdvalue!="") {
+    $swatchimageval = $customViewModel->getSwatchImage($optionIdvalue);
+}
+
+$calculatorType = $product->getAttributeText('incstores_pim_calculator_type');
+$childCalculatorMap = [];
+$childSaleableMap = [];
+$hasAddToCartChild = false;
+
+if ($product->getTypeId() === 'configurable') {
+    $usedProducts = $product->getTypeInstance()->getUsedProducts($product);
+    foreach ($usedProducts as $child) {
+        if ($child->getStatus() != \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED) {
+            continue;
+        }
+        $childCalcType = $child->getAttributeText('incstores_pim_calculator_type');
+        if (in_array(strtolower((string)$childCalcType), ['none', 'case', 'roll', 'sqft', 'pre_cut_roll'], true)) {
+            $hasAddToCartChild = true;
+        }
+        $keyParts = [];
+        foreach ($productAttributeOptions as $configAttr) {
+            $attrCode = $configAttr['attribute_code'] ?? '';
+            $attrId = (int)($configAttr['attribute_id'] ?? $configAttr['id'] ?? 0);
+            if ($attrCode && $attrId) {
+                $val = $child->getData($attrCode);
+                if ($val !== null && $val !== '') {
+                    $keyParts[] = $attrId . '_' . $val;
+                }
+            }
+        }
+        sort($keyParts);
+        $mapKey = implode('|', $keyParts);
+        if ($mapKey) {
+            $childCalculatorMap[$mapKey] = strtolower((string)$childCalcType);
+        }
+    }
+    $childSaleableMap = $customViewModel->getChildSaleableMap($product, $productAttributeOptions);
+    $showAddToCartInPopup = $hasAddToCartChild;
+    $hasNonAddableChild = false;
+    foreach ($childCalculatorMap as $ct) {
+        if (!in_array($ct, ['none', 'case', 'roll', 'sqft', 'pre_cut_roll'], true)) {
+            $hasNonAddableChild = true;
+            break;
+        }
+    }
+    $isConfigurableWithMixedChildren = $hasAddToCartChild && $hasNonAddableChild;
+} else {
+    $showAddToCartInPopup = in_array(strtolower((string)$calculatorType), ['none', 'case', 'sqft', 'pre_cut_roll'], true);
+    $isConfigurableWithMixedChildren = false;
+}
+
+// Compute secondary price (per case or per tile) - use finalPrice from product/option config
+$secondaryPriceFormatted = '';
+$secondaryPriceOldFormatted = '';
+$secondaryPriceLabel = '';
+$showSecondaryPrice = false;
+$coveragePerCase = 0;
+$sqftPerTile = 0;
+
+if ($product->getTypeId() === 'configurable') {
+    $usedProducts = $product->getTypeInstance()->getUsedProducts($product);
+    $minPriceChild = null;
+    $minPrice = PHP_FLOAT_MAX;
+    foreach ($usedProducts as $child) {
+        if ($child->getStatus() != \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_ENABLED) {
+            continue;
+        }
+        $fp = (float)$child->getFinalPrice(1);
+        if ($fp < $minPrice && $fp > 0) {
+            $minPrice = $fp;
+            $minPriceChild = $child;
+        }
+    }
+    $priceProduct = $minPriceChild ?? $product;
+} else {
+    $priceProduct = $product;
+}
+
+$calcTypeForSecondary = strtolower((string)($priceProduct->getAttributeText('incstores_pim_calculator_type') ?? ''));
+$finalPrice = (float)$priceProduct->getFinalPrice(1);
+$regularPrice = (float)$priceProduct->getPrice();
+$coveragePerCase = (float)($priceProduct->getIncstoresPimCoverage() ?: 0);
+$exactWidth = (float)($priceProduct->getData('incstores_pim_exact_width_inches') ?: 0);
+$exactLength = (float)($priceProduct->getData('incstores_pim_exact_length_inches') ?: 0);
+if ($calcTypeForSecondary === 'roll' && $exactWidth === 0.0 && method_exists($priceProduct, 'getRollWidth')) {
+    $exactWidth = (float)$priceProduct->getRollWidth();
+}
+if ($exactWidth > 0 && $exactLength > 0) {
+    $sqftPerTile = round(($exactWidth / 12) * ($exactLength / 12), 2);
+}
+
+if ($finalPrice > 0) {
+    if ($calcTypeForSecondary === 'roll' && $exactWidth > 0) {
+        $rollWidthFt = ceil($exactWidth / 12);
+        $pricePerLinearFoot = $rollWidthFt > 0 ? $rollWidthFt * $finalPrice : $finalPrice;
+        $secondaryPriceFormatted = strip_tags($productViewModel->format($pricePerLinearFoot));
+        if ($regularPrice > $finalPrice && $regularPrice > 0) {
+            $oldPricePerLinearFoot = $rollWidthFt > 0 ? $rollWidthFt * $regularPrice : $regularPrice;
+            $secondaryPriceOldFormatted = strip_tags($productViewModel->format($oldPricePerLinearFoot));
+        }
+        $secondaryPriceLabel = '/linear foot';
+        $showSecondaryPrice = true;
+    } elseif (in_array($calcTypeForSecondary, ['case', 'sqft'], true) && $coveragePerCase > 0) {
+        $secondaryPriceFormatted = strip_tags($productViewModel->format($finalPrice));
+        if ($regularPrice > $finalPrice && $regularPrice > 0) {
+            $secondaryPriceOldFormatted = strip_tags($productViewModel->format($regularPrice));
+        }
+        $secondaryPriceLabel = '/case';
+        $showSecondaryPrice = true;
+    } elseif ($calcTypeForSecondary === 'sqft' && $priceProduct->getData('incstores_pim_has_corner_border_center') == 0
+        && $sqftPerTile > 0) {
+        $secondaryPriceFormatted = strip_tags($productViewModel->format($finalPrice));
+        if ($regularPrice > $finalPrice && $regularPrice > 0) {
+            $secondaryPriceOldFormatted = strip_tags($productViewModel->format($regularPrice));
+        }
+        $secondaryPriceLabel = '/tile';
+        $showSecondaryPrice = true;
+    }
+}
+?>
+
+<?php if ($product->isSaleable()): ?>
+<form method="post"
+    action="<?= $escaper->escapeUrl($productViewModel->getAddToCartUrl($product, ['useUencPlaceholder' => true])) ?>"
+    class="item product product-item product_addtocart_form flex flex-col pr-6 m-0 w-full relative align-top <?= $viewIsGrid ? '' : 'md:flex-row' ?>
+    <?= $swatchimageval ? 'avail-freeship': 'not-avail-freeship'  ?>"
+    <?php if ($product->getOptions()): ?>
+    enctype="multipart/form-data"
+    <?php endif; ?>
+    onsubmit="var q=this.querySelector('input[name=qty]');if(q){var v=parseInt(q.value,10);if(isNaN(v)||v<1){q.value=1;}}return true;"
+>
+    <?= /** @noEscape */ $block->getBlockHtml('formkey') ?>
+    <input type="hidden" name="product" value="<?= (int)$productId ?>"/>
+    <?php foreach ($options as $optionItem): ?>
+    <input type="hidden"
+           name="<?= $escaper->escapeHtml($optionItem['name']) ?>"
+           value="<?= $escaper->escapeHtml($optionItem['value']) ?>">
+    <?php endforeach; ?>
+    <?php else: ?>
+        <!-- item product product-item card card-interactive flex flex-col w-full -->
+<div class="item product product-item product_addtocart_form flex flex-col pr-6 m-0 w-full relative align-top <?= $viewIsGrid ? '' : 'md:flex-row' ?> <?= $swatchimageval ? 'avail-freeship': 'not-avail-freeship'  ?>">
+<?php endif; ?>
+<div class="catergory_slider_content bg-white">    
+    <?php /* Product Image */ ?>
+    <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-new-<?php echo $product->getId();?>"
+        class="product photo product-item-photo block mx-auto w-full desk-view <?= $viewIsGrid ? '' : 'md:w-2/6 md:mb-0 md:mr-5' ?>"
+        tabindex="-1"
+    >
+        <?= $block->getImage($product, $imageDisplayArea)
+            ->setTemplate('Magento_Catalog::product/list/image.phtml')
+            ->setData('custom_attributes', $imageCustomAttributes)
+            ->setProductId($productId)
+            ->toHtml(); ?>
+    </a>
+    <div class="product-info flex">
+
+        <div class="product-info-left">      
+                <?php /* Product Image */ ?>
+                <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-new-<?php echo $product->getId();?>"
+                    class="product photo product-item-photo block mx-auto w-full mob-view <?= $viewIsGrid ? '' : 'md:w-2/6 md:mb-0 md:mr-5' ?>"
+                    tabindex="-1"
+                >
+                    <?= $block->getImage($product, $imageDisplayArea)
+                        ->setTemplate('Magento_Catalog::product/list/image.phtml')
+                        ->setData('custom_attributes', $imageCustomAttributes)
+                        ->setProductId($productId)
+                        ->toHtml(); ?>
+                </a>      
+                <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-name-<?php echo $product->getId();?>" class="products-name">
+                    <?php $productNameStripped = $block->stripTags($product->getName(), null, true); ?>
+                    <div class="text-primary product-name <?= $viewIsGrid ? '' : 'md:text-left' ?>">
+                        <span class="product-item-link text-size18 text-black font-semibold no-underline relative block"
+                        href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-nname-<?php echo $product->getId();?>">
+                            <?= /* @noEscape */ $catalogOutputHelper->productAttribute($product, $product->getName(), 'name') ?>
+                        </span>
+                    </div>
+
+                    <?php //if (!$hideRatingSummary): ?>
+                        <div class="ratings <?= $viewIsGrid ? '' : 'md:mx-0 md:w-auto' ?>" data-nosnippet>
+                            <div data-bv-show="rating_summary"
+                                data-bv-product-id="<?= $product->getSku(); ?>"
+                                data-bv-redirect-url="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                            </div>
+                        </div>
+                    <?php //endif; ?>
+
+                    <?php if ($product->isAvailable() && !$hideDetails && $viewMode=='list'): ?>
+                        <?= $block->getProductDetailsHtml($product) ?>
+                    <?php endif; ?>
+
+                    <?php if ($showDescription): ?>
+                    <div class="mt-2 mb-1 items-center justify-center text-primary text-center <?= $viewIsGrid ? '' : 'md:text-left' ?>">
+                        <?= /* @noEscape */ $productViewModel->getShortDescriptionForProduct($product) ?>
+                    </div>
+                    <?php endif; ?>
+                <div class="color_counts">
+                    <?php if ($product->getTypeId() == 'configurable' && $viewMode=='grid') {
+                        $config_color_arr = [];
+                        $_children = $product->getTypeInstance()->getUsedProducts($product);
+                        foreach($_children as $_child){
+                            $config_color_arr[] = $_child->getIncstoresPimColorAxis();
+                        }
+                        $uniqueColorCount = count(array_unique(array_filter($config_color_arr)));
+                        if ($uniqueColorCount > 1) {
+                            ?>
+                        <div class="color_count text-size14 font-normal text-black">Available in <?php echo $uniqueColorCount ?> colors</div>
+                            <?php
+                        }
+                    }
+                    ?>
+                    <?php  if (!empty($product->getIncstoresPimFeatureBullet1())) {?>
+                        <div class="color_count text-size14 font-normal text-black deal-of-month"><?php echo $product->getIncstoresPimFeatureBullet1();?></div>
+                    <?php }?>
+                    <?php if (!empty($product->getIncstoresPimFeatureBullet2())) {?>
+                        <div class="color_count text-size14 font-normal text-black ship-next"><?php echo $product->getIncstoresPimFeatureBullet2();?></div>
+                    <?php } ?>
+                </div>
+                <span class="learn-more-link hover:no-underline">Learn More</span>
+            </a>            
+        </div>
+
+        <div class="product-info-middle">
+            <?php
+            $optionConfigJson = ($product->getTypeId() === 'configurable') ? $customViewModel->getConfigurableJsonConfig($product) : '';
+            ?>
+            <div class="color_options configurable-options-related"
+                <?php if ($product->getTypeId() === 'configurable' && !empty($childCalculatorMap)): ?>
+                data-child-calculator-map="<?= $escaper->escapeHtmlAttr(json_encode($childCalculatorMap)) ?>"
+                data-child-saleable-map="<?= $escaper->escapeHtmlAttr(json_encode($childSaleableMap)) ?>"
+                data-product-id="<?= (int)$productId ?>"
+                data-product-url="<?= $escaper->escapeUrl($productUrl) ?>"
+                <?php if ($optionConfigJson !== ''): ?>
+                data-option-config="<?= $escaper->escapeHtmlAttr($optionConfigJson) ?>"
+                <?php endif; ?>
+                <?php endif; ?>>
+                <?php if ($showAddToCartInPopup && $product->getTypeId() == 'configurable' && $viewMode == 'grid' && !empty($productAttributeOptions)): ?>
+                    <?php foreach ($productAttributeOptions as $configAttribute): ?>
+                        <?php
+                        $attrCode = $configAttribute['attribute_code'] ?? '';
+                        if (!in_array($attrCode, ['incstores_pim_color_axis', 'incstores_pim_variant_axis'], true)) {
+                            continue;
+                        }
+                        $attrId = (int)($configAttribute['attribute_id'] ?? $configAttribute['id'] ?? 0);
+                        if ($attrCode === 'incstores_pim_color_axis' || $attrId === $attributeId) {
+                            $attrLabel = $escaper->escapeHtml(__('Colors')->render());
+                        } elseif ($attrCode === 'incstores_pim_variant_axis') {
+                            $attrLabel = $escaper->escapeHtml(__('Select')->render());
+                        } else {
+                            $attrLabel = $escaper->escapeHtml($configAttribute['store_label'] ?? $configAttribute['label'] ?? '');
+                        }
+                        $attrValues = $configAttribute['values'] ?? [];
+                        if (empty($attrValues)) {
+                            continue;
+                        }
+                        $hasOnlyNaOptions = true;
+                        foreach ($attrValues as $opt) {
+                            $label = trim((string)($opt['label'] ?? ''));
+                            if ($label !== '' && strtoupper($label) !== 'NA' && strtoupper($label) !== 'N/A') {
+                                $hasOnlyNaOptions = false;
+                                break;
+                            }
+                        }
+                        if ($hasOnlyNaOptions) {
+                            $fixedVal = '';
+                            foreach ($attrValues as $opt) {
+                                $v = $opt['value_index'] ?? '';
+                                if ($v !== '') {
+                                    $fixedVal = $v;
+                                    break;
+                                }
+                            }
+                            if ($fixedVal !== ''): ?>
+                            <input type="hidden" class="super-attribute-fixed" name="super_attribute[<?= $attrId ?>]" value="<?= $escaper->escapeHtmlAttr($fixedVal) ?>" data-attr-id="<?= $attrId ?>">
+                            <?php endif;
+                            continue;
+                        }
+                        ?>
+                        <div class="config-option-item text-size14 font-normal text-darkblack mb-2">
+                            <span class="color_count_label text-size14 font-normal text-darkblack"><?= $attrLabel ?></span>
+                            <select aria-label="<?= $attrLabel ?>"
+                                    name="super_attribute[<?= $attrId ?>]"
+                                    id="super_attribute_<?= $productId ?>_<?= $attrId ?>"
+                                    class="text-size14 font-normal text-darkblack form-select super-attribute-select"
+                                    data-product-id="<?= $productId ?>"
+                                    data-attr-id="<?= $attrId ?>"
+                                    onchange="selectSwatchRelated(this, '<?= $productId ?>', '<?= $escaper->escapeUrl($product->getProductUrl()) ?>', <?= $attrId ?>);">
+                                <?php $firstOpt = true; foreach ($attrValues as $opt): ?>
+                                    <?php $valueIndex = $opt['value_index'] ?? ''; $optLabel = $opt['label'] ?? ''; ?>
+                                    <?php if ($valueIndex !== ''): ?>
+                                        <option value="<?= $escaper->escapeHtmlAttr($valueIndex) ?>"<?= $firstOpt ? ' selected' : '' ?>><?= $escaper->escapeHtml($optLabel) ?></option>
+                                        <?php $firstOpt = false; ?>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+            <script>
+                function initPriceBox_<?= (int)$productId ?>() {
+                    return {
+                        showSecondaryPrice: <?= $showSecondaryPrice ? 'true' : 'false' ?>,
+                        coveragePerCase: <?= (float)$coveragePerCase ?>,
+                        sqftPerTile: <?= (float)$sqftPerTile ?>,
+                        secondaryPriceFormatted: '<?= /* @noEscape */ $escaper->escapeJs($secondaryPriceFormatted) ?>',
+                        secondaryPriceOldFormatted: '<?= /* @noEscape */ $escaper->escapeJs($secondaryPriceOldFormatted ?? '') ?>',
+                        secondaryPriceLabel: '<?= /* @noEscape */ $escaper->escapeJs($secondaryPriceLabel) ?>',
+                        updatePrice(priceData) {
+                            if (!priceData || !priceData.finalPrice || typeof priceData.finalPrice.amount === 'undefined') return;
+                            const root = this.$root;
+                            const cov = parseFloat(priceData.getIncstoresPimCoverage) || 0;
+                            const calcType = (priceData.calculatorType || '').toLowerCase();
+                            const exactWidth = parseFloat(priceData.exactWidth) || 0;
+                            const exactLength = parseFloat(priceData.exactLength) || 0;
+                            const rollWidthFt = exactWidth > 0 ? exactWidth / 12 : 0;
+                            const sqftPerTileVal = (exactWidth > 0 && exactLength > 0) ? (exactWidth/12)*(exactLength/12) : 0;
+                            const divisorSqft = (calcType === 'roll' && cov === 0 && rollWidthFt > 0) ? rollWidthFt : cov;
+                            var displayFinalPrice = priceData.finalPrice.amount;
+                            var displayOldPrice = priceData.oldPrice ? priceData.oldPrice.amount : displayFinalPrice;
+                            var displayBasePrice = priceData.basePrice ? priceData.basePrice.amount : displayFinalPrice;
+                            if (divisorSqft > 0 && ['case','roll','sqft'].includes(calcType)) {
+                                displayFinalPrice = priceData.finalPrice.amount / divisorSqft;
+                                displayOldPrice = priceData.oldPrice ? priceData.oldPrice.amount / divisorSqft : displayFinalPrice;
+                                displayBasePrice = priceData.basePrice ? priceData.basePrice.amount / divisorSqft : displayFinalPrice;
+                            } else if (sqftPerTileVal > 0 && calcType === 'sqft') {
+                                displayFinalPrice = priceData.finalPrice.amount / sqftPerTileVal;
+                                displayOldPrice = priceData.oldPrice ? priceData.oldPrice.amount / sqftPerTileVal : displayFinalPrice;
+                                displayBasePrice = priceData.basePrice ? priceData.basePrice.amount / sqftPerTileVal : displayFinalPrice;
+                            }
+                            const regularPriceLabel = root.querySelector('.normal-price .price-label') || root.querySelector('.price-label');
+                            const regularPriceElement = root.querySelector('.normal-price [data-price-type=finalPrice].price-wrapper .price')
+                                || root.querySelector('.price-container [data-price-type=finalPrice].price-wrapper .price')
+                                || root.querySelector('[data-price-type=finalPrice].price-wrapper .price')
+                                || root.querySelector('.price-wrapper .price');
+                            const basePriceElement = root.querySelector('[data-price-type=basePrice].price-wrapper .price');
+                            if (regularPriceLabel) {
+                                if (priceData.oldPrice && priceData.finalPrice.amount < priceData.oldPrice.amount) {
+                                    regularPriceLabel.classList.add('hidden');
+                                } else {
+                                    regularPriceLabel.classList.remove('hidden');
+                                }
+                            }
+                            if (regularPriceElement) regularPriceElement.innerText = hyva.formatPrice(displayFinalPrice);
+                            if (basePriceElement && priceData.basePrice) basePriceElement.innerText = hyva.formatPrice(displayBasePrice);
+                            const priceMrpNew = root.querySelector('.price-mrp-new');
+                            const savePriceEl = root.querySelector('.price-mrp .savePrice');
+                            if (priceMrpNew && priceData.oldPrice && priceData.finalPrice.amount < priceData.oldPrice.amount) {
+                                priceMrpNew.innerHTML = 'was ' + hyva.formatPrice(displayOldPrice);
+                                const priceMrp = root.querySelector('.price-mrp');
+                                if (priceMrp) priceMrp.style.display = '';
+                                if (savePriceEl) {
+                                    const saveAmt = displayOldPrice - displayFinalPrice;
+                                    const pct = Math.round(saveAmt * 100 / displayOldPrice);
+                                    savePriceEl.textContent = 'Save ' + pct + '%';
+                                }
+                            } else if (priceMrpNew && (!priceData.oldPrice || priceData.finalPrice.amount >= priceData.oldPrice.amount)) {
+                                const priceMrp = root.querySelector('.price-mrp');
+                                if (priceMrp) priceMrp.style.display = 'none';
+                            }
+                            if (priceData.getIncstoresPimCoverage !== undefined || priceData.calculatorType !== undefined) {
+                                const cov = parseFloat(priceData.getIncstoresPimCoverage) || 0;
+                                const calcType = (priceData.calculatorType || '').toLowerCase();
+                                const exactWidth = parseFloat(priceData.exactWidth) || 0;
+                                const exactLength = parseFloat(priceData.exactLength) || 0;
+                                const sqftPerTileVal = (exactWidth > 0 && exactLength > 0) ? (exactWidth/12)*(exactLength/12) : this.sqftPerTile;
+                                const rollWidthFt = exactWidth > 0 ? exactWidth / 12 : 0;
+                                if (calcType === 'none') {
+                                    this.secondaryPriceFormatted = '';
+                                    this.secondaryPriceOldFormatted = '';
+                                    this.secondaryPriceLabel = '';
+                                } else if (calcType === 'roll' && (rollWidthFt > 0 || cov > 0)) {
+                                    this.coveragePerCase = cov > 0 ? cov : rollWidthFt;
+                                    this.sqftPerTile = 0;
+                                    this.secondaryPriceFormatted = hyva.formatPrice(priceData.finalPrice.amount);
+                                    this.secondaryPriceOldFormatted = (priceData.oldPrice && priceData.oldPrice.amount > priceData.finalPrice.amount) ? hyva.formatPrice(priceData.oldPrice.amount) : '';
+                                    this.secondaryPriceLabel = '/linear foot';
+                                } else if (cov > 0 && ['case','sqft'].includes(calcType)) {
+                                    this.coveragePerCase = cov;
+                                    this.sqftPerTile = 0;
+                                    this.secondaryPriceFormatted = hyva.formatPrice(priceData.finalPrice.amount);
+                                    this.secondaryPriceOldFormatted = (priceData.oldPrice && priceData.oldPrice.amount > priceData.finalPrice.amount) ? hyva.formatPrice(priceData.oldPrice.amount) : '';
+                                    this.secondaryPriceLabel = '/case';
+                                } else if (sqftPerTileVal > 0 && calcType === 'sqft') {
+                                    this.sqftPerTile = sqftPerTileVal;
+                                    this.coveragePerCase = 0;
+                                    this.secondaryPriceFormatted = hyva.formatPrice(priceData.finalPrice.amount);
+                                    this.secondaryPriceOldFormatted = (priceData.oldPrice && priceData.oldPrice.amount > priceData.finalPrice.amount) ? hyva.formatPrice(priceData.oldPrice.amount) : '';
+                                    this.secondaryPriceLabel = '/tile';
+                                }
+                            }
+                        }
+                    };
+                }
+                function selectSwatchRelated(selectEl, productId, produrl, attributeId) {
+                    var container = selectEl.closest('.configurable-options-related');
+                    var baseUrl = produrl;
+                    var params = [];
+                    if (container) {
+                        container.querySelectorAll('.super-attribute-select, input.super-attribute-fixed').forEach(function(el) {
+                            var attrId = el.dataset.attrId || el.getAttribute('data-attr-id');
+                            var val = el.tagName === 'SELECT' ? el.value : (el.value || '');
+                            if (attrId && val) params.push('super_attribute[' + attrId + ']=' + encodeURIComponent(val));
+                        });
+                        if (params.length) baseUrl = produrl + (produrl.indexOf('?') >= 0 ? '&' : '?') + params.join('&');
+                    }
+                    var imgLink = document.getElementById('prodatas-new-' + productId);
+                    if (imgLink) imgLink.setAttribute('href', baseUrl);
+                    var iconLink = document.getElementById('prodatas-icon-' + productId);
+                    if (iconLink) iconLink.setAttribute('href', baseUrl);
+                    var shipLink = document.getElementById('prodatas-ship-' + productId);
+                    if (shipLink) shipLink.setAttribute('href', baseUrl);
+                    var nameLink = document.getElementById('prodatas-name-' + productId);
+                    if (nameLink) nameLink.setAttribute('href', baseUrl);
+                    var nnameLink = document.getElementById('prodatas-nname-' + productId);
+                    if (nnameLink) nnameLink.setAttribute('href', baseUrl);
+                    var pblockLink = document.getElementById('prodatas-pblock-' + productId);
+                    if (pblockLink) pblockLink.setAttribute('href', baseUrl);
+                    if (typeof updateRelatedAddToCartVisibility === 'function') {
+                        updateRelatedAddToCartVisibility(productId, selectEl);
+                    }
+                    if (typeof updateRelatedPrice === 'function') {
+                        updateRelatedPrice(productId, selectEl);
+                    }
+                }
+            </script>
+            <div class="qty_fields flex items-center justify-center justify-between w-full">
+                <?php if ($product->isSaleable()):?>
+                    <div class="field qty flex items-center justify-center">
+                        <label class="label text-size14 font-semibold text-darkblack" for="qty"><span><?= $escaper->escapeHtml(__('Qty')) ?></span></label>
+                        <div class="control">
+                            <input type="number"
+                                name="qty"
+                                value="1"
+                                min="1"
+                                step="1"
+                                title="<?= $escaper->escapeHtml(__('Qty')) ?>"
+                                class="input-text qty text-size16 font-semibold text-darkblack text-center related-popup-qty"
+                                data-validate="<?= $escaper->escapeHtml(json_encode($block->getQuantityValidators())) ?>"
+                                oninput="var v=parseInt(this.value,10);if(this.value!==''&&(isNaN(v)||v<1))this.value=1;"
+                                onchange="var v=parseInt(this.value,10);if(isNaN(v)||v<1||this.value==='')this.value=1;"/>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="product-info-right">
+            <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" id ="prodatas-pblock-<?php echo $product->getId();?>" class="priceBlock">
+                <div class="pt-0 pb-0 text-gray-900"
+                     x-data="initPriceBox_<?= (int)$productId ?>()"
+                     @update-prices-<?= (int)$productId ?>.window="updatePrice($event.detail);">
+                    <?= /* @noEscape */ $productListItemViewModel->getProductPriceHtml($product) ?>
+                    <?php
+                    $showSecondaryPriceBlock = $showSecondaryPrice
+                        || ($product->getTypeId() === 'configurable' && $optionConfigJson !== ''
+                            && (in_array('case', $childCalculatorMap ?? []) || in_array('roll', $childCalculatorMap ?? []) || in_array('sqft', $childCalculatorMap ?? [])));
+                    if ($showSecondaryPriceBlock):
+                    ?>
+                    <div class="price_per_case mt-1 inter-imp text-size13 font-medium text-blackalt"
+                         x-show="secondaryPriceFormatted"
+                         x-cloak
+                         x-transition>
+                        <span x-text="secondaryPriceFormatted"><?= /* @noEscape */ $secondaryPriceFormatted ?></span><span x-text="secondaryPriceLabel"><?= /* @noEscape */ $secondaryPriceLabel ?></span>
+                        <span class="line-through mr-1" x-show="secondaryPriceOldFormatted" x-text="secondaryPriceOldFormatted"></span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </a>  
+
+            <div class="compare-buttons pt-0 m-0">
+                <?php if ($product->isSaleable()):?>
+                    <?php if ($showAddToCartInPopup): ?>
+                    <?php $isConfigurableWithMixedChildren = $isConfigurableWithMixedChildren ?? false; ?>
+                    <div id="related-addtocart-block-<?= (int)$productId ?>" class="related-addtocart-block flex items-center"
+                        style="<?= $isConfigurableWithMixedChildren ? 'display:none' : '' ?>">                        
+                        <button type="submit"
+                            class="btn btn-primary btn_cart bg-custom-blue text-size16 font-semibold text-custom-white text-center px-6 py-3 min-h-[44px] uppercase
+                            <?= $viewIsGrid ? '' : 'mr-auto md:mr-0' ?>"
+                            aria-label="<?= $escaper->escapeHtmlAttr(__('Add to Cart')) ?>"
+                            title="<?= $escaper->escapeHtmlAttr(__('Add to Cart')) ?>">
+                            <span class="<?= $viewIsGrid ? 'md:ml-0 md:hidden lg:ml-0 lg:inline' : '' ?>">
+                                <?= $escaper->escapeHtml(__('Add to Cart')) ?>
+                            </span>
+                        </button>
+                    </div>
+                    <a id="related-view-block-<?= (int)$productId ?>" class="btn btn-primary btn_cart bg-custom-blue text-size16 font-semibold text-custom-white text-center px-6 py-3 min-h-[44px] uppercase
+                        <?= $viewIsGrid ? '' : 'mr-auto md:mr-0' ?>"
+                        aria-label="<?= $escaper->escapeHtmlAttr(__('View')) ?>"
+                        href="<?= $escaper->escapeUrl($productUrl) ?>"
+                        style="<?= $isConfigurableWithMixedChildren ? '' : 'display:none' ?>">
+                        <span class="<?= $viewIsGrid ? 'md:ml-0 md:hidden lg:ml-0 lg:inline' : '' ?>">
+                            <?= $escaper->escapeHtml(__('View')) ?>
+                        </span>
+                    </a>
+                    <?php else: ?>
+                    <a class="btn btn-primary btn_cart bg-custom-blue text-size16 font-semibold text-custom-white text-center px-6 py-3 min-h-[44px] uppercase
+                        <?= $viewIsGrid ? '' : 'mr-auto md:mr-0' ?>"
+                        aria-label="<?= $escaper->escapeHtmlAttr(__('View')) ?>"
+                        href="<?= $escaper->escapeUrl($productUrl) ?>">
+                        <span class="<?= $viewIsGrid ? 'md:ml-0 md:hidden lg:ml-0 lg:inline' : '' ?>">
+                            <?= $escaper->escapeHtml(__('View')) ?>
+                        </span>
+                    </a>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <div class="w-auto justify-center <?= $viewIsGrid ? 'mr-auto' : 'mr-auto md:mr-0' ?>">
+                        <?= $block->getChildBlock('stockstatus')->setData('product', $product)->toHtml() ?>
+                    </div>
+                <?php endif; ?>
+                <?php /*if ($showAddToWishlist): ?>
+                <button x-data="initWishlist()"
+                        @click.prevent="addToWishlist(<?= (int)$productId ?>)"
+                        aria-label="<?= $escaper->escapeHtmlAttr(__('Add to Wish List')) ?>"
+                        type="button"
+                        class="inline-flex shrink-0 items-center justify-center">
+                    <?= $heroiconsSolid->heartHtml("w-5 h-5", 25, 25) ?>
+                </button>
+                <?php endif; */?>                                
+            </div>            
+        </div>     
+
+    </div>
+</div>
+<?php if ($product->isSaleable()): ?>
+</form>
+<?php else: ?>
+</div>
+<?php endif; ?>

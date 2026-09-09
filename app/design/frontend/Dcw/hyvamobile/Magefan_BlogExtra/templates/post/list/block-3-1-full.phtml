@@ -1,0 +1,143 @@
+<?php
+/**
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
+ */
+?>
+<?php
+/**
+ * Blog recent posts widget
+ *
+ * @var $block \Magefan\Blog\Block\Widget\Recent
+ */
+?>
+
+<?php
+$width = (int)$block->getBackgroundImageWidth() ?: 1000;
+$imageHelper = $this->helper(\Magefan\Blog\Helper\Image::class);
+?>
+
+<?php
+    $_postCollection = $block->getPostCollection();
+    $count = (int) $_postCollection->count();
+?>
+
+<?php if ($count) { ?>
+    <?= $block->getStyleViewModel()->getStyle('Magefan_Blog::css/bootstrap-4.4.1-custom-min.css') ?>
+    <?= $block->getStyleViewModel()->getStyle('Magefan_BlogExtra::css/template-all.css') ?>
+    <?= $block->getStyleViewModel()->getStyle('Magefan_BlogExtra::css/template-3.css') ?>
+    <?= $block->getStyleViewModel()->getStyle('Magefan_BlogExtra::css/template-3.1.css') ?>
+<!-- Post Grid Three Column Mix Template 3-1 -->
+<div class="template-3-1 mb-5">
+        <div class="block-inner">
+            <!-- block title -->
+            <?php if ($block->getTitle()) { ?>
+                <div class="block-title-wrap sm:bg-transparent border-0 m-0">
+                    <h4 class="block-title text-size24 font-semibold text-custom-black sm:bg-transparent border-0"><?= $block->escapeHtml($block->getTitle()) ?></h4>
+                    <h6 class="block-title text-size16 font-normal text-custom-black">Explore some of our latest articles</h6>
+                </div>
+            <?php } ?>
+
+            <!-- block content -->
+            <div class="block-content m-0">
+                <!-- post grid -->
+                <div class="block-post-grid col-3-wrap">
+                <?php foreach ($_postCollection as $_post) { ?>
+                        <?php
+                        $_postUrl = $block->escapeUrl($_post->getPostUrl());
+                        $_postName = $block->escapeHtml($_post->getTitle());
+                        ?>
+                        <!-- post item -->
+                        <div class="block-post">
+                            <!-- img container -->
+                            <div class="image-container">
+                                <!-- post image -->
+                                <a class="image-wrap" href="<?= /*@noEscape*/ $_postUrl ?>" title="<?= /*@noEscape*/ $_postName ?>">
+                                    <?php
+                                    $featuredImage = $_post->getFeaturedListImg() ?: $_post->getFeaturedImg();
+                                    if ($featuredImage) {
+                                        $featuredImage = $imageHelper->init($featuredImage)->resize($width, null, false);
+                                        $featuredImgAlt = $_post->getData('featured_list_img_alt') ?: $_post->getData('featured_img_alt');
+                                        if (!$featuredImgAlt) {
+                                            $featuredImgAlt = $_postName;
+                                        }
+                                    } else {
+                                        $featuredImage = $this->getViewFileUrl('Magefan_BlogExtra::images/default-no-image.png');
+                                        $featuredImgAlt  = '';
+                                    }
+                                    ?>
+                                    <div class="animation-type-zoom bg-img mfblogunveil" data-original="<?= $block->escapeHtml($featuredImage) ?>"></div>
+                                </a>
+                               
+                            </div>
+
+                            <!-- block info -->
+                            <div class="post-info">
+                                <!-- post title -->
+                                <div class="post-title-wrap mb-0">
+                                    <h3 class="post-title">
+                                        <a class="text-size22 font-semibold text-darkblack block" href="<?= /*@noEscape*/ $_postUrl ?>"><?= /*@noEscape*/ $_postName ?></a>
+                                    </h3>
+                                </div>
+
+                                <!-- block data -->
+                                <div class="post-data-wrap w-full">
+                                    <!-- post author -->
+                                    <?php /* if ($block->authorEnabled()) { ?>
+                                        <?php if ($_author = $_post->getAuthor()) { ?>
+                                            <span class="post-author-name">
+                                            <?php if ($block->authorPageEnabled()) { ?>
+                                                <a title="<?= $block->escapeHtml($_author->getTitle()) ?>"
+                                                   href="<?= $block->escapeUrl($_author->getAuthorUrl()) ?>"><?= $block->escapeHtml($_author->getTitle()) ?>
+                                                </a>
+                                            <?php } else { ?>
+                                                <?= $block->escapeHtml($_author->getTitle()) ?>
+                                            <?php } ?>
+                                            <span>-</span>
+                                        </span>
+                                        <?php } ?>
+                                    <?php } */ ?>
+
+                                    <!-- post data -->
+                                    <?php if ($_post->isPublishDateEnabled()) { ?>
+                                       <span class="post-data"><span class="text-size14 font-semibold text-black">Posted:</span><i class="text-size14 font-normal text-black"><?= $block->escapeHtml($_post->getPublishDate()) ?></i></span>
+                                    <?php } ?>
+                                    
+                                    <!-- post category-->
+                                        <?php if ($_categoriesCount = $_post->getCategoriesCount()) { ?>
+                                            <span class="post-category"><span class="text-size14 font-semibold text-black">Categories:</span> <?php foreach ($_post->getParentCategories() as $ct) { ?>
+                                                <a class="category-name text-size14 font-normal text-custom-blue"
+                                                href="<?= $block->escapeUrl($ct->getCategoryUrl()) ?>"
+                                                title="<?= $block->escapeHtml($ct->getTitle()) ?>">
+                                                <?= $block->escapeHtml($ct->getTitle()) ?>
+                                            </a>
+                                            <?php } ?>
+                                        </span>
+                                        <?php } ?>
+                                    <!-- end post category-->
+
+                                    <!-- post view -->
+                                    <?php if ($_post->getCommentsCount()) { ?>
+                                        <?php if ($commentCount = $_post->getCommentsCount()) { ?>
+                                            <span class="post-view float-right d-none d-md-block">
+                                                <?= $block->escapeHtml($commentCount)?>
+                                            </span>
+                                        <?php } ?>
+                                    <?php } ?>
+                                </div>
+
+                                <!-- post description -->
+                                <div class="post-description d-none d-xl-block text-size14 font-normal text-black">
+                                    <?= /*@noEscape*/ $_post->getShortFilteredContent() ?>
+                                </div>
+                                <span><a class="read-more relative text-size14 font-normal text-custom-blue" href="<?= /*@noEscape*/ $_postUrl ?>">Read More</a></span>
+                            </div>
+                        </div>
+                        <!-- end post item -->
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?= $block->getToolbarHtml() ?>
+<?php } ?>

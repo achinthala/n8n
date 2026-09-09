@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+/**
+ * BSS Commerce Co.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the EULA
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://bsscommerce.com/Bss-Commerce-License.txt
+ *
+ * @category   BSS
+ * @package    Hyva_BssSocialLogin
+ * @author     Extension Team
+ * @copyright  Copyright (c) 2022 BSS Commerce Co. ( http://bsscommerce.com )
+ * @license    http://bsscommerce.com/Bss-Commerce-License.txt
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="customer.register">
+            <action method="setTemplate" ifconfig="bss_sociallogin/general/enable">
+                <argument name="template" xsi:type="string">Hyva_BssSocialLogin::header/customer-menu/register-link.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="customer.login">
+            <action method="setTemplate" ifconfig="bss_sociallogin/general/enable">
+                <argument name="template" xsi:type="string">Hyva_BssSocialLogin::header/customer-menu/login-link.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="social-login-popup">
+            <action method="setTemplate" ifconfig="bss_sociallogin/general/enable">
+                <argument name="template" xsi:type="string">Hyva_BssSocialLogin::sociallogin.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="popup-login">
+            <action method="setTemplate" ifconfig="bss_sociallogin/general/enable">
+                <argument name="template" xsi:type="string">Hyva_BssSocialLogin::popup/form/login.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="popup-register">
+            <action method="setTemplate" ifconfig="bss_sociallogin/general/enable">
+                <argument name="template" xsi:type="string">Hyva_BssSocialLogin::popup/form/register.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="popup-forgotpassword">
+            <action method="setTemplate" ifconfig="bss_sociallogin/general/enable">
+                <argument name="template" xsi:type="string">Hyva_BssSocialLogin::popup/form/forgotpassword.phtml</argument>
+            </action>
+        </referenceBlock>
+         <referenceBlock name="popup-login" remove="true"/>
+         <referenceBlock name="popup-register" remove="true"/>
+    </body>      
+</page>

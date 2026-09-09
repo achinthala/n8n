@@ -1,0 +1,225 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\Cart\CheckoutConfig;
+use Magento\Checkout\Block\Cart;
+use Magento\Framework\Escaper;
+
+/** @var Cart $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+?>
+
+<?php
+/** @var CheckoutConfig $checkoutConfigViewModel */
+$checkoutConfigViewModel = $viewModels->require(CheckoutConfig::class);
+$serializedCheckoutConfig =  $block->getItemsCount() ? $checkoutConfigViewModel->getSerializedCheckoutConfig() : 'false';
+
+?>
+<script>
+    window.checkoutConfig = <?= /* @noEscape  */ $serializedCheckoutConfig ?>;
+    window.customerData = window.checkoutConfig.customerData;
+    window.isCustomerLoggedIn = window.checkoutConfig.isCustomerLoggedIn;
+</script>
+
+<script>
+    'use strict';
+    (function( hyva, undefined ) {
+        /**
+         * Takes a form element and submits it through fetch,
+         * then replaces the result into the document without
+         * refreshing the page
+         */
+        hyva.postCart = (form) => {
+            if (!form.action) {
+                return;
+            }
+            const action = form.action;
+            const formData = new FormData(form);
+
+            if (!formData.uenc) {
+                formData.append('uenc', hyva.getUenc());
+            }
+
+            formData.append('form_key', hyva.getFormKey());
+
+            window.fetch(action, {
+                method: 'POST',
+                body: formData
+            }).then((result) => {
+                return result.text()
+            }).then((content) => {
+                
+                hyva.replaceDomElement('#maincontent', content);
+                //Cart Improvements Start
+                if (document.querySelector('.page.messages')) {
+                    document.querySelector('.page.messages').style.display = 'none';
+                }
+
+                setTimeout(() => {
+                    let messageElement = document.querySelector('.message.success span');
+                    let errorMessageElement = document.querySelector('.message.error span');
+                    if (messageElement) {
+                        let messageText = messageElement.innerText || messageElement.textContent;
+                        if (messageText.includes('coupon code')) {
+                            let parentContainer = messageElement.closest('.page.messages');
+                            if (parentContainer) {
+                                parentContainer.style.display = 'none';
+                                let couponSuccessMsg = document.querySelector('.coupon-success-msg');
+                                if (couponSuccessMsg) {
+                                    couponSuccessMsg.innerText = messageText;
+                                }
+                            }
+                        } else {
+                            if (document.querySelector('.page.messages')) {
+                                document.querySelector('.page.messages').style.display = 'block';
+                            }
+                        }
+                    }
+
+                    if (errorMessageElement) {
+                        let errorMessageText = errorMessageElement.innerText || errorMessageElement.textContent;
+                        if (errorMessageText.includes('coupon code')) {
+                            let parentContainer = errorMessageElement.closest('.page.messages');
+                            if (parentContainer) {
+                                parentContainer.style.display = 'none';
+                                let couponErrorMsg = document.querySelector('.coupon-error-msg');
+                                if (couponErrorMsg) {
+                                    couponErrorMsg.innerText = errorMessageText;
+                                }
+                            }
+                        } else {
+                            if (document.querySelector('.page.messages')) {
+                                document.querySelector('.page.messages').style.display = 'block';
+                            }
+                        }
+                    }
+                }, 50);
+                //Cart Improvements End
+
+                // Select all tbody elements with a class that contains 'sku-'
+                let elements = document.querySelectorAll("tbody[class*='sku-']");
+                if (elements) {
+                    let skuGroups = {};
+                    elements.forEach(el => {
+                        // Find the class that starts with 'sku-'
+                        let skuClass = Array.from(el.classList).find(cls => cls.startsWith("sku-"));
+
+                        if (skuClass) {
+                            // Initialize array for each SKU type
+                            if (!skuGroups[skuClass]) {
+                                skuGroups[skuClass] = [];
+                            }
+                            skuGroups[skuClass].push(el);
+                        }
+                    });
+
+                    // Loop through each SKU group and hide all except the last one
+                    Object.values(skuGroups).forEach(group => {
+                        group.forEach((el, index) => {
+                            el.style.display = index === group.length - 1 ? "table-row-group" : "none";
+                        });
+                    });
+                }
+            }).catch((error) => {
+                console.error(error);
+                typeof window.dispatchMessages !== "undefined" && window.dispatchMessages(
+                    [{
+                        type: "error",
+                        text: "<?= $escaper->escapeJs(__("Something went wrong. Please try again.")) ?>"
+                    }], 10000
+                );
+            })
+        }
+    }( window.hyva = window.hyva || {} ));
+</script>
+
+<script>
+
+    function initCartForm(){
+        return {
+            cartIsEmpty: !!window.checkoutConfig,
+            checkCartShouldUpdate(data) {
+                const cart = data.cart;
+
+                if (this.cartIsEmpty !== !!window.checkoutConfig) {
+                    this.cartIsEmpty = !!window.checkoutConfig;
+                    this.reloadCartContent();
+                    return;
+                }
+
+                if (cart) {
+                    if (!window.checkoutConfig) {
+                        if (cart.items.length) {
+                            this.reloadCartContent();
+                        }
+                        return;
+                    }
+
+                    const roundUp = (number) => {
+                        return Math.round(number * 100);
+                    }
+
+                    const decimalNumbersAreEqual = (number1, number2) => {
+                        return roundUp(number1) === roundUp(number2);
+                    }
+
+                    if (window.checkoutConfig && cart) {
+                        if (decimalNumbersAreEqual(
+                            cart.items.reduce((totalQty, cartItem) => totalQty + cartItem.qty, 0),
+                                window.checkoutConfig.quoteData.items_qty
+                            ) &&
+                            decimalNumbersAreEqual(
+                                cart.subtotalAmount,
+                                window.checkoutConfig.totalsData.total_segments.find((segment) => segment.code === "subtotal").value
+                            )
+                        ) {
+                            return;
+                        }
+                    }
+                }
+                this.reloadCartContent();
+            },
+            reloadCartContent() {
+                window.fetch(window.location.href, {
+                    method: "GET"
+                }).then((result) => {
+                    return result.text()
+
+                }).then((body) => {
+                    hyva.setCookie('mage-cache-sessid', '', -1, true);
+                    window.checkoutConfig = null;
+                    hyva.replaceDomElement('#maincontent', body)
+
+                }).catch((error) => {
+                    console.error(error);
+                    window.location.reload()
+                })
+            },
+            onStorageChange(event) {
+                if (event.key === 'private_content_version') {
+                    window.dispatchEvent(new CustomEvent("reload-customer-section-data"));
+                }
+            }
+        }
+    }
+</script>
+<div x-data="initCartForm()"
+     class="cart-form clearfix"
+     @private-content-loaded.window="checkCartShouldUpdate($event.detail.data)"
+     @storage.window="onStorageChange($event)"
+>
+    <?php if ($block->getItemsCount()): ?>
+        <?= $block->getChildHtml('with-items') ?>
+    <?php else: ?>
+        <?= $block->getChildHtml('no-items') ?>
+    <?php endif; ?>
+</div>

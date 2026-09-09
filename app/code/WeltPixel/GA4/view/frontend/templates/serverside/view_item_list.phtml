@@ -1,0 +1,15 @@
+<?php
+/** @var \WeltPixel\GA4\Helper\ServerSideTracking $ga4Helper */
+$ga4Helper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking');
+?>
+<?php
+if ($ga4Helper->isServerSideTrakingEnabled() && $ga4Helper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_VIEW_ITEM_LIST)) :
+?>
+<input type="hidden" name="wp_ga4_server_side_view_item_list" id="wp_ga4_server_side_view_item_list" value="<?= $this->getServerSideViewItemListUniqueId()?>">
+    <script>
+        requirejs(['jquery', 'WeltPixel_GA4/js/weltpixel_ga4_serverside'],
+            function   ($, wpGa4ServerSide) {
+                window.wpGA4ServerSide.pushViewItemList('<?= $this->getServerSideViewItemListUniqueId()?>');
+            });
+    </script>
+<?php endif; ?>

@@ -1,0 +1,14 @@
+<div class="block" data-amexfee-js="block">
+    <div class="amexfee-block-content -checkout"
+         visible="visible()"
+         data-bind="mageInit: {'collapsible':{'active': '1', 'openedState': 'active'}}">
+        <div class="title amexfee-title" data-role="title" role="heading" translate="'Delivery Fee'"></div>
+        <div class="content" data-role="content">
+            <form method="post" class="amexfee-form-container" id="amexfee-form">
+                <fieldset class="fieldset amexfee-fieldset"
+                          each="getRegion('amasty-extrafee-fieldsets')"
+                          render="" ></fieldset>
+            </form>
+        </div>
+    </div>
+</div>

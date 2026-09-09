@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="payment">
+                <group id="splitpayment" translate="label" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Split Payment Method</label>
+                    <field id="active" translate="label comment" sortOrder="10" type="select" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Enable</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
+                    <field id="title" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Title</label>
+                    </field>
+                    <field id="short_description" translate="label" type="textarea" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Short Description</label>
+                    </field>
+                    <field id="sort_order" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Sort Order</label>
+                        <validate>validate-number validate-zero-or-greater</validate>
+                    </field>
+                    <field id="heading_blackhawk" translate="label" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Blackhawk API Details</label>
+                        <frontend_model>Magento\Config\Block\System\Config\Form\Field\Heading</frontend_model>
+                        <attribute type="shared">1</attribute>
+                    </field>
+                    <field id="blackhawk_api_url" translate="label" type="text" sortOrder="110" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Base Api Url</label>
+                    </field>
+                    <field id="blackhawk_product_line_id" translate="label" type="text" sortOrder="120" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>product Line Id</label>
+                    </field>
+                    <field id="blackhawk_account_type" translate="label" type="text" sortOrder="130" showInDefault="1" showInWebsite="0" showInStore="0">
+                        <label>Account Type</label>
+                    </field>
+                </group>
+        </section>
+    </system>
+</config>

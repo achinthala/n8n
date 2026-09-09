@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/** OrderRestrictions db_schema xml
+ * @category  Dotcomweavers
+ * @package   Dotcomweavers_OrderRestrictions
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+ */
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="orderrestriction_rules" resource="default" engine="innodb" comment="OrderRestrictions Rules Table">
+        <column xsi:type="smallint" name="restriction_id" padding="6" unsigned="false" nullable="false" identity="true" comment="Restriction ID"/>
+        <column xsi:type="varchar" name="name" nullable="false" length="255" comment="Name"/>
+        <column xsi:type="smallint" name="enabled" nullable="false" comment="Enabled"/>
+        <column xsi:type="varchar" name="internal_notes" nullable="false" length="255" comment="Internal Notes"/>
+        <column xsi:type="varchar" name="message" nullable="false" length="255" comment="Message"/>
+        <column xsi:type="varchar" name="stores" nullable="false" length="255" comment="Stores"/>
+        <column xsi:type="varchar" name="customer_groups" nullable="false" length="255" comment="Customer Groups"/>
+        <column xsi:type="mediumtext" name="conditions_serialized" nullable="false" comment="Conditions Serialized"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="restriction_id"/>
+        </constraint>
+    </table>
+</schema>

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Backend\Model\Dashboard\Period">
+        <plugin name="dcw_dashboard_period"
+                type="Dcw\Dashboard\Plugin\Model\Dashboard\PeriodPlugin"/>
+    </type>
+    <type name="Magento\Backend\Model\Dashboard\Chart\Date">
+        <plugin name="dcw_dashboard_date"
+                type="Dcw\Dashboard\Plugin\Backend\Model\Dashboard\Chart\DatePlugin"/>
+    </type>
+</config>

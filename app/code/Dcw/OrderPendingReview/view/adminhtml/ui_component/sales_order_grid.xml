@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <columns name="sales_order_columns">
+        <column name="dcw_pending_review_reasons"
+                component="Magento_Ui/js/grid/columns/select"
+                class="Dcw\OrderPendingReview\Ui\Component\Listing\Column\PendingReviewReasons"
+                sortOrder="190">
+            <settings>
+                <label translate="true">Pending Review Reason(s)</label>
+                <filter>select</filter>
+                <options class="Dcw\OrderPendingReview\Ui\Component\Listing\Column\PendingReviewReason\Options"/>
+                <dataType>select</dataType>
+                <sortable>false</sortable>
+                <visible>true</visible>
+            </settings>
+        </column>
+    </columns>
+</listing>

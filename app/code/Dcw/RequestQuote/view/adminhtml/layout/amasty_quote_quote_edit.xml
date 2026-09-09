@@ -1,0 +1,26 @@
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!-- Override the discount.phtml template -->
+      
+        <referenceBlock name="items_grid">
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string">Dcw_RequestQuote::quote/edit/items/grid.phtml</argument>
+            </action>
+        </referenceBlock>
+        
+        <!-- Add lock status warning -->
+        <referenceContainer name="content">
+            <block class="Dcw\RequestQuote\Block\Adminhtml\Quote\Edit\LockStatus" 
+                   name="quote.lock.status" 
+                   template="Dcw_RequestQuote::quote/edit/lock_status.phtml"
+                   before="-"/>
+        </referenceContainer>
+        
+        <!-- Override items template to add lock check -->
+        <referenceBlock name="quote_items">
+            <action method="setTemplate">
+                <argument name="template" xsi:type="string">Dcw_RequestQuote::quote/edit/items.phtml</argument>
+            </action>
+        </referenceBlock>
+    </body>
+</page>

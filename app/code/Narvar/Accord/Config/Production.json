@@ -1,0 +1,13 @@
+{
+  "narvar_data_api_host": "https://raavi.narvar.com",
+  "narvar_order_plugin": "/api/v1/order",
+  "narvar_invoice_plugin": "/api/v1/order/{orderNumber}/invoice",
+  "narvar_shipment_plugin": "/api/v1/order/{orderNumber}/shipment",
+  "narvar_log_host":"https://commerce-logger.narvar.com",
+  "narvar_error_api": "/api/v1/logs/error",
+  "narvar_debug_api": "/api/v1/logs/debug",
+  "narvar_auth_api_host": "https://beas.narvar.com",
+  "narvar_auth_api": "/api/v1/magento/handshake",
+  "narvar_no_flake_host":"https://noflake-aggregator-http.narvar.com",
+  "no_flake_api":"/noflake"
+}

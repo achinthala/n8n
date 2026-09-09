@@ -1,0 +1,28 @@
+<?xml version="1.0" ?>
+<!--
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="2columns-left"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+
+    <body>
+        <referenceContainer name="head.additional">
+            <block class="Magento\DataServices\Block\Context" name="dataservices_base_ds" template="Magento_DataServices::ds.phtml">
+                <arguments>
+                    <argument name="page_type" xsi:type="string">Default</argument>
+                    <argument name="step_name" xsi:type="string">page-view</argument>
+                </arguments>
+            </block>
+            <block class="Magento\DataServices\Block\Context" name="dataservices_base" template="Magento_DataServices::search-result-index.phtml">
+                <arguments>
+                    <argument name="page_type" xsi:type="string">Default</argument>
+                    <argument name="step_name" xsi:type="string">page-view</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

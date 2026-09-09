@@ -1,0 +1,27 @@
+{
+    "name": "hyva-themes/weltpixel-ga4",
+    "description": "Hyvä Themes Compatibility module for WeltPixel_GA4",
+    "type": "magento2-module",
+    "require": {
+        "magento/framework": "*",
+        "hyva-themes/magento2-compat-module-fallback": "*"
+    },
+    "authors": [{
+        "name": "Weltpixel",
+        "email": "support@weltpixel.com"
+    }],
+    "license": "see LICENSE.md",
+    "suggest": {
+        "weltpixel/module-ga4": "*",
+        "weltpixel/m2-weltpixel-backend": "*"
+    },
+    "version": "1.0.6",
+    "autoload": {
+        "files": [
+            "src/registration.php"
+        ],
+        "psr-4": {
+            "WeltPixel\\HyvaGA4\\": "src/"
+        }
+    }
+}

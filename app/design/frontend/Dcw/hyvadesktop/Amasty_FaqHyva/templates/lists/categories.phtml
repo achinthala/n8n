@@ -1,0 +1,39 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package FAQ and Product Questions Hyva
+ */
+
+declare(strict_types=1);
+
+use Amasty\Faq\Block\Lists\CategoryList;
+use Magento\Framework\Escaper;
+
+/** @var CategoryList $block */
+/** @var Escaper $escaper */
+
+$currentCategoryId = $block->getCurrentCategoryId();
+?>
+<?php if ($categories = $block->getCategories()): ?>
+    <div class="amfaq_categories card mb-4 pb-4">
+        <h3 class="flex justify-between items-center cursor-pointer
+                        md:cursor-default md:border-container md:border-b md:pb-4">
+            <span class="title text-md md:text-lg font-semibold">
+                <?= $escaper->escapeHtml(__('Categories:')) ?>
+            </span>
+        </h3>
+        <?php foreach ($categories as $category): ?>
+            <div class="mt-2<?= ($category->getCategoryId() ==
+                    $currentCategoryId) ? ' font-semibold':'' ?>">
+                <a
+                    href="<?= $block->escapeUrl($block->getCategoryUrl($category)) ?>"
+                    class="hover:underline mt-1 text-sm<?= ($category->getCategoryId() ==
+                            $currentCategoryId) ? '':' text-custom-blue font-semibold' ?>"
+                >
+                    <?= $block->escapeHtml($category->getTitle()) ?>
+                </a>
+            </div>
+        <?php endforeach ?>
+    </div>
+<?php endif ?>

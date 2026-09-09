@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- Override Amasty Feed export product model to customize media gallery data -->
+    <preference for="Amasty\Feed\Model\Export\Product"
+                type="Dcw\Feed\Model\Export\Product"/>
+
+    <!-- Override Amasty gallery row customizer to use custom image links (Canto URLs) -->
+    <preference for="Amasty\Feed\Model\Export\RowCustomizer\Gallery"
+                type="Dcw\Feed\Model\Export\RowCustomizer\Gallery"/>
+
+    <!-- Double exported prices and log once per feed row -->
+    <type name="Amasty\Feed\Model\Export\Adapter\Csv">
+        <plugin name="dcw_feed_csv_price_multiplier"
+                type="Dcw\Feed\Plugin\Export\Adapter\CsvPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- Rename "Gallery" option group to "Canto Gallery" in feed attribute selector -->
+    <type name="Amasty\Feed\Model\OptionSource\Feed\CustomOptionSourceProvider">
+        <arguments>
+            <argument name="optionSources" xsi:type="array">
+                <item name="gallery" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Canto Gallery</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+</config>
+
+

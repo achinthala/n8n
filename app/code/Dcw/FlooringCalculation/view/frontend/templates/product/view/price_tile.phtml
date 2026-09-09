@@ -1,0 +1,810 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\ProductPrice;
+use Magento\Catalog\Block\Product\AbstractProduct;
+use Magento\Catalog\Model\Product;
+use Magento\Catalog\Pricing\Price\FinalPrice;
+use Magento\Catalog\Pricing\Price\RegularPrice;
+use Magento\Catalog\Pricing\Price\TierPrice;
+use Magento\Framework\Escaper;
+use Dcw\AdvanceSearch\ViewModel\Data as AdvanceSearchViewModel;
+
+/** @var AbstractProduct $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+/** @var Product $product */
+$product = $block->getProduct();
+
+/** @var ProductPrice $productPriceViewModel */
+$productPriceViewModel = $viewModels->require(ProductPrice::class);
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var AdvanceSearchViewModel $advanceSearchViewModel */
+$advanceSearchViewModel = $viewModels->require(AdvanceSearchViewModel::class);
+
+$regularPrice = $productPriceViewModel->getPriceValue(RegularPrice::PRICE_CODE, $product);
+$finalPrice = $productPriceViewModel->getPriceValue(FinalPrice::PRICE_CODE, $product);
+$tierPrices = $productPriceViewModel->getTierPrices(TierPrice::PRICE_CODE, $product);
+
+$save_msrp_price = $regularPrice - $finalPrice;
+if ($regularPrice >= 1) {
+    $percentage_discount = round((float)number_format(($save_msrp_price * 100) / $regularPrice, 2, ".", ""));
+} else {
+    $percentage_discount = 0; // Set percentage discount to 0 if regular price is zero.
+}
+
+$productCalculatedPrice = $advanceSearchViewModel->getCalculatedPrice($product->getId(), 'final');
+$productCalculatedPrice = is_array($productCalculatedPrice) ? $productCalculatedPrice['price'] : $productCalculatedPrice;
+
+if ($productCalculatedPrice == '') {
+    $productCalculatedPrice = $finalPrice;
+}
+
+$flooringCalculationBlock = $block->getLayout()->createBlock(\Dcw\FlooringCalculation\Block\Index::class);
+$flooringCalculationHelper = $flooringCalculationBlock->flooringCalculationHelper();
+$childSwatch = $flooringCalculationBlock->getSwatchImageProducts($product);
+$child = json_encode($childSwatch);
+$tiles_size_attribute_id =  $flooringCalculationBlock->attributeResourceModel()
+->getIdByCode('catalog_product', 'incstores_pim_variant_axis'); // pass attribute id here
+$color_attribute_id =  $flooringCalculationBlock->attributeResourceModel()
+->getIdByCode('catalog_product', 'incstores_pim_color_axis');
+
+if ($productPriceViewModel->displayPriceInclAndExclTax()) {
+    $regularPriceExclTax = $productPriceViewModel->getPriceValueExclTax(RegularPrice::PRICE_CODE, $product);
+    $finalPriceExclTax = $productPriceViewModel->getPriceValueExclTax(FinalPrice::PRICE_CODE, $product);
+}
+
+$displayTax = $productPriceViewModel->displayPriceIncludingTax();
+
+if (!empty($product->getIncstoresPimExactWidthInches())) {
+    $exact_width_ft = (float)$product->getIncstoresPimExactWidthInches()/12;
+    $exact_width_ft = round($exact_width_ft, 2);
+} else {
+    $exact_width_ft = 0;
+}
+if (!empty($product->getIncstoresPimExactLengthInches())) {
+    $exact_length_ft = (float)$product->getIncstoresPimExactLengthInches()/12;
+    $exact_length_ft = round($exact_length_ft, 2);
+} else {
+    $exact_length_ft = 0;
+}
+$sqft_per_tile = $exact_width_ft * $exact_length_ft;
+$sqft_per_tile = round($sqft_per_tile, 2);
+
+if ($product->getAttributeText('product_floor_type') == 'Tier Pricing') {
+    if (!empty($product->getIncstoresPimMinRollcut())) {
+        $min_tile_quantity = $product->getIncstoresPimMinRollcut();
+    } else {
+        $min_tile_quantity = 1;
+    }
+}
+
+$spotlightsku='';
+if(isset($_REQUEST['option']) && $_REQUEST['option']!='') {
+	$spotlightsku = $_REQUEST['option'];
+}
+	
+?>
+<script>
+function initPriceSqft<?= (int)$product->getId() ?>() {
+
+    <?php /* All four of these keys are used - they are rendered by PHP */ ?>
+    const regularPriceInclTaxKey = 'oldPrice',
+          regularPriceExclTaxKey = 'baseOldPrice',
+          finalPriceInclTaxKey = 'finalPrice',
+          finalPriceExclTaxKey = 'basePrice';
+
+    function calculateCustomOptionPrices(activeCustomOptions, customOptionPrices) {
+        return activeCustomOptions.reduce((priceAccumulator, activeCustomOptionId) => {
+            const customOptionPrice = customOptionPrices[activeCustomOptionId];
+            if (customOptionPrice) {
+                return Number.parseFloat(priceAccumulator) + Number.parseFloat(customOptionPrice);
+            }
+            return priceAccumulator;
+        }, 0);
+    }
+
+    return {
+        regularPriceKey: <?= $displayTax ? 'regularPriceInclTaxKey' : 'regularPriceExclTaxKey' ?>,
+        finalPriceKey: <?= $displayTax ? 'finalPriceInclTaxKey' : 'finalPriceExclTaxKey' ?>,
+        activeProductsPriceData: false,
+        initialFinalPrice: <?= (float)$finalPrice ?>,
+        calculatedFinalPrice: false,
+        calculatedFinalPriceWithCustomOptions: false,
+        initialTierPrices: <?= /** @noEscape */ json_encode($tierPrices) ?>,
+        showRegularPriceLabel: <?= ($finalPrice < $regularPrice) ? 'true' : 'false' ?>,
+        customOptionPrices: [],
+        <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+        initialBasePrice: <?= (float)$finalPriceExclTax ?>,
+        calculatedBasePrice: false,
+        customOptionBasePrices: [],
+        calculatedBasePriceWithCustomOptions: false,
+        <?php endif; ?>
+        activeCustomOptions: [],
+        qty: 1,
+        <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+        min_tile_quantity:'<?= /* @noEscape */ $min_tile_quantity?>',
+        <?php endif;?>
+        getMibTileQty:'1',
+        getSqftPerTile:'',
+        initMinPriceFlag: true,
+        getPercentageDiscount:'<?= /* @noEscape */ $percentage_discount ?>',
+        getSaveMsrpPrice:'<?= /* @noEscape */ strip_tags($productViewModel->format($save_msrp_price))?>',
+        pdp_shipping_text: '',
+        expected_days_ship: '<?= /* @noEscape */ $flooringCalculationHelper
+        ->getExpectedShipDate($product);?>',
+        updateCustomOptionActive(data) {
+            let activeCustomOptions = this.activeCustomOptions;
+            const customOptionId = data.customOptionId;
+
+            if (data.active) {
+                if (!activeCustomOptions.includes(customOptionId)) {
+                    activeCustomOptions.push(data.customOptionId);
+                }
+            } else {
+                if (customOptionId && activeCustomOptions.includes(customOptionId)) {
+                    let index = activeCustomOptions.indexOf(customOptionId);
+                    activeCustomOptions.splice(index, 1);
+                }
+            }
+            this.calculateFinalPriceWithCustomOptions()
+        },
+        updateCustomOptionPrices(prices, basePrices) {
+            if (prices) {
+                this.customOptionPrices = prices;
+            }
+
+            <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+            if (basePrices) {
+                this.customOptionBasePrices = basePrices;
+            }
+            <?php endif; ?>
+
+            this.calculateFinalPriceWithCustomOptions();
+        },
+        calculateFinalPrice() {
+            const findApplicableTierPrice = (initialPrice, withTax) => {
+                if (this.activeProductsPriceData && this.activeProductsPriceData.tierPrices) {
+                    const key = withTax ? 'price' : 'basePrice'
+                    return this.activeProductsPriceData.tierPrices.reduce((acc, tierPrice) => {
+                        if (this.qty >= tierPrice.qty && tierPrice[key] < acc) {
+                            return tierPrice[key];
+                        }
+                        return acc;
+                    }, this.activeProductsPriceData[withTax ? finalPriceInclTaxKey : finalPriceExclTaxKey].amount);
+
+                } else {
+                    const key = withTax ? 'price_incl_tax' : 'price_excl_tax';
+                    return Object.values(this.initialTierPrices).reduce((acc, tierPrice) => {
+                        if (this.qty >= tierPrice.price_qty && tierPrice[key] < acc) {
+                            return tierPrice[key];
+                        }
+                        return acc;
+                    }, initialPrice);
+
+                }
+            }
+
+            this.calculatedFinalPrice = findApplicableTierPrice(
+                                        this.initialFinalPrice, <?= $displayTax ? 'true' : 'false' ?>
+                                        );
+            window.dispatchEvent(new CustomEvent("update-product-final-price", {detail: this.calculatedFinalPrice}));
+
+            <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+            this.calculatedBasePrice = findApplicableTierPrice(<?= (float) $finalPriceExclTax ?>, false);
+            window.dispatchEvent(new CustomEvent("update-product-base-price",
+                                    {detail: {basePrice: this.calculatedBasePrice}})
+                                );
+            <?php endif; ?>
+
+
+        },
+        calculatePriceLabelVisibility() {
+            this.showRegularPriceLabel =
+                (this.calculatedFinalPrice === this.activeProductsPriceData[this.regularPriceKey].amount) &&
+                this.activeProductsPriceData.isMinimalPrice;
+        },
+        calculateFinalPriceWithCustomOptions() {
+            const finalPrice = this.calculatedFinalPrice || this.initialFinalPrice;
+            this.calculatedFinalPriceWithCustomOptions = finalPrice + this.getCustomOptionPrice();
+            <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+            const basePrice = this.calculatedBasePrice || this.initialBasePrice;
+            this.calculatedBasePriceWithCustomOptions = basePrice + this.getCustomOptionBasePrice();
+            <?php endif; ?>
+        },
+        getCustomOptionPrice() {
+            return calculateCustomOptionPrices(this.activeCustomOptions, this.customOptionPrices);
+        },
+        <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+        getCustomOptionBasePrice() {
+            return calculateCustomOptionPrices(this.activeCustomOptions, this.customOptionBasePrices);
+        },
+        <?php endif; ?>
+        getFinalPrice() {
+            var final_price = this.calculatedFinalPriceWithCustomOptions ||
+            this.calculatedFinalPrice || this.initialFinalPrice;
+            if(final_price>0){
+            this.final_price = parseFloat(final_price)/
+                                                  parseFloat(this.getSqftPerTile).toFixed(2);
+            } else {
+                this.final_price = 0;
+            }
+            return (this.final_price);
+        },
+        getFormattedFinalPrice() {
+            return hyva.formatPrice(this.getFinalPrice())
+        },
+        getMinFormattedFinalPrice() {
+            //Start - Added by Ram - 30th Aug 2024
+			var spotlightsku = "<?php echo $spotlightsku; ?>";
+            var min_final_price = Math.min(this.calculatedFinalPriceWithCustomOptions,this.calculatedFinalPrice, this.initialFinalPrice);
+			if(spotlightsku){
+					var min_final_price = this.calculatedFinalPriceWithCustomOptions ||
+                this.calculatedFinalPrice || this.initialFinalPrice;
+				}
+            if(min_final_price>0){
+                this.final_price = parseFloat(min_final_price)/parseFloat(this.getSqftPerTile).toFixed(2);
+            } else {
+                this.final_price = 0;
+            }
+            this.initMinPriceFlag = false;
+            return hyva.formatPrice(this.final_price)
+            //Start - Added by Ram - 30th Aug 2024
+        },
+        getFinalPricePerTile() {
+            //var final_price_per_tile = parseFloat(this.getSqftPerTile)*parseFloat(this.getFinalPrice());
+            //Added by Ram - 1st Aug 2024
+            var final_price_per_tile = this.calculatedFinalPriceWithCustomOptions ||
+            this.calculatedFinalPrice || this.initialFinalPrice;
+            return hyva.formatPrice(final_price_per_tile);
+        },
+        getRegularPrice() {
+            var regular_price = '<?= /* @noEscape */ $regularPrice?>';
+            if (this.activeProductsPriceData){
+                if(this.activeProductsPriceData[this.regularPriceKey].amount>0){
+               regular_price =   parseFloat(this.activeProductsPriceData[this.regularPriceKey].amount)/
+                                                  parseFloat(this.getSqftPerTile).toFixed(2);
+                } else {
+                    regular_price = 0;
+                }
+               this.regular_price = regular_price;
+            }
+            return regular_price;
+        },
+        getFormattedRegularPrice() {
+            return hyva.formatPrice(this.getRegularPrice())
+        },
+        getRegularPricePerTile() {
+           // var regular_price_per_tile = parseFloat(this.getSqftPerTile)*parseFloat(this.getRegularPrice());
+            return hyva.formatPrice(this.getRegularPrice());
+        },
+        getRegularPricePerSqft() {
+            if(this.getRegularPrice()>0){
+            var regular_price_per_sqft = parseFloat(this.getRegularPrice())/
+                                                  parseFloat(this.getSqftPerTile).toFixed(2);
+            } else {
+                var regular_price_per_sqft = 0;
+            }
+            return hyva.formatPrice(regular_price_per_sqft);
+        },
+        getSaveMsrpPrice() {
+            var save_msrp_price = parseFloat(this.getRegularPrice()) - parseFloat(this.getFinalPrice());
+            return save_msrp_price;
+        },
+        getFormattedSaveMsrpPrice() {
+            return hyva.formatPrice(this.getSaveMsrpPrice());
+        },
+        getPercentageDiscount() {
+            var percentage_discount = Math.round(
+                                                 (parseFloat(this.getSaveMsrpPrice()*100)/
+                                                  parseFloat(this.getRegularPrice())).toFixed(2)
+                                                 );
+            return percentage_discount;
+        },
+        getActiveSaleLabel() {
+            const percentageDiscount = Number.parseFloat(this.getPercentageDiscount());
+            const hasDiscount = Number.isFinite(percentageDiscount) && percentageDiscount > 0;
+
+            if (!hasDiscount) {
+                return 'Going Fast - Order Before It\'s Gone';
+            }
+
+            const today = new Date();
+            const year = today.getFullYear();
+            const blackFridayStart = new Date(year, 10, 12);
+            const blackFridayEnd = new Date(year, 10, 28, 23, 59, 59, 999);
+
+            if (today >= blackFridayStart && today <= blackFridayEnd) {
+                return 'Black Friday Sale';
+            }
+
+            const cyberMondayStart = new Date(year, 10, 29);
+            const cyberMondayEnd = new Date(year, 11, 7, 23, 59, 59, 999);
+
+            if (today >= cyberMondayStart && today <= cyberMondayEnd) {
+                return 'Cyber Monday Sale';
+            }
+
+            return 'Limited-Time Savings';
+        },
+        <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+        getFormattedBasePrice() {
+            return hyva.formatPrice(
+                this.calculatedBasePriceWithCustomOptions ||
+                this.calculatedBasePrice ||
+                this.initialBasePrice
+            )
+        },
+        <?php endif; ?>
+        isPriceHidden() {
+            const finalPrice = this.calculatedFinalPriceWithCustomOptions ||
+                this.calculatedFinalPrice ||
+                this.initialFinalPrice;
+            return <?= $product->isSaleable() ? 'false' : 'true' ?> && finalPrice === 0;
+        },
+        updateConfigurableChanged(data){
+            //--- on color/size click price change in size box   START------------------
+            //alert(this.optionConfig.attributes[data.optionId]['code']);
+            if (this.optionConfig.attributes[data.optionId]['code'] != 'incstores_pim_color_axis' &&
+                this.optionConfig.attributes[<?= /* @noEscape */ $color_attribute_id?>]) {
+                var color_attributes_options = this.optionConfig.attributes[data.optionId]['options'];
+               color_attributes_options.forEach(function(option_details) {
+
+                    if(option_details['id'] == data.value){
+                        option_details['products'].forEach(function(color_child_product_id) {
+                            var color_size_attr_value =
+                            initConfigurableSwatchOptions_<?= /* @noEscape */ (int)$product->getId() ?>().optionConfig.
+                            index[color_child_product_id][<?= /* @noEscape */ $color_attribute_id?>];
+                            var childSwatch = JSON.parse('<?php echo $child; ?>');
+
+                            var swatchImageurl = '';
+                            if(childSwatch[color_child_product_id]!="" && isValidURL(childSwatch[color_child_product_id])){
+                                swatchImageurl = "<img src='"+childSwatch[color_child_product_id]+"/-FWEBP' title="+childSwatch[color_child_product_id]+" alt="+childSwatch[color_child_product_id]+"/>";
+                            }  else {
+                            var placeHoldernew = BASE_URL+'media/catalog/product/placeholder/default/swatch_placeholder.png';
+
+                            swatchImageurl = "<img  width= '60px' height='60px' src="+placeHoldernew+" title="+placeHoldernew+" alt="+placeHoldernew+"/>";
+                            }
+                            if(document.getElementById(
+                                            "child-color-<?= /* @noEscape */ $color_attribute_id?>-"+
+                                            color_size_attr_value)){
+                              document.getElementById("child-color-<?= /* @noEscape */ $color_attribute_id?>-"+
+                                            color_size_attr_value).innerHTML = swatchImageurl;
+                                            }
+                        });
+                    }
+                });
+            }
+            if (this.optionConfig.attributes[data.optionId]['code'] != 'incstores_pim_variant_axis' &&
+                this.optionConfig.attributes[<?= /* @noEscape */ $tiles_size_attribute_id?>]) {
+                var attributes_options = this.optionConfig.attributes[data.optionId]['options'];
+                //console.log(JSON.stringify(attributes_options));
+                attributes_options.forEach(function(option_details) {
+                    if(option_details['id'] == data.value){
+                        option_details['products'].forEach(function(child_product_id) {
+                            var tiles_size_attr_value =
+                            initConfigurableSwatchOptions_<?= /* @noEscape */ (int)$product->getId() ?>().optionConfig.
+                            index[child_product_id][<?= /* @noEscape */ $tiles_size_attribute_id?>];
+
+                            var finalPrice_amount =
+                            initConfigurableSwatchOptions_<?= /* @noEscape */ (int)$product->getId() ?>().optionConfig.
+                            optionPrices[child_product_id]['finalPrice']['amount'];
+                            <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+                            var get_min_tile_quantity =
+                            initConfigurableSwatchOptions_<?= /* @noEscape */ (int)$product->getId() ?>().optionConfig.
+                            min_tile_quantity[child_product_id];
+
+                            get_min_tile_quantity =
+                            (get_min_tile_quantity)?get_min_tile_quantity:'<?= /* @noEscape */ $min_tile_quantity?>';
+                            <?php endif;?>
+                            var get_exact_width =
+                            initConfigurableSwatchOptions_<?= /* @noEscape */ (int)$product->getId() ?>().
+                            optionConfig.exact_width[child_product_id];
+                            var get_exact_width_ft = initPriceSqft<?= /* @noEscape */ (int)$product->getId() ?>().
+                            getExactFt(get_exact_width,'<?= /* @noEscape */ $exact_width_ft?>');
+
+                            var get_exact_length =
+                            initConfigurableSwatchOptions_<?= /* @noEscape */ (int)$product->getId() ?>().
+                            optionConfig.exact_length[child_product_id];
+                            var get_exact_length_ft = initPriceSqft<?= /* @noEscape */ (int)$product->getId() ?>().
+                            getExactFt(get_exact_length,'<?= /* @noEscape */ $exact_length_ft?>');
+
+                            var get_sqft_per_tile = parseFloat(get_exact_width_ft) * parseFloat(get_exact_length_ft);
+                            get_sqft_per_tile = Math.round(parseFloat(get_sqft_per_tile) * 100) / 100;
+
+
+                            var CONTROL_INTERVAL = setInterval(function(){
+                            if(document.getElementById(
+                            "swatch-tiles-size-price-pertile-<?= /* @noEscape */ $tiles_size_attribute_id?>-"+
+                            tiles_size_attr_value)){
+                                if (get_sqft_per_tile > 0 && get_sqft_per_tile !="") {
+                                    document.getElementById(
+                                    "swatch-label-box-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).classList.remove("opacity-50");
+                                    document.getElementById(
+                                    "swatch-label-box-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).classList.remove("select-none");
+
+                                    document.getElementById(
+                                    "swatch-tiles-size-price-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).innerHTML =
+                                    '('+hyva.formatPrice(parseFloat(finalPrice_amount)/parseFloat(get_sqft_per_tile))+'/sqft)';
+                                    document.getElementById(
+                                    "swatch-tiles-size-price-pertile-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).innerHTML =
+                                    hyva.formatPrice(finalPrice_amount);
+                                } else {
+                                    /* ----------- tiles size box inactive & price hide START ------------ */
+                                    document.getElementById(
+                                    "swatch-label-box-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).classList.add("opacity-50");
+                                    document.getElementById(
+                                    "swatch-label-box-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).classList.add("select-none");
+
+                                    document.getElementById(
+                                    "swatch-tiles-size-price-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).innerHTML = '';
+                                    document.getElementById(
+                                    "swatch-tiles-size-price-pertile-<?= /* @noEscape */ $tiles_size_attribute_id?>-"
+                                    +tiles_size_attr_value
+                                    ).innerHTML = '';
+                                    /* ----------- tiles size box inactive & price hide END ------------ */
+                                }
+                                clearInterval(CONTROL_INTERVAL);
+                            }
+                            }, 100);
+                        });
+                    }
+                });
+            }
+            //--- on color/size click price change in size box   END------------------
+        },
+        getExactFt(child_exact_size, parent_exact_size) {
+
+            if(child_exact_size){
+                var exact_size_ft = parseFloat(child_exact_size)/12;
+                exact_size_ft = Math.round(parseFloat(exact_size_ft) * 100) / 100;
+            }else{
+                var exact_size_ft = parent_exact_size;
+            }
+
+            return exact_size_ft;
+        },
+        eventListeners: {
+
+            ['@update-tile-size-area-<?= (int)$product->getId() ?>.window'](event) {
+                // this.tile_size_area_text = event.detail.tile_size_area_text;
+                this.overage_percent = (event.detail.overage_percent)?event.detail.overage_percent:
+                    '<?= /* @noEscape */ $product->getIncstoresPimPercentOverage()?>';
+                this.is_check_overage_percent = (event.detail.overage_percent)?'true':'false';
+                this.exact_width = (event.detail.exact_width)?event.detail.exact_width:
+                '<?= /* @noEscape */ $product->getIncstoresPimExactWidthInches()?>';
+
+                var get_exact_width_ft =
+                this.getExactFt(event.detail.exact_width,'<?= /* @noEscape */ $exact_width_ft?>');
+
+                this.exact_length = (event.detail.exact_length)?event.detail.exact_length:
+                '<?= /* @noEscape */ $product->getIncstoresPimExactLengthInches()?>';
+
+                var get_exact_length_ft =
+                this.getExactFt(event.detail.exact_length,'<?= /* @noEscape */ $exact_length_ft?>');
+
+                var get_sqft_per_tile =  parseFloat(get_exact_width_ft) * parseFloat(get_exact_length_ft);
+                get_sqft_per_tile = Math.round(parseFloat(get_sqft_per_tile) * 100) / 100;
+                this.getSqftPerTile = get_sqft_per_tile;
+                this.sqft_per_tile = this.getSqftPerTile;
+            },
+            ['@update-shipping-details-<?= (int)$product->getId() ?>.window'](event) {
+                this.pdp_shipping_text = (event.detail.pdp_shipping_text)?event.detail.pdp_shipping_text:
+                '';
+                this.expected_days_ship = (event.detail.expected_days_ship)?event.detail.expected_days_ship:
+                '<?= /* @noEscape */ $flooringCalculationHelper
+                ->getExpectedShipDate($product);?>';
+            },
+            <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+            ['@update-min-tile-quantity-<?= (int)$product->getId() ?>.window'](event) {
+                this.min_tile_quantity = parseFloat(
+                                            (event.detail)?event.detail:'<?= /* @noEscape */ $min_tile_quantity?>'
+                                         );
+                 this.getMibTileQty= this.min_tile_quantity;
+
+            },
+        <?php endif;?>
+
+            ['@update-prices-<?= (int)$product->getId() ?>.window'](event) {
+                this.activeProductsPriceData = event.detail;
+
+                this.calculateFinalPrice();
+                this.calculateFinalPriceWithCustomOptions();
+                this.calculatePriceLabelVisibility();
+
+            /* --- add to cart button enabled / disabled based on exact_width & exact_length checking START --- */
+            if(this.sqft_per_tile > 0 && this.sqft_per_tile !=""){
+                document.querySelector('#product-addtocart-button-fake').disabled = false;
+            }else{
+                document.querySelector('#product-addtocart-button-fake').disabled = true;
+            }
+            /* --- add to cart button enabled / disabled based on exact_width & exact_length checking END ----- */
+
+                //--- on color/size click total info change    START------------------
+
+            if (event.detail.calculatorType == 'case' && this.square_footage < 1) {
+                this.square_footage = 0;
+                setTimeout(() => {
+                    let squareFootageElement = document.getElementsByName('square_footage');
+        
+                    if (squareFootageElement.length > 0) {
+                        var squareFootage = squareFootageElement[0].value;
+
+                        if (squareFootage) {
+                            // Trigger the 'keyup' event
+                            var event = new KeyboardEvent('keyup', {
+                                'key': 'Enter', // You can set this to any key, like 'Enter'
+                                'bubbles': true,
+                                'cancelable': true
+                            });
+
+                            squareFootageElement[0].dispatchEvent(event);
+                        }
+                    }
+                }, 100);
+            }
+
+            if ( this.square_footage > 0 && this.square_footage != '') {
+                var total_square_footage = parseFloat(this.square_footage);
+                if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                    var extra_square_footage_overage = (parseFloat(total_square_footage)*
+                                                parseFloat(this.overage_percent))/100;
+
+                    total_square_footage = parseFloat(total_square_footage) +
+                                        parseFloat(extra_square_footage_overage);
+                }
+                qty_calc = parseFloat(total_square_footage)/parseFloat(this.sqft_per_tile);
+                qty_calc = Math.ceil(qty_calc);
+                this.total_qty = qty_calc;
+                this.total_qty_tile = qty_calc;
+            }
+            if ((this.length > 0 && this.length != '') && (this.width > 0 && this.width != '')) {
+                /*var total_square_footage =  parseFloat(this.length) * parseFloat(this.width);
+                if(this.is_check_overage_percent){
+                    var extra_square_footage_overage = (parseFloat(total_square_footage)*
+                                                parseFloat(this.overage_percent))/100;
+
+                    total_square_footage = parseFloat(total_square_footage) +
+                                        parseFloat(extra_square_footage_overage);
+                }
+                qty_calc = parseFloat(total_square_footage)/parseFloat(this.sqft_per_tile);
+                qty_calc = Math.ceil(qty_calc);*/
+
+                var room_length_inch = this.length * 12;
+                var room_width_inch = this.width * 12;
+
+                var no_of_tiles_length = Math.ceil(parseFloat(room_length_inch) / parseFloat(this.exact_length));
+                var no_of_tiles_width = Math.ceil(parseFloat(room_width_inch) / parseFloat(this.exact_width));
+
+                qty_calc = parseInt(no_of_tiles_length) * parseInt(no_of_tiles_width);
+
+                if(this.is_check_overage_percent !== false && this.is_check_overage_percent !== undefined && this.is_check_overage_percent !== null && this.is_check_overage_percent != 'false'){
+                    var extra_qty_calc = (parseFloat(qty_calc) * parseFloat(this.overage_percent))/100;
+                    qty_calc = Math.ceil(parseFloat(qty_calc) + parseFloat(extra_qty_calc));
+                }
+
+                this.total_qty = qty_calc;
+                this.total_qty_tile = qty_calc;
+            }
+
+            <?php if ($product->getAttributeText('product_floor_type') == 'Tier Pricing'):?>
+
+                if(this.total_qty<this.min_tile_quantity){
+                        this.total_qty=this.min_tile_quantity;
+                        this.total_qty_tile=this.min_tile_quantity;
+                }
+                document.getElementById('min_tile_quantity').value=this.min_tile_quantity;
+            <?php endif;?>
+
+            this.total_coverage_sqft = (parseFloat(this.getSqftPerTile) * parseFloat(this.total_qty_tile)).toFixed(2);
+            this.total_price = hyva.formatPrice(
+                                                parseFloat(this.total_qty_tile) *
+                                                (parseFloat(this.getFinalPrice())*
+                                                 parseFloat(this.getSqftPerTile)).toFixed(2)
+                                                );
+            this.total_regular_price = hyva.formatPrice(
+                                                        parseFloat(this.total_qty_tile) *
+                                                        (parseFloat(this.getRegularPrice())*
+                                                         parseFloat(this.getSqftPerTile)).toFixed(2)
+                                                        );
+
+
+            //--- on color/size click total info change    END------------------
+
+            this.showPriceSummary = 1; // show Price Summary
+            },
+            ['@update-qty-<?= (int)$product->getId() ?>.window'](event) {
+                this.qty = event.detail;console.log(event.detail);
+                this.calculateFinalPrice();
+                this.calculateFinalPriceWithCustomOptions();
+            },
+            ['@update-custom-option-active.window'](event) {
+                this.updateCustomOptionActive(event.detail);
+            },
+            ['@update-custom-option-prices.window'](event) {
+                this.updateCustomOptionPrices(event.detail);
+            },
+            ['@configurable-selection-changed.window'](event) {
+                this.updateConfigurableChanged(event.detail);
+            },
+
+            <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+            ['@update-custom-option-base-prices.window'](event) {
+                this.updateCustomOptionPrices(null, event.detail);
+            }
+            <?php endif; ?>
+        }
+    }
+}
+</script>
+<div x-data="initPriceSqft<?= (int)$product->getId() ?>()"
+     x-bind="eventListeners"
+     class="price-box price-final_price price__box mb-2"
+>
+    <div class="tag-label" x-show="getActiveSaleLabel()">
+        <span class="limited">
+            <span x-text="getActiveSaleLabel()"></span>
+            <template x-if="Number.isFinite(Number(getPercentageDiscount())) && Number(getPercentageDiscount()) > 0">
+                <span class="ml-1">
+                    <span x-text="getPercentageDiscount()"></span>% OFF
+                </span>
+            </template>
+            </span>
+        </span>
+    </div>
+    <div class="sale_price_info bg-transparent py-2" x-show="showPriceSummary == 1 && (sqft_per_tile > 0 && sqft_per_tile !='')">
+        <template x-if="activeProductsPriceData">
+            <h3 class="text-size12 font-bold mb-1 pb-2">Our Sale Price</h3>
+        </template>
+        <template x-if="!activeProductsPriceData && !isPriceHidden()">
+            <div class="price-container flex items-baseline">
+                <div class="final-price inline-block" itemprop="offers" itemscope="" itemtype="http://schema.org/Offer">
+                        <?php /*<span class="price-label block">
+                            <?= ($product->canConfigure() && is_int($product->getPrice())) ?
+                                $escaper->escapeHtml(__('As low as')) . ':' :
+                                '&nbsp;' ?>
+                        </span> */?>
+                    <span id="product-price-<?= (int)$product->getId() ?>"
+                          class="price-wrapper">
+                        <span class="price inter text-size21 font-bold text-darkblack" x-html="getFormattedFinalPrice()">
+                            <?= /** @noEscape */ $productCalculatedPrice ?>
+                        </span>
+                        <span class="price-label inter text-size14 font-normal text-darkblack mr-2">/sqft</span>
+                    </span>
+                    <meta itemprop="price" content="<?= $escaper->escapeHtmlAttr($finalPrice) ?>">
+                    <meta itemprop="priceCurrency"
+                          content="<?= $escaper->escapeHtmlAttr($productViewModel->getCurrencyData()['code']) ?>">
+                </div>
+                <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+                    <div class="final-price-excl-tax">
+                        <span>
+                            <span><?= $escaper->escapeHtml(__('Excl. Tax')) ?>:</span>
+                            <span class="price inter text-size21 font-bold text-darkblack"
+                                  x-html="getFormattedBasePrice()">
+                                <?= /** @noEscape */ $productViewModel->format($finalPriceExclTax) ?>
+                            </span>
+                        </span>
+                    </div>
+                <?php endif; ?>
+                <?php if ($finalPrice < $regularPrice): ?>
+                    <div class="old-price mr-2 flex">
+                        <span id="product-price-<?= (int)$product->getId() ?>"
+                              class="price-wrapper">
+                            <span class="price line-through inter text-size14 font-normal text-darkblack"
+                                  x-html="hyva.formatPrice(<?= (float)$regularPrice ?> +
+                                  getCustomOptionPrice())">
+                                <?= /** @noEscape */ $productCalculatedPrice ?>
+                            </span>
+                        </span>
+                    </div>
+                    <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+                    <div class="old-price-excl-tax">
+                        <span>
+                            <span><?= $escaper->escapeHtml(__('Excl. Tax')) ?>:</span>
+                            <span class="price line-through inter text-size14 font-normal text-darkblack"
+                                x-html="hyva.formatPrice(<?= (float)$regularPriceExclTax ?> +
+                                getCustomOptionBasePrice())">
+                                <?= /** @noEscape */ $productViewModel->format($regularPriceExclTax) ?>
+                            </span>
+                        </span>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </template>
+        <template x-if="activeProductsPriceData">
+            <div class="price-container flex items-baseline">
+                <div class="final-price inline-block">
+                    <?php /*if ($product->canConfigure() && is_int($product->getPrice())): ?>
+                        <span class="price-label block" :class="{ 'invisible' : !showRegularPriceLabel }">
+                            <?= $escaper->escapeHtml(__('As low as')) ?>:
+                        </span>
+                    <?php endif;*/ ?>
+                    <span id="product-price-<?= (int)$product->getId() ?>"
+                          class="price-wrapper">
+                        <span class="price inter text-size21 font-bold text-darkblack"
+                            x-html="getFormattedFinalPrice()">
+                            <?= /** @noEscape */ $productCalculatedPrice ?>
+                        </span>
+                        <span class="price-label inter text-size14 font-normal text-darkblack mr-2">
+                            /sqft
+                        </span>
+                    </span>
+                </div>
+
+                <template x-if="activeProductsPriceData &&
+                    activeProductsPriceData.oldPrice &&
+                    activeProductsPriceData[finalPriceKey].amount < activeProductsPriceData[regularPriceKey].amount
+                ">
+                    <div class="old-price flex mr-2">
+                        <span id="product-price-<?= (int)$product->getId() ?>"
+                              class="price-wrapper title-font font-regular text-xl text-gray-900">
+                            <span class="price line-through" x-html="getRegularPricePerTile()"></span>
+                        </span>
+                    </div>
+                </template>
+                            <div class="price-tile-container flex" x-show="showPriceSummary == 1 && (sqft_per_tile > 0 && sqft_per_tile !='')">
+            <div class="final_price_per_tile inter text-size14 font-medium text-darkblack">
+                <span x-text="getFinalPricePerTile()"></span> / tile
+            </div>
+            <div x-show="getPercentageDiscount() > 0"
+            class="regular_price_per_tile inter text-size14 font-medium text-darkblack">
+                <span x-text="hyva.formatPrice((activeProductsPriceData[regularPriceKey] ? activeProductsPriceData[regularPriceKey].amount : 0)
+                + getCustomOptionPrice())"></span>
+            </div>
+        </div>
+            </div>
+        </template>
+        <?php if ($productPriceViewModel->displayPriceInclAndExclTax()): ?>
+        <template x-if="activeProductsPriceData &&
+            activeProductsPriceData.oldPrice &&
+            activeProductsPriceData[finalPriceKey].amount < activeProductsPriceData[regularPriceKey].amount
+        ">
+            <div class="old-price-excl-tax">
+                <span><?= $escaper->escapeHtml(__('Excl. Tax')) ?>:</span>
+                <span class="font-regular text-gray-900">
+                    <span class="price" x-html="hyva.formatPrice(activeProductsPriceData['baseOldPrice'].amount +
+                    getCustomOptionBasePrice())"></span>
+                </span>
+            </div>
+        </template>
+        <template x-if="activeProductsPriceData">
+            <div class="price-excl-taxinline-block">
+                <span><?= $escaper->escapeHtml(__('Excl. Tax')) ?>:</span>
+                <span class="font-regular text-gray-900">
+                    <span class="price" x-html="getFormattedBasePrice()"></span>
+                </span>
+            </div>
+        </template>
+        <?php endif; ?>
+
+    </div>
+    <?= /* @noEscape */ $block->getLayout()->createBlock(Magento\Catalog\Block\Product\View::class)
+    ->setTemplate('Dcw_FlooringCalculation::product/view/price_ship_info_right.phtml')->toHtml();?>
+</div>

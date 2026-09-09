@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\App\Response\Http">
+        <plugin name="capture_redirect_url" type="Dcw\Spotlight\Plugin\SpotlightUrlRedirect" />
+    </type>
+
+    <preference  for="Amasty\SeoRichData\Model\JsonLd\ProductInfo" type="Dcw\Spotlight\Model\JsonLd\ProductInfo" />
+
+    <!-- Console command configuration -->
+    <type name="Dcw\Spotlight\Console\Command\GenerateJsonLdCommand">
+        <arguments>
+            <argument name="state" xsi:type="object">Magento\Framework\App\State</argument>
+        </arguments>
+    </type>
+
+    <!-- Register console commands -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="dcw_spotlight_jsonld_warm" xsi:type="object">Dcw\Spotlight\Console\Command\WarmJsonLdCacheCommand</item>
+                <item name="dcw_spotlight_jsonld_generate" xsi:type="object">Dcw\Spotlight\Console\Command\GenerateJsonLdCommand</item>
+                <item name="dcw_spotlight_sync_reviews" xsi:type="object">Dcw\Spotlight\Console\Command\SyncBazaarvoiceReviews</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

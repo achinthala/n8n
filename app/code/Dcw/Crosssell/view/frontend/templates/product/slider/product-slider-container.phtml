@@ -1,0 +1,254 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Dcw\Custom\ViewModel\Data;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\ProductListItem;
+use Hyva\Theme\ViewModel\ProductPage;
+use Hyva\Theme\ViewModel\Store;
+use Magento\Catalog\Block\Product\ReviewRendererInterface as ProductReviewRenderer;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var Store $viewModelStore */
+$viewModelStore = $viewModels->require(Store::class);
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var ProductListItem $productListItemViewModel */
+$productListItemViewModel = $viewModels->require(ProductListItem::class);
+$viewMode = 'grid';
+$imageDisplayArea = 'category_page_grid';
+$showDescription = false;
+$title = (string) $block->getTitle();
+$items = $block->getItems() ?? [];
+if (is_object($items) && $items instanceof Iterator) {
+    $items = iterator_to_array($items);
+}
+if (!$itemCount = count($items)) {
+    return '';
+}
+
+$sliderItemRenderer = $block->getLayout()->getBlock('product_list_item')
+    ?: $block->getChildBlock('slider.item.template')
+    ?: $block->getLayout()->createBlock(Template::class);
+$hideRatingSummary = (bool) $block->getData('hide_rating_summary');
+$hideDetails       = (bool) $block->getData('hide_details');
+$sliderItemRenderer->setData('hide_details', $hideDetails);
+$sliderItemRenderer->setData('hide_rating_summary', $hideRatingSummary);
+
+// The slider item renderer block is often a shared instance.
+// If a specific item template is set for this slider, the previously set template must be reset later
+// so the item template is only replaced for the one slider it is specified on.
+$sharedItemRendererTemplate = null;
+$isSharedItemRenderer       = $sliderItemRenderer !== $block->getChildBlock('slider.item.template');
+if ($isSharedItemRenderer && $block->getChildBlock('slider.item.template')) {
+    $sharedItemRendererTemplate = $sliderItemRenderer->getTemplate();
+    $sliderSpecificItemTemplate = $block->getChildBlock('slider.item.template')->getTemplate();
+    $sliderItemRenderer->setTemplate($sliderSpecificItemTemplate);
+}
+?>
+<script>
+    var addtocart=document.getElementById('product-addtocart-button');
+    addtocart.addEventListener("click", myFunction);
+    function myFunction() {
+        setTimeout(() => {
+            // console.log("View Change");
+            // var element = document.getElementById('products_slider');
+            // var headerOffset = 100;
+            // var elementPosition = element.getBoundingClientRect().top;
+            // console.log("elementPosition "+elementPosition);
+            // var offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            // window.scrollTo({
+            //     top: offsetPosition,
+            //     behavior: "smooth"
+            // });
+
+            console.log("View Change 224");
+            var element = document.getElementById('products_slider');
+            const offset = 100; // Adjust this value as needed
+            const targetPosition = element.offsetTop - offset;
+
+            window.scrollTo({
+            top: targetPosition,
+            behavior: "smooth" // You can use "auto" or "smooth" scrolling behavior
+            });
+            console.log(element.offsetTop);
+            console.log(targetPosition);
+
+
+            // document.getElementById('products_slider').scrollIntoView({behavior: "smooth", block: "end", inline: "nearest"});
+        }, 3000);
+    }
+</script>
+<script>
+    'use strict';
+    function initSliderComponent() {
+        return {
+            active: 0,
+            itemCount: 0,
+            getSlider() {
+                return this.$root.querySelector('.js_slides');
+            },
+            pageSize: 4,
+            pageFillers: 0,
+            calcPageSize() {
+                const slider = this.getSlider();
+                if (slider) {
+                    this.itemCount = slider.querySelectorAll('.js_slide').length;
+                    this.pageSize = Math.round(slider.clientWidth / slider.querySelector('.js_slide').clientWidth);
+                    this.pageFillers = (
+                        this.pageSize * Math.ceil(this.itemCount / this.pageSize)
+                    ) - this.itemCount;
+                }
+            },
+            calcActive() {
+                const slider = this.getSlider();
+                if (slider) {
+                    const sliderItems = this.itemCount + this.pageFillers;
+                    const calculatedActiveSlide = slider.scrollLeft / (slider.scrollWidth / sliderItems);
+                    this.active = Math.round(calculatedActiveSlide / this.pageSize) * this.pageSize;
+                }
+            },
+            scrollPrevious() {
+                this.scrollTo(this.active - this.pageSize);
+            },
+            scrollNext() {
+                this.scrollTo(this.active + this.pageSize);
+            },
+            scrollTo(idx) {
+                const slider = this.getSlider();
+                if (slider) {
+                    const slideWidth = slider.scrollWidth / (this.itemCount + this.pageFillers);
+                    slider.scrollLeft = Math.floor(slideWidth) * idx;
+                    this.active = idx;
+                }
+            }
+        }
+    }
+</script>
+<?php
+    if ($title=="You May Also Need") {
+?>
+    <section  id="products_slider"  class="<?=
+    $escaper->escapeHtmlAttr($block->getData('maybe_purged_tailwind_section_classes'))
+    ?: 'text-gray-700 body-font products_slider';?>"  x-data="initSliderComponent()"
+    x-init="calcPageSize();" @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })">
+<?php
+    } else {
+?>
+    <section  id="products_slider_upsell"  class="<?=
+    $escaper->escapeHtmlAttr($block->getData('maybe_purged_tailwind_section_classes'))
+    ?: 'text-gray-700 body-font products_slider';?>"  x-data="initSliderComponent()"
+    x-init="calcPageSize();"  @resize.window.debounce="calcPageSize(); $nextTick( function() { calcActive() })">
+<?php
+    }
+?>
+
+
+    <?php if ($items): ?>
+        <div class="relative dcw-crosssell">
+            <?php if ($title): ?>
+                <div class="w-full flex flex-col items-center mx-auto md:flex-row">
+                    <h5>
+                        <?= $escaper->escapeHtml($title); ?>
+
+                    </h5>
+                </div>
+            <?php endif; ?>
+            <div class="flex-none relative w-full overflow-x-hidden">
+                <div class="relative flex flex-nowrap w-full overflow-auto js_slides snap"
+                     @scroll.debounce="calcActive"
+                >
+                    <?php
+                    $blockObj = $viewModels->require(Data::class);
+
+					foreach ($items as $product):
+					$sproducts = $blockObj->getLoadProduct((int)$product->getId());
+
+					 ?>
+                        <div class="flex shrink-0 w-full js_slide md:w-1/2 lg:w-1/3 xl:w-1/4">
+                            <?= /** @noEscape */ $productListItemViewModel->getItemHtmlWithRenderer(
+                                $sliderItemRenderer,
+                                $sproducts,
+                                $block,
+                                $viewMode,
+                                ProductReviewRenderer::SHORT_VIEW,
+                                $imageDisplayArea,
+                                $showDescription
+                            ) ?>
+					<?php echo $this->getLayout()->createBlock("Magento\Catalog\Block\Product\AbstractProduct")->setTemplate("Amasty_OutofstockHyvaCompatibility::category/stock-status.phtml")->toHtml();?>
+					<?php echo $this->getLayout()->createBlock("Magento\Catalog\Block\Product\AbstractProduct")->setTemplate("Amasty_OutofstockHyvaCompatibility::js/amnotification-init.phtml")->toHtml();?>
+                        </div>
+                    <?php endforeach; ?>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex shrink-0 py-1' : pageFillers > 0
+                        }"></div>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex shrink-0 py-1' : pageFillers > 1
+                        }"></div>
+                    <div :class="{
+                        'js_dummy_slide w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex shrink-0 py-1' : pageFillers > 2
+                        }"></div>
+                </div>
+            </div>
+            <div>
+            <template x-if="itemCount > pageSize">
+                <div class="flex items-center justify-center py-4 page">
+                    <button
+                        aria-label="<?= $escaper->escapeHtml(__('Previous')) ?>"
+                        tabindex="-1"
+                        class="mr-4 text-black rounded-full outline-none focus:outline-none flex-none btn-prev"
+                        :class="{ 'opacity-25 pointer-events-none' : active === 0 }"
+                        @click="scrollPrevious">
+                        <?= $heroicons->chevronLeftHtml("w-5 h-5", 25, 25) ?>
+                    </button>
+                    <div class="flex flex-wrap w-full md:w-auto justify-center js_dots">
+                    <?php for ($i=0; $i < $itemCount; $i++): ?>
+                        <span class="shrink-0 block w-3 h-3 m-1 bg-black bg-opacity-25 rounded-full shadow cursor-pointer"
+                                :class="{
+                                    'bg-opacity-100': active === <?= (int) $i ?>,
+                                    'hidden': (pageSize !== 1 && !!(<?= (int) $i ?> % pageSize))
+                                    }"
+                                @click="scrollTo(<?= (int) $i ?>)">
+                        </span>
+                    <?php endfor; ?>
+                    </div>
+                    <button
+                        aria-label="<?= $escaper->escapeHtml(__('Next')) ?>"
+                        tabindex="-1"
+                        class="ml-4 text-black rounded-full outline-none focus:outline-none flex-none btn-next"
+                        :class="{ 'opacity-25 pointer-events-none' : active >= itemCount-pageSize }"
+                        @click="scrollNext">
+                        <?= $heroicons->chevronRightHtml("w-5 h-5", 25, 25) ?>
+                    </button>
+                </div>
+            </template>
+            </div>
+        </div>
+    <?php endif; ?>
+</section>
+<?php
+
+if ($sharedItemRendererTemplate) {
+    $sliderItemRenderer->setTemplate($sharedItemRendererTemplate);
+}
+
+?>

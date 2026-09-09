@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="product.info.options.configurable.js" remove="true"/>
+        <referenceContainer name="before.body.end">
+            <block name="product.info.options.configurable.js.dcw" template="Dcw_FlooringCalculation::product/view/type/options/js/configurable-options.phtml"/>
+        </referenceContainer>
+        
+        <block name="product.swatch.item.dcw" template="Dcw_FlooringCalculation::product/swatch-item.phtml"/> 
+    </body>
+</page>

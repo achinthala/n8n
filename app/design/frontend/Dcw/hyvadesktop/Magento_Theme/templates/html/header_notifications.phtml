@@ -1,0 +1,41 @@
+<div class="header_top flex justify-between items-center" x-data="notificationAjaxCall()" x-init="initNotificationFunc()">
+    <div class="header_left_notification text-size14 font-normal" x-html="left_notification_html"></div>
+    <div class="header_middle_notification flex">
+        <?= /* @noEscape */ $block->getLayout()->createBlock(Magento\Cms\Block\Block::class)->setBlockId('header_middle_notifications')->toHtml();?>
+    </div>
+    <div class="header_right_notifications font-normal">
+        <?php
+            echo $this->getLayout()
+            ->createBlock('Magento\Cms\Block\Block')
+            ->setBlockId('header_contact_link')
+            ->toHtml();
+        ?>
+    </div>
+</div>
+
+<script>
+  function notificationAjaxCall() {
+    return {
+        availability_notification: '',
+        left_notification_html: '',
+        right_notification_html: '',
+        initNotificationFunc: function () {
+            fetch(BASE_URL+'notifications/index/show', {
+                method: "GET",
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                  this.availability_notification = data.availability_notification;
+                  this.left_notification_html = data.left_notification_html;
+                  this.right_notification_html = data.right_notification_html;
+                }
+            });
+        }
+    }
+  }
+</script>

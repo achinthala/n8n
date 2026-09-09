@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="category.products.list" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="search_result_list" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/list.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="product_list_item">
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/list/item.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="crosssell" >
+            <action method="setTemplate" >
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/slider/product-slider.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="upsell" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/slider/product-slider.phtml</argument>
+            </action>
+        </referenceBlock>
+        <referenceBlock name="related" >
+            <action method="setTemplate">
+                <argument name='template' xsi:type='string'>WeltPixel_HyvaGA4::product/slider/product-slider.phtml</argument>
+            </action>
+        </referenceBlock>
+    </body>
+</page>

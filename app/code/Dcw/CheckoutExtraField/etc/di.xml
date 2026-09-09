@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Checkout\Block\Checkout\LayoutProcessor">
+        <plugin name="address_type" type="Dcw\CheckoutExtraField\Plugin\Block\Checkout\LayoutProcessor" sortOrder="100"/>
+    </type>
+    <type name="Magento\Checkout\Model\ShippingInformationManagement">
+        <plugin name="save_to_quote_table" type="Dcw\CheckoutExtraField\Plugin\Checkout\Model\ShippingInformationManagement" sortOrder="10" />
+    </type>
+    <type name="Magento\Framework\Api\DataObjectHelper">
+        <plugin name="dcw_checkoutextrafield_convert_incompatible_address_extension"
+                type="Dcw\CheckoutExtraField\Plugin\Framework\Api\ConvertIncompatibleAddressExtensionPlugin"
+                sortOrder="10"/>
+    </type>
+    <!-- sortOrder -10: before Magento_CheckoutStaging array_diff() on address getData() -->
+    <type name="Magento\Checkout\Api\PaymentInformationManagementInterface">
+        <plugin name="dcw_checkoutextrafield_strip_address_extension_before_place"
+                type="Dcw\CheckoutExtraField\Plugin\Checkout\StripAddressExtensionBeforePlaceOrderPlugin"
+                sortOrder="-10"/>
+    </type>
+    <type name="Magento\Checkout\Api\GuestPaymentInformationManagementInterface">
+        <plugin name="dcw_checkoutextrafield_strip_guest_address_extension_before_place"
+                type="Dcw\CheckoutExtraField\Plugin\Checkout\GuestStripAddressExtensionBeforePlaceOrderPlugin"
+                sortOrder="-10"/>
+    </type>
+</config>

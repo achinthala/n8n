@@ -1,0 +1,22 @@
+<?php
+// @codingStandardsIgnoreFile
+?>
+<?php
+$_helper = $this->helper('WeltPixel\GA4\Helper\Data');
+$gtmCodeSnippetForHead = $_helper->getGtmCodeSnippetForHead();
+$cspNonceProvider = $_helper->getCspNonceProvider();
+
+$gtmCodeSnippetForHead = str_replace(
+    ['<script>', '<script data-rocketjavascript="false">', '<script data-rocketjavascript="true">', '<script exclude-this-tag="text/x-magento-template">', '</script>'],
+    ['<script>  if (window.ga4AllowServices) { ', '<script data-rocketjavascript="false"> if (window.ga4AllowServices) { ', '<script data-rocketjavascript="true"> if (window.ga4AllowServices) { ' ,'<script exclude-this-tag="text/x-magento-template">  if (window.ga4AllowServices) { ', '} </script>'],
+    $gtmCodeSnippetForHead
+);
+
+if ($cspNonceProvider) {
+    $gtmCodeSnippetForHead = str_replace('<script', '<script nonce="' . $cspNonceProvider->generateNonce() . '" ', $gtmCodeSnippetForHead);
+}
+
+?>
+<?php if ($_helper->isEnabled()) : ?>
+    <?php echo $gtmCodeSnippetForHead; ?>
+<?php endif; ?>

@@ -1,0 +1,50 @@
+<?php
+declare(strict_types=1);
+/**
+ * BSS Commerce Co.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the EULA
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://bsscommerce.com/Bss-Commerce-License.txt
+ *
+ * @category   BSS
+ * @package    Hyva_BssSocialLogin
+ * @author     Extension Team
+ * @copyright  Copyright (c) 2022 BSS Commerce Co. ( http://bsscommerce.com )
+ * @license    http://bsscommerce.com/Bss-Commerce-License.txt
+ */
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\CustomerRegistration;
+use Magento\Framework\Escaper;
+use Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink;
+use Hyva\BssSocialLogin\ViewModels\Helper as ModuleViewModel;
+
+/** @var ViewModelRegistry $viewModels */
+/** @var CustomerRegistration $customerRegistration */
+/** @var Escaper $escaper */
+/** @var CustomerMenuLink $block */
+
+$customerRegistration = $viewModels->require(CustomerRegistration::class);
+$moduleViewModel = $viewModels->require(ModuleViewModel::class);
+$helperSocial = $moduleViewModel->getHelper();
+$checkButtonRegister = $moduleViewModel->checkButtonRegister();
+?>
+<?php if ($customerRegistration->isAllowed()): ?>
+    <a class="<?= $escaper->escapeHtmlAttr(implode(" ", $block->getCss())) ?>"
+       href="<?= $escaper->escapeUrl($block->getLink()) ?>"
+        <?php if ($helperSocial->popupEnabled()) : ?>
+            @click.prevent="$dispatch('popup-register',
+            { open: true,openRegister : true,openLogin : false,openCreate :false ,
+            openButtonLogin : false,
+            openButtonRegister :<?php echo(json_encode($checkButtonRegister)); ?>,
+            })"
+        <?php endif; ?>
+    >
+        <?= $block->getChildHtml('customer_menu_item_before_link_text') ?>
+        <?= $escaper->escapeHtml($block->getLinkText()); ?>
+        <?= $block->getChildHtml('customer_menu_item_after_link_text') ?>
+    </a>
+<?php endif; ?>

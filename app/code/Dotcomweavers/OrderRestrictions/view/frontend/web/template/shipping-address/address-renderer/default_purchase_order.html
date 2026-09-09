@@ -1,0 +1,31 @@
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<div class="shipping-address-item" data-bind="attr: { id: address().getKey() }" css="'selected-item': isSelected(), 'not-selected-item': !isSelected()">
+    <text args="address().prefix"></text> <text args="address().firstname"></text> <text args="address().middlename"></text>
+    <text args="address().lastname"></text> <text args="address().suffix"></text><br/>
+    <text args="_.values(address().street).join(', ')"></text><br/>
+    <text args="address().city "></text>, <span text="address().region"></span> <text args="address().postcode"></text><br/>
+    <text args="getCountryName(address().countryId)"></text><br/>
+    <a if="address().telephone" attr="'href': 'tel:' + address().telephone" text="'('+address().telephone.substr(0, 3)+') '+address().telephone.substr(3, 3)+' - '+address().telephone.substr(6)"></a><br/>
+
+    <each args="data: address().customAttributes, as: 'element'">
+        <text args="$parent.getCustomAttributeLabel(element)"></text>
+        <br/>
+    </each>
+    <!-- ko if: (address().isEditable()) -->
+    <button visible="address().isEditable()" type="button"
+            class="action edit-address-link"
+            click="editAddress">
+        <span translate="'Edit'"></span>
+    </button>
+    <!-- /ko -->
+    <!-- ko if: (!isSelected()) -->
+    <button type="button" data-bind="click: selectAddress, visible: !isQuoteAddressLocked" class="action action-select-shipping-item">
+        <span data-bind="i18n: 'Ship Here'"></span>
+    </button>
+    <!-- /ko -->
+</div>

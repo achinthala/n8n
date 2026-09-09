@@ -1,0 +1,178 @@
+<?php
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\PageBuilderProductRecommendations\Block\PageBuilderRecommendation;
+
+/* @var PageBuilderRecommendation $block
+ * @var HeroiconsOutline $heroiconsOutline
+ * @var ViewModelRegistry $viewModels
+ */
+
+$heroiconsOutline = $viewModels->require(HeroiconsOutline::class);
+$unitId = $block->escapeJs($block->getData('unit_id'));
+$systemLocale = $block->getSystemLocale();
+$currencyConfiguration = $block->getCurrencyConfiguration();
+$defaultStoreViewCode = $block->getDefaultStoreViewCode();
+$alternateEnvironmentId = $block->getAlternateEnvironmentId();
+$uniqueId = uniqid();
+?>
+<script>
+    function recommendedProducts_<?= $uniqueId ?>() {
+        "use strict";
+        return {
+            config: {
+                unitId: "<?= $unitId ?>",
+                systemLocale: "<?= /* @noEscape */ $systemLocale; ?>",
+                defaultStoreViewCode: "<?= /* @noEscape */ $defaultStoreViewCode; ?>"
+            },
+            productBanners: '',
+            initProducts: function() {
+                let self = this;
+                let storefrontEvents = window.magentoStorefrontEvents,
+                    n = {};
+
+                storefrontEvents.context.setContext("recsContext", {
+                    alternateEnvironmentId: "<?= /* @noEscape */ $block->getAlternateEnvironmentId(); ?>"
+                });
+
+                document.addEventListener("request", (function() {
+                    storefrontEvents.publish.recsRequestSent();
+                }))
+
+                document.addEventListener("response", (function(n) {
+                    let rec = storefrontEvents.context.getRecommendations();
+
+                    rec = n.detail, storefrontEvents.context.setRecommendations({
+                        units: rec
+                    })
+                    self.getProducts(rec);
+
+                }))
+                this.recsFetcher();
+            },
+            recsFetcher: function() {
+                document.dispatchEvent(new Event("request"))
+                let client;
+                const options = {
+                    unitId: this.config.unitId.substring(0, 36),
+                    pageType: "PageBuilder",
+                    defaultStoreViewCode: this.config.defaultStoreViewCode,
+                    alternateEnvironmentId: this.config.alternateEnvironmentId,
+                }
+                let promise = new Promise(function(resolve, reject) {
+                        let interval = setInterval(() => {
+                            client = new RecommendationsClient(options);
+                            if (client._environmentId !== "") {
+                                clearInterval(interval);
+                                resolve();
+                            }
+                        }, 300);
+                    })
+                    .then(() => {
+                        client.fetchPreconfigured().then(res => {
+                            const units = res.data.results;
+                            const filteredUnits = units.filter(unit => unit.products.length);
+                            const responseEvent = new CustomEvent("response", {
+                                detail: filteredUnits,
+                            });
+
+                            document.dispatchEvent(responseEvent);
+                        });
+                    });
+            },
+            addToCartRecsEvent: function(e, unitId, productId) {
+                // requires recommendationsContext to be set
+                magentoStorefrontEvents.publish.recsItemAddToCartClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => e.submit(), 500);
+            },
+            scrollViewEvent: function(unitId) {
+                magentoStorefrontEvents.publish.recsUnitView(
+                    unitId, magentoStorefrontEvents.context
+                );
+            },
+            recsClickEvent: function(unitId, productId, productUrl) {
+                magentoStorefrontEvents.publish.recsItemClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => window.location.href = productUrl, 500);
+            },
+            getProducts: function(rec) {
+                this.productBanners = rec;
+            },
+            createAddToCartUrl: function(productId) {
+                const currentLocationUENC = encodeURIComponent(
+                    this.encodeUenc(BASE_URL),
+                );
+                return BASE_URL +
+                    "checkout/cart/add/uenc/" +
+                    currentLocationUENC +
+                    "/product/" +
+                    productId
+            },
+            encodeUenc: function(value) {
+                const regex = /=/gi;
+                return btoa(value).replace(regex, ",");
+            },
+        }
+    }
+</script>
+<div x-data="recommendedProducts_<?= $uniqueId ?>()" x-init="initProducts()" x-show="productBanners" class="container">
+    <template x-if="productBanners">
+        <div>
+            <template x-for="banner in productBanners">
+                <div class="product-slider" x-intersect="scrollViewEvent(banner.unitId)">
+                    <section class="my-12 text-gray-700 body-font">
+                        <div class="relative">
+                            <div class="container flex flex-col items-center pt-6 pb-3 mx-auto mb-6 border-b-2 border-gray-300 md:flex-row">
+                                <h3 x-text='banner.storefrontLabel' class="text-2xl font-medium text-gray-900 title-font"></h3>
+                            </div>
+                            <div class="relative flex flex-wrap gap-2 w-full md:px-1 xl:px-2">
+                                <template x-for="product in banner.products">
+                                    <div class="mr-1 p-1 w-64">
+                                        <form method="post" x-bind:action="createAddToCartUrl(product.productId)" @submit.prevent="addToCartRecsEvent($event.target, banner.unitId, product.productId)" class="item product product-item product_addtocart_form card card-interactive flex flex-col w-full">
+                                            <input name="form_key" type="hidden" :value="hyva.getFormKey()" />
+                                            <input type="hidden" name="product" x-bind:value="product.productId">
+                                            <a @click="recsClickEvent(banner.unitId, product.productId, product.url)" class="product photo product-item-photo block mx-auto mb-3 cursor-pointer" tabindex="-1">
+                                                <img class="hover:shadow-sm object-contain" loading="lazy" x-bind:alt="product.image?.label" x-bind:title="product.image?.label" x-bind:src="product.image.url" width="360" height="360">
+                                            </a>
+                                            <div class="product-info flex flex-col flex-grow">
+                                                <div class="mt-2 mb-1 items-center justify-center text-primary font-semibold text-lg text-center ">
+                                                    <a class="product-item-link cursor-pointer" @click="recsClickEvent(banner.unitId, product.productId, product.url)" x-text="product.name"></a>
+                                                </div>
+                                                <template x-if="product.prices">
+                                                    <div class="pt-1 text-gray-900 price-box price-final_price" x-bind:data-product-id="product.productId">
+                                                        <span class="normal-price">
+                                                            <span class="price-container price-final_price">
+                                                                <span class="price-label"><?= $escaper->escapeHtml(__('As low as')) ?></span>
+                                                                <span id="product-price" class="price-wrapper ">
+                                                                    <span class="price" x-text="hyva.formatPrice(product.prices.minimum.final)"></span>
+                                                                </span>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </template>
+                                                <template x-if="product.addToCartAllowed">
+                                                    <div class="mt-auto pt-3 flex flex-wrap justify-center items-center">
+                                                        <button class="w-auto btn btn-primary justify-center text-sm mr-auto" aria-label="Add to Cart">
+                                                            <?= $heroiconsOutline->shoppingCartHtml("h-6 w-6 border-current inline", 25, 25) ?>
+                                                            <span class="ml-2 inline md:ml-0 md:hidden lg:ml-2 lg:inline"><?= $escaper->escapeHtml(__('Add to Cart')) ?></span>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </template>
+        </div>
+    </template>
+</div>

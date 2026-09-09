@@ -1,0 +1,264 @@
+<?php
+/**
+ * Copyright © Dotcom Weavers. All rights reserved.
+ * @var \Magento\Backend\Block\Template $block
+ */
+?>
+
+<div class="revenue-ranking-actions">
+    <button type="button" class="action-secondary" id="import-manual-adjustment">
+        <span><?= $block->escapeHtml(__('Import Manual Adjustments')) ?></span>
+    </button>
+    <button type="button" class="action-secondary" id="download-sample-csv">
+        <span><?= $block->escapeHtml(__('Download Sample CSV')) ?></span>
+    </button>
+    <form method="POST" action="<?= $block->escapeUrl($block->getUrl('revenue_ranking/index/refresh')) ?>" style="display: inline-block; margin-left: 10px;">
+        <input type="hidden" name="form_key" value="<?= $block->escapeHtml($block->getFormKey()) ?>">
+        <button type="submit" class="action-primary">
+            <span><?= $block->escapeHtml(__('Refresh Revenue Data')) ?></span>
+        </button>
+    </form>
+</div>
+
+<div id="import-modal" style="display: none;">
+    <div class="modal-inner-wrap">
+        <div class="modal-header">
+            <h1 class="modal-title"><?= $block->escapeHtml(__('Import Manual Adjustments')) ?></h1>
+        </div>
+        <div class="modal-content">
+            <form id="import-form" enctype="multipart/form-data">
+                <div class="field required">
+                    <label class="label" for="csv_file">
+                        <span><?= $block->escapeHtml(__('CSV File')) ?></span>
+                    </label>
+                    <div class="control">
+                        <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
+                                                                                    <div class="note">
+                                    <?= $block->escapeHtml(__('Select a CSV file with SKU and Manual Adjustment columns. Leave Manual Adjustment empty to use base revenue.')) ?>
+                                </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="action-primary" id="start-import">
+                <span><?= $block->escapeHtml(__('Import')) ?></span>
+            </button>
+            <button type="button" class="action-secondary" id="cancel-import">
+                <span><?= $block->escapeHtml(__('Cancel')) ?></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+require(['jquery'], function($) {
+    'use strict';
+    
+    // Wait for page to be fully loaded
+    $(window).on('load', function() {
+        setTimeout(function() {
+            var importModal = $('#import-modal');
+            var importForm = $('#import-form');
+            var importButton = $('#import-manual-adjustment');
+            var downloadButton = $('#download-sample-csv');
+            var startImportButton = $('#start-import');
+            var cancelButton = $('#cancel-import');
+            
+            // Check if elements exist before initializing
+            if (importModal.length === 0 || importButton.length === 0) {
+                console.log('Import elements not found');
+                return;
+            }
+            
+            // Simple modal implementation without Magento modal
+            var isModalOpen = false;
+            
+            // Open modal
+            importButton.on('click', function() {
+                importModal.show();
+                isModalOpen = true;
+            });
+            
+            // Download sample CSV
+            downloadButton.on('click', function() {
+                window.location.href = '<?= $block->escapeUrl($block->getUrl('revenue_ranking/index/downloadSample')) ?>';
+            });
+            
+                            // Start import
+                startImportButton.on('click', function() {
+                    var formData = new FormData(importForm[0]);
+                    
+                    // Add form key to the request
+                    formData.append('form_key', '<?= $block->escapeJs($block->getFormKey()) ?>');
+
+                    if (!formData.get('csv_file')) {
+                        alert('<?= $block->escapeJs(__('Please select a CSV file.')) ?>');
+                        return;
+                    }
+
+                    startImportButton.prop('disabled', true).find('span').text('<?= $block->escapeJs(__('Importing...')) ?>');
+
+                    $.ajax({
+                        url: '<?= $block->escapeUrl($block->getUrl('revenue_ranking/index/import')) ?>',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        showLoader: true,
+                    success: function(response) {
+                        if (response.success) {
+                            var message = '<?= $block->escapeJs(__('Import completed successfully. %1 records updated.')) ?>'.replace('%1', response.updated_count);
+                            if (response.attribute_updated_count) {
+                                message += ' <?= $block->escapeJs(__('%1 product attributes updated.')) ?>'.replace('%1', response.attribute_updated_count);
+                            }
+                            alert(message);
+                            location.reload();
+                        } else {
+                            alert('<?= $block->escapeJs(__('Import failed: %1')) ?>'.replace('%1', response.message));
+                        }
+                    },
+                    error: function() {
+                        alert('<?= $block->escapeJs(__('An error occurred during import.')) ?>');
+                    },
+                    complete: function() {
+                        startImportButton.prop('disabled', false).find('span').text('<?= $block->escapeJs(__('Import')) ?>');
+                    }
+                });
+            });
+            
+            // Cancel import
+            cancelButton.on('click', function() {
+                importModal.hide();
+                importForm[0].reset();
+                isModalOpen = false;
+            });
+            
+            // Close modal when clicking outside
+            importModal.on('click', function(e) {
+                if (e.target === this) {
+                    importModal.hide();
+                    importForm[0].reset();
+                    isModalOpen = false;
+                }
+            });
+            
+        }, 1000); // Wait 1 second for grid to load
+    });
+});
+</script>
+
+<style>
+.revenue-ranking-actions {
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+.action-primary {
+    background: #eb5202;
+    border: 1px solid #eb5202;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1.4rem;
+    line-height: 1.36;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.action-primary:hover {
+    background: #d04a00;
+    border-color: #d04a00;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.action-secondary {
+    background: #514943;
+    border: 1px solid #514943;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 1.4rem;
+    line-height: 1.36;
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.action-secondary:hover {
+    background: #373330;
+    border-color: #373330;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+#import-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#import-modal .modal-inner-wrap {
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    width: 500px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+}
+
+#import-modal .modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #d6d6d6;
+}
+
+#import-modal .modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#import-modal .modal-content {
+    padding: 20px;
+}
+
+#import-modal .modal-footer {
+    padding: 20px;
+    border-top: 1px solid #d6d6d6;
+    text-align: right;
+}
+
+#import-modal .field {
+    margin-bottom: 20px;
+}
+
+#import-modal .label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+#import-modal .control input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d6d6d6;
+    border-radius: 3px;
+}
+
+#import-modal .note {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
+</style>

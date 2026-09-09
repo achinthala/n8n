@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../../lib/internal/Magento/Framework/ObjectManager/etc/config.xsd">
+    <type name="Magento\Checkout\Block\Checkout\LayoutProcessor">
+        <plugin name="rewrite-street-address" type="Dcw\ShoppingCart\Plugin\Checkout\LayoutProcessorPlugin"
+                sortOrder="10"/>
+    </type>
+    <preference for="Hyva\Theme\ViewModel\ProductList" type="Dcw\ShoppingCart\ViewModel\ProductList"/>
+    <preference for="Hyva\AmastyRequestQuote\Controller\Cart\UpdatePost" type="Dcw\ShoppingCart\Controller\Cart\UpdatePost"/>
+    <preference for="Magento\Catalog\Block\Product\ProductList\Related" type="Dcw\ShoppingCart\Block\Related" />
+    <!--Promise Date changes-->
+    <preference for="Magento\CatalogInventory\Model\StockStateProvider" type="Dcw\ShoppingCart\Model\StockStateProvider" />
+    <!-- Override the NegotiableQuote ReorderPlugin -->
+    <preference for="Magento\NegotiableQuote\Plugin\Sales\Controller\Order\ReorderPlugin" type="Dcw\ShoppingCart\Plugin\ReorderPluginOverride"/>
+</config>

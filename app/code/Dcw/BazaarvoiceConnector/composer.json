@@ -1,0 +1,21 @@
+{
+  "name": "dcw/module-bazaarvoice-connector",
+  "version": "1.0.0",
+  "description": "N/A",
+  "type": "magento2-module",
+  "require": {
+    "magento/framework": "*",
+    "bazaarvoice/bazaarvoice-magento2-ext": "9.1.*"
+  },
+  "license": [
+    "Proprietary"
+  ],
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "Dcw\\BazzarvoiceConnector\\": ""
+    }
+  }
+}

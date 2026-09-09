@@ -1,0 +1,82 @@
+<?php
+/* @var $block \Mirasvit\Rma\Block\Rma\View\Info */
+$rma    = $block->getRma();
+$orders = $block->getOrders();
+?>
+<div class="mst-rma-block flex mb-4">
+    <div class="mst-rma-box mst-rma__return flex-auto">
+        <div class="mst-rma-box__title text-lg title"><?= __('Request Information') ?></div>
+        <div class="mst-rma-box__content text-gray-600  ">
+            <table class="w-full">
+                <tbody>
+                <tr>
+                    <th class="text-left font-normal p-2 align-top"><?= __('RMA') ?>:</th>
+                    <td class="p-2">
+                        #<?= $block->escapeHtml($rma->getIncrementId()) ?>&nbsp;
+                        <span class="mst-rma-status p-1.5 rounded text-white" style="background-color: <?= $block->getStatus($rma)->getIncstoresPimColorAxis() ?: 'gray' ?>">
+                                <?= $block->escapeHtml($block->getStatus($rma)->getName()) ?>
+                            </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th class="text-left font-normal p-2 align-top"><?= __('Order') ?>:</th>
+                    <td class="p-2">
+                        <?php foreach ($orders as $order): ?>
+                            <div>
+                                <?php if ($rma->getCustomerId()): ?>
+                                    <?= $block->getOrderLabel($order, $block->getOrderUrl($order->getId())) ?>
+                                <?php else: ?>
+                                    <?= $block->getOrderLabel($order) ?>
+                                <?php endif ?>
+                            </div>
+                        <?php endforeach; ?>
+                        <?= $rma->getIsGift() ? __('(This was a gift)') : '' ?>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th class="text-left font-normal p-2 align-top"><?= __('Date Requested') ?>:</th>
+                    <td class="p-2"><?= $block->formatDate($rma->getCreatedAt(), \IntlDateFormatter::MEDIUM) ?></td>
+                </tr>
+
+                <?php foreach ($block->getCustomFields($rma) as $field): ?>
+                    <?php if (!$value = $block->getRmaFieldValue($rma, $field)) {
+                        continue;
+                    } ?>
+                    <tr>
+                        <th class="p-2 align-top"><?= __($block->escapeHtml($field->getName())) ?>:</th>
+                        <td class="p-2">
+                            <?= $block->escapeHtml($value) ?>
+                        </td>
+                    </tr>
+                <?php endforeach ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mst-rma-box mst-rma__contact flex-auto" style="display: none;">
+        <div class="mst-rma-box__title text-lg title"><?= __('Contact Information') ?></div>
+        <div class="mst-rma-box__content text-gray-600">
+            <?= nl2br($block->escapeHtml($block->getShippingAddressHtml($rma))) ?>
+        </div>
+    </div>
+
+    <?php if ($address = $block->getReturnAddressHtml($rma)): ?>
+        <div class="mst-rma-box mst-rma__return-address flex-auto">
+            <div class="mst-rma-box__title text-lg title"><?= __('Return Address') ?></div>
+            <div class="mst-rma-box__content text-gray-600">
+                <?= nl2br($block->escapeHtml($address)) ?>
+            </div>
+        </div>
+    <?php endif ?>
+</div>
+
+<style>
+    .mst-rma-box__content a {
+        color: rgb(37, 99, 235);
+    }
+    .mst-rma-box__content a:hover {
+        text-decoration: underline;
+    }
+</style>

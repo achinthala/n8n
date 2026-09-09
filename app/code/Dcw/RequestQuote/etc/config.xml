@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <requestquote>
+            <general>
+                <show_save_cart_proceed_to_checkout>1</show_save_cart_proceed_to_checkout>
+            </general>
+            <change_log>
+                <show_to_customer>1</show_to_customer>
+            </change_log>
+            <quote_lock>
+                <lock_timeout>300</lock_timeout>
+            </quote_lock>
+            <discount_threshold>
+                <threshold_percentage>20</threshold_percentage>
+            </discount_threshold>
+            <admin_permissions>
+                <quantity_edit_roles></quantity_edit_roles>
+                <pricing_control_roles></pricing_control_roles>
+                <full_discount_roles></full_discount_roles>
+                <admin_assistance_roles></admin_assistance_roles>
+            </admin_permissions>
+        </requestquote>
+    </default>
+</config>
+
+

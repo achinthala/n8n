@@ -1,0 +1,90 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\GiftMessage\Block\Cart\GiftOptions;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+
+/** @var Escaper $escaper */
+/** @var GiftOptions $block */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var ViewModelRegistry $viewModels */
+/** @var HeroiconsOutline $heroicons */
+
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+$slideOutDrawer = (bool) $block->getSlideOutDrawer();
+?>
+
+<div x-data="initGiftItemOptions({itemId: '<?= (int) $block->getItem()->getId() ?>'})" class="gift-options-component w-full flex flex-wrap" :data-item-id="itemId" x-cloak>
+    <div class="text-left gift-options-title w-full order-first" x-show="isGiftMsgEnabled || hasActiveOptions">
+        <span @click="formBlockVisibility = !formBlockVisibility" class="cursor-pointer text-primary-lighter select-none whitespace-nowrap underline">
+            <?= $escaper->escapeHtml(__('Gift options')) ?>
+            <?php if (!$slideOutDrawer): ?>
+                <span x-show="!formBlockVisibility">
+                    <?= $heroicons->chevronDownHtml('inline-block', 16, 16) ?>
+                </span>
+                <span x-show="formBlockVisibility">
+                    <?= $heroicons->chevronUpHtml('inline-block', 16, 16) ?>
+                </span>
+            <?php endif ?>
+        </span>
+    </div>
+    <?php if ($slideOutDrawer): ?>
+        <div role="dialog"
+            aria-labelledby="enquiry-form-drawer-title"
+            aria-modal="true"
+            @keydown.window.escape="formBlockVisibility=false"
+            class="fixed inset-y-0 right-0 z-30 flex max-w-full"
+        >
+            <div class="backdrop"
+                x-show="formBlockVisibility"
+                x-transition:enter="ease-in-out duration-500"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="ease-in-out duration-500"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click="formBlockVisibility=false"
+                aria-label="Close panel"
+            ></div>
+            <div class="relative w-screen max-w-md shadow-2xl bg-white p-8 flex flex-col overflow-y-auto"
+                x-show="formBlockVisibility"
+                x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+                x-transition:enter-start="translate-x-full"
+                x-transition:enter-end="translate-x-0"
+                x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+                x-transition:leave-start="translate-x-0"
+                x-transition:leave-end="translate-x-full"
+            >
+                <div class="relative">
+                    <h2 class="text-lg font-medium leading-7 text-gray-900 "><?= $escaper->escapeHtml('Item Gift Options') ?></h2>
+                    <div class="absolute top-0 right-0 cursor-pointer" @click="formBlockVisibility=false" aria-label="Close panel" tabindex="0" role="button">
+                        <?= $heroicons->xHtml('inline-block', 24, 24) ?>
+                    </div>
+                </div>
+                <div class="gift-options-item">
+                    <span><?= $escaper->escapeHtml($block->getItem()->getName()) ?></span>
+                </div>
+                <?= $block->getChildHtml('gift-options-body') ?>
+            </div>
+        </div>
+    <?php else: ?>
+        <?= $block->getChildHtml('gift-options-body') ?>
+    <?php endif ?>
+    <div x-show="(resultBlockVisibility && !formBlockVisibility) || (resultBlockVisibility && inSlideOut)" class="gift-summary pt-2" @click="formBlockVisibility = true">
+        <div class="additional-options-summary"></div>
+        <div x-show="savedFormMessage.message">
+            <span><?= $escaper->escapeHtml(__('Message:')) ?></span> <span x-text="savedFormMessage.message"></span>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,253 @@
+
+<?php $users = $block->getUsers() ?>
+<?php  if ($users->getSize()): ?>
+
+<div x-cloak x-data="{showModal: false,jobititle:'',role:'',fname:'',lname:'',email:'',mobile:'',status:0}" class="table_wrapper">
+	<div class="actions">
+		<button type="button" title="Add New User" class="action primary" x-on:click="showModal = true,addtimeblank()">
+			<span>Add New User</span>
+		</button>
+	</div>
+	<div class="modal" x-show="showModal">
+		<div class="modal-overlay" x-on:click="showModal = false"></div>
+		<div class="modal-content">
+			<button class="closemodal" type="button" x-on:click="showModal = false">X</button>
+			<?= $block->getChildHtml('dialog.customer.add') ?>
+		</div>
+	</div>
+
+
+	<div class="table_information">
+    <table class="table_info">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Team</th>
+                <th>Status</th>
+                <th>Actions</th>						
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($users as $user): ?>
+            <?php //print_r ($user->getData());
+//echo $user->getCustomerId();die;
+$customer=$block->getCustomerDetailsById($user->getCustomerId());
+$roles=$block->getUserRoal($user->getCustomerId());
+$roletext='';
+if (count($roles)) {
+            foreach ($roles as $role) {//print_r ($role->getData());die;
+               $roletext = $block->escapeHtml($role->getRoleName());
+                break;
+            } 
+        }
+
+			?>
+			
+<?php 
+$statustext='Inactive';
+if($user->getStatus()==1){
+	$statustext='Active';
+	
+}?>		
+			
+			
+			
+                <tr>
+                    <td><?= $customer->getName() ?></td>
+                    <td><?= $customer->getEmail() ?></td>
+                    <td><?= $roletext ?></td>
+                    <td>-</td>
+                    <td><?=$statustext?></td>
+                    <td>
+					
+					<div x-cloak x-data="{cid: <?=$user->getCustomerId()?>}">
+			<button type="button" x-on:click="showModal = true,fetchuserfromContent(cid)"><?= $escaper->escapeHtml(__('Edit')) ?></button>
+		</div>	
+					</td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php else: ?>
+    <p>No users found.</p>
+<?php endif; ?> 
+</div>
+
+
+<script>
+
+
+
+
+
+
+
+/*
+Alpine.ajax({
+    // your ajax settings here
+}).then(function(data) {
+    Alpine.each(data.data, function(idx, item) {
+        if (idx === 'custom_attributes') {
+            Alpine.each(item, function(name, itemData) {
+                var customAttributeCode = itemData['attribute_code'],
+                    issetPopupField = false,
+                    multilineAttributeCode,
+                    multilineAttributeValue,
+                    multilineAttributeId,
+                    multiSelectAttributeCode,
+                    key;
+
+                if (itemData.hasOwnProperty('attributeType')) {
+                    customAttributeCode = 'customer_account_create-'.concat(customAttributeCode);
+                }
+
+                if (itemData.hasOwnProperty('attributeType') && itemData.value) {
+                    if (itemData.attributeType === 'multiline') {
+                        multilineAttributeCode = customAttributeCode + '[]';
+                        multilineAttributeValue = itemData.value.split('\n');
+
+                        // eslint-disable-next-line max-depth
+                        for (key = 0; key < multilineAttributeValue.length; key++) {
+                            multilineAttributeId = customAttributeCode + '_' + key;
+
+                            that.setMultilineValues(
+                                multilineAttributeCode,
+                                multilineAttributeId,
+                                multilineAttributeValue[key]
+                            );
+
+                            issetPopupField = true;
+                        }
+                    } else if (itemData.attributeType === 'multiselect') {
+                        multiSelectAttributeCode = customAttributeCode + '[]';
+
+                        that.setMultiSelectOptions(multiSelectAttributeCode, itemData.value);
+
+                        issetPopupField = true;
+                    }
+                }
+
+                if (!issetPopupField) {
+                    that._setPopupFields(customAttributeCode, itemData.value);
+                }
+            });
+        }
+        that._setPopupFields(idx, item);
+    });
+});
+*/
+
+
+
+
+function addtimeblank(){
+	console.log('pk');
+	let customer_id = document.getElementById('customer_id');
+				  customer_id.value = '';
+
+				   let jobtitle = document.getElementById('jobtitle');
+				  jobtitle.value = '';
+				  
+				  let role = document.getElementById('role');
+				   role.value='';
+				  let firstname = document.getElementById('firstname');
+				  firstname.value='';
+				  let lastname = document.getElementById('lastname');
+				  lastname.value='';
+				  let email = document.getElementById('email');
+				  email.value='';
+				  let telephone = document.getElementById('telephone');
+				  telephone.value='';
+				  let status = document.getElementById('status');
+				  status.value='1';
+  
+}
+
+
+
+  function fetchuserfromContent(userid) {console.log('asasass');
+  
+  
+  
+  
+  
+					let customer_id = document.getElementById('customer_id');
+				  customer_id.value = '';
+
+				   let jobtitle = document.getElementById('jobtitle');
+				  jobtitle.value = '';
+				  
+				  let role = document.getElementById('role');
+				   role.value='';
+				  let firstname = document.getElementById('firstname');
+				  firstname.value='';
+				  let lastname = document.getElementById('lastname');
+				  lastname.value='';
+				  let email = document.getElementById('email');
+				  email.value='';
+				  let telephone = document.getElementById('telephone');
+				  telephone.value='';
+				  let status = document.getElementById('status');
+				  status.value='1';
+  
+  
+  
+    const formKey = hyva.getFormKey();
+                const postUrl = BASE_URL + 'company/customer/get/?customer_id='+userid+'&_='+formKey;
+    fetch(postUrl, {
+                method: "GET",
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+					
+					
+
+  
+					
+					console.log(data.data.extension_attributes);
+					//console.log(data.data.extension_attributes[company_attributes][job_title]);
+					
+					let customer_id = document.getElementById('customer_id');
+				  customer_id.value = data.data.id;;
+                   //console.log(data.data);
+                   //console.log(data.data.extension_attributes);
+                  // console.log(data.data.extension_attributes.company_attributes.telephone);
+                  // console.log(data.data.extension_attributes.[company_attributes].[job_title]);
+				   let jobtitle = document.getElementById('jobtitle');
+				  jobtitle.value = 'new value';//extension_attributes[company_attributes][job_title]
+				  //jobtitle.value = data.data.extension_attributes[company_attributes][job_title];
+				  
+				  let role = document.getElementById('role');
+				   role.value=data.data.role;
+				  let firstname = document.getElementById('firstname');
+				  firstname.value=data.data.firstname;
+				  let lastname = document.getElementById('lastname');
+				  lastname.value=data.data.lastname;
+				  let email = document.getElementById('email');
+				  email.value=data.data.email;
+				  let telephone = document.getElementById('telephone');
+				  telephone.value='9898989898';
+				  let status = document.getElementById('status');
+				  status.value='1';
+
+                }
+            }).catch(error => {
+        console.error(error);
+      });
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+  }
+</script>

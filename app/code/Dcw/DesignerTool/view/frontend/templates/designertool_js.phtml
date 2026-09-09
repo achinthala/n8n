@@ -1,0 +1,2358 @@
+<script>
+let design_cart_items_arr = []; 
+let default_design_tile_json = '<?= /* @noEscape */ addslashes(json_encode($block->getDefaultPatternTile($block->getProductId(), $block->getChildId())));?>';
+let default_design_tile = jQuery.parseJSON(default_design_tile_json);
+let productId = '<?= /* @noEscape */ $block->getProductId();?>';
+let childId = '<?= /* @noEscape */ $block->getChildId();?>';
+let isDisplayEdging = '<?= /* @noEscape */ ($block->getIsDisplayEdging())?$block->getIsDisplayEdging():false?>';
+let isDisplayCorner = '<?= /* @noEscape */ ($block->getIsDisplayCorner())?$block->getIsDisplayCorner():false?>';
+let default_width = '<?= /* @noEscape */ $block->getCustomWidth();?>';
+let default_length = '<?= /* @noEscape */ $block->getCustomLength();?>';
+let exact_width_inch = '<?= /* @noEscape */ $block->getExactWidthInch();?>';
+let exact_length_inch = '<?= /* @noEscape */ $block->getExactLengthInch();?>';
+let width_ratio = '<?= /* @noEscape */ $block->getWidthRatio();?>';
+let length_ratio = '<?= /* @noEscape */ $block->getLengthRatio();?>';
+//let floor_area_width_unit = '<?= /* @noEscape */ $block->getFloorAreaWidthUnit();?>';
+//let floor_area_length_unit = '<?= /* @noEscape */ $block->getFloorAreaLengthUnit();?>';
+let px_per_width = '<?= /* @noEscape */ $block->getPxPerWidth();?>';
+let px_per_length = '<?= /* @noEscape */ $block->getPxPerLength();?>';
+
+let design_single_pattern_tiles_arr = {};
+let floor_area_width_total_px = '';
+let floor_area_length_total_px = '';
+
+var isDown = false;
+var floor_canvas = document.getElementById('floor_area_canvas');
+var context = floor_canvas.getContext('2d');
+var rects = [];
+var color_in_cell = {};
+
+let color_tiles_arr ={};
+let color_male_edge_arr ={};
+let color_female_edge_arr ={};
+let color_corner_arr ={};
+
+var undoStack = [];
+var garage_clicked = false;
+
+if($(window).width() > 767 ){
+    var canvas_calc_area = 500;
+}else if($(window).width() <= 390 ){
+    var canvas_calc_area = 250;
+}else if($(window).width() <= 414 ){
+    var canvas_calc_area = 300;
+}else{
+    var canvas_calc_area = Math.ceil((500*parseFloat($(window).width()))/700);
+}
+
+let edge_corner_array_json = {};
+
+jQuery(function($) {
+    $('#choose_variant').on('change', function() {
+        var selectedValue = jQuery(this).val();
+        // Hide all divs initially
+        $('.color_group').hide();
+        $('.color_group_'+selectedValue).show();
+
+        setCookie('design_selected_variant_id', selectedValue);
+        
+        $('.color_position_'+selectedValue).eq(0).prop("checked", true);
+        var primaryColorSwatch  = $('.choose_color_'+selectedValue).eq(0).attr('data-swatch_image');
+        var primaryColorTitle  = $('.choose_color_'+selectedValue).eq(0).attr('data-color_title');
+        $(".color_img_box_"+selectedValue).eq(0).html('<img src="'+primaryColorSwatch+'"/>');
+        $(".color_title_"+selectedValue).eq(0).html(primaryColorTitle);
+
+        $('.color_position_'+selectedValue).eq(1).prop("checked", true);
+        var secondaryColorSwatch  = $('.choose_color_'+selectedValue).eq(1).attr('data-swatch_image');
+        var secondaryColorTitle  = $('.choose_color_'+selectedValue).eq(1).attr('data-color_title');
+        $(".color_img_box_"+selectedValue).eq(1).html('<img src="'+secondaryColorSwatch+'"/>');
+        $(".color_title_"+selectedValue).eq(1).html(secondaryColorTitle);
+
+        $('.color_position_'+selectedValue).eq(0).prop("checked", true);
+        
+        edgeCornerHideShow(selectedValue);
+    });
+    
+    $('#width, #length').on('keyup keypress change', function(e) {
+        let regexp = /^\d*\.?\d*$/;     ///^\d+(\.\d{1,2})?$/;
+        let isValidated = regexp.test($(this).val());
+        if (isValidated) {
+            if (parseFloat($(this).val()) > 150) {
+                $(this).val(150);
+            }
+            let measurement = $(this).val();
+
+            setCookie("design_"+$(this).attr("name"), measurement);
+            
+            /* ====== 'Start Designing Entered Size' update based on Custom Size Width (ft) & Length (ft)   START ========= */
+            let custom_measurement_display_ft_inch = decimalFeetToFeetInches(measurement);
+            $('.feet_'+$(this).attr("name")).html(custom_measurement_display_ft_inch['feet']);
+            $('.inches_'+$(this).attr("name")).html(custom_measurement_display_ft_inch['inches']);
+            /* ====== 'Start Designing Entered Size' update based on Custom Size Width (ft) & Length (ft)   END ========= */
+            
+            /* ====== Grid Size update based on Custom Size Width (ft) & Length (ft)   START ========= */
+            let grid_size_inch = parseFloat(measurement)*12;
+            let grid_tiles = parseFloat(grid_size_inch) / parseFloat(eval('exact_'+$(this).attr("name")+'_inch'));
+            grid_tiles = Math.ceil(grid_tiles);
+            $('.grid_'+$(this).attr("name")+'_tiles').html(grid_tiles);
+            /* ====== Grid Size update based on Custom Size Width (ft) & Length (ft)   END ========= */
+            
+            /* ====== Layout Size update based on Custom Size Width (ft) & Length (ft)   START ========= */
+            let layout_size_inch = parseInt(grid_tiles) * parseFloat(eval('exact_'+$(this).attr("name")+'_inch'));
+            let layout_size_ft = parseFloat(layout_size_inch)/12;
+            let layout_size_display_ft_inch = decimalFeetToFeetInches(layout_size_ft);
+            $('.layout_size_'+$(this).attr("name")+'_feet').html(layout_size_display_ft_inch['feet']);
+            $('.layout_size_'+$(this).attr("name")+'_inches').html(layout_size_display_ft_inch['inches']);
+            /* ====== Layout Size update based on Custom Size Width (ft) & Length (ft)   END ========= */
+            
+            /* ====== floor_area_canvas Width x Height update based on Custom Size Width (ft) & Length (ft)   START ========= */
+            
+            floor_area_canvas_width_height_generate();
+
+            /* ====== floor_area_canvas Width x Height update based on Custom Size Width (ft) & Length (ft)   STOP ========= */
+            
+            $('.color_position:checked').trigger('click');
+            $('input[name="edge-pattern"]').each(function(){
+                edge_pattern_calc_generate($(this));
+            });
+            
+        }else{
+            $(this).val(eval('default_'+$(this).attr("name"))); 
+        }
+    });
+    
+    /* ====== click on Common Sizes Garage, update Custom Size Width (ft) & Length (ft)   START ========= */
+    $('input[name="common_size_car_garage"]').click(function(e){
+
+        $('#design_car_garrage').val($(this).attr('data-car_garage'));
+        setCookie('design_car_garrage', $(this).attr('data-car_garage'));
+
+        $('#design_car_garrage_size').val($(this).val());
+        setCookie('design_car_garrage_size', $(this).val());
+
+        garage_clicked = 1;
+
+        var common_size_car_garageArr = $(this).val().split("x");
+        $('#width').val(parseInt(common_size_car_garageArr[0]));
+        $('#width').trigger('change');
+        $('#length').val(parseInt(common_size_car_garageArr[1]));
+        $('#length').trigger('change');
+
+    });
+    /* ====== click on Common Sizes Garage, update Custom Size Width (ft) & Length (ft)   END ========= */
+    
+    /* ====== click on choose_pattern   START ========= */
+    $('input[name="choose_pattern"]').click(function() {
+        var variantId = $("#choose_variant").val();
+        if($(this).val() == 'Default'){
+            if (!jQuery.isEmptyObject(default_design_tile)) {//====== if  default_design_tile as Yes found for any associated simple(child) product =====
+                $('#design_pattern').val($(this).val());
+                setCookie('design_pattern', $(this).val());
+                $('.color_position_'+variantId+':checked').trigger('click');
+            }
+        } else if($(this).val() == 'Checkered') {
+            $('#design_pattern').val($(this).val());
+            setCookie('design_pattern', $(this).val());
+            //$('.color_position_'+variantId+':checked').trigger('click');
+            $('.color_position_'+variantId).eq(1).trigger('click');
+            $('.choose_color_'+variantId).eq(1).trigger('click');
+            $('.color_position_'+variantId).eq(0).trigger('click');
+        } else {
+            $('#design_pattern').val($(this).val());
+            setCookie('design_pattern', $(this).val());
+            $('.color_position_'+variantId+':checked').trigger('click');
+        }
+
+        if(garage_clicked != 1){
+            undoStackAdd();
+        }
+
+        garage_clicked = 0;
+
+    });
+    /* ====== click on choose_pattern   STOP ========= */
+
+    
+    /* ====== click on color from list START ========= */
+    $('.choose_color').click(function(){
+        //if($('.color_position').not(':checked').attr('data-color_title') == $(this).attr('data-color_title')){ 
+            //=====  If choosed color same as unchecked color_position, then only swap feature will work START =======
+            //$('.swap_button').trigger('click');
+            //=====  If choosed color same as unchecked color_position, then only swap feature will work END =======
+        //}else{
+
+            var selectedVariantId = $("#choose_variant").val();
+            var colorOptionId = $(this).attr("data-color_option_id");
+            var childProductId = $(this).attr("data-child_product_id");
+            var variantTitle = $(this).attr("data-variant_title");
+            var colorTitle = $(this).attr("data-color_title");
+            var swatchImage = $(this).attr("data-swatch_image");
+
+            $('.color_position_'+selectedVariantId+':checked').attr('data-child_product_id', childProductId);
+            $('.color_position_'+selectedVariantId+':checked').attr('data-swatch_image', swatchImage);
+            $('.color_position_'+selectedVariantId+':checked').attr('data-color_title', colorTitle);
+            $('.color_position_'+selectedVariantId+':checked').attr('data-color_option_id', colorOptionId);
+
+            //=====  If choosed color not same as unchecked color_position  START =======
+            let color_position = $('.color_position_'+selectedVariantId+':checked').attr('data-color_position');
+
+            $('#design_'+color_position+'_color_title').val($(this).attr('data-color_title'));
+            setCookie('design_'+color_position+'_color_title', $(this).attr('data-color_title'));
+            
+            setCookie('design_'+color_position+'_child_product', childProductId);
+
+            $('#design_'+color_position+'_color_type').val($(this).attr('data-color_type'));
+            setCookie('design_'+color_position+'_color_type', $(this).attr('data-color_type'));
+
+            $('#design_'+color_position+'_color_value').val($(this).attr('data-value'));
+            setCookie('design_'+color_position+'_color_value', $(this).attr('data-value'));
+            
+            if($(this).attr('data-color_type') == 'swatch_color_url') {
+                $('#design_'+color_position+'_tiles_color').val($(this).attr('data-swatch_image'));
+                setCookie('design_'+color_position+'_tiles_color', $(this).attr('data-swatch_image'));
+            }
+        
+            $('.choose_color').removeClass(color_position+'_active');
+            $(this).addClass(color_position+'_active');
+            
+            $('#'+color_position+'_color').attr('data-color_title',$(this).attr('data-color_title'));
+            $('#'+color_position+'_color').attr('data-swatch_image',$(this).attr('data-swatch_image'));
+            $('#'+color_position+'_color').attr('data-color_type',$(this).attr('data-color_type'));
+            $('#'+color_position+'_color').val($(this).attr('data-value'));
+            
+            if($(this).attr('data-color_type') == 'swatch_color_url') {
+                $('.'+color_position+'_container').find('.color_img_box_'+selectedVariantId).html('<img src="'+$(this).attr('data-swatch_image')+'"/>');
+            }
+            $('.'+color_position+'_container').find('.color_title_'+selectedVariantId).html($(this).attr('data-color_title'));
+
+            if ($('#design_pattern').val() != 'Single') {
+                $('.color_position_'+selectedVariantId+':checked').trigger('click');
+            }
+
+            edgeCornerHideShow(selectedVariantId);
+
+            //=====  If choosed color not same as unchecked color_position  END =======
+        //}
+    });
+    /* ====== click on color from list   STOP ========= */
+
+    $('.color_img_box').click(function(e) {
+        var selectedVariantId = getCookie('design_selected_variant_id');
+
+        var colorPosition = $(this).parent().find('.color_position_'+selectedVariantId);
+        colorPosition.prop("checked", true);
+
+        if (colorPosition.is(':checked')) {
+            return false;
+        }
+        
+        var colorOptionId = colorPosition.attr('data-color_option_id');
+        $('.choose_color_'+selectedVariantId+'_'+colorOptionId).trigger('click');
+    });
+    /* ====== click on primary & secondary color   START ========= */
+    $('.color_position').click(function(e) {
+        var selectedVariantId = getCookie('design_selected_variant_id');
+        let grid_width_tiles = $('.grid_width_tiles').text();
+        let grid_length_tiles = $('.grid_length_tiles').text();
+        let color_position = $('.color_position_'+selectedVariantId+':checked').attr('data-color_position');
+        let total_all_pattern_tiles_qty = parseInt(grid_width_tiles) * parseInt(grid_length_tiles);
+        let half_tiles_qty = parseInt(total_all_pattern_tiles_qty) / 2;
+        let primary_half_tiles_qty = Math.ceil(half_tiles_qty);
+        let secondary_half_tiles_qty = parseInt(half_tiles_qty);
+        color_tiles_arr ={};
+
+        var selectedChildProduct = $('.color_position_'+selectedVariantId+':checked').attr('data-child_product_id');
+
+        var swatchImage = $('.color_position_'+selectedVariantId+':checked').attr('data-swatch_image');
+
+        var selectedColorOptionId = $('.color_position_'+selectedVariantId+':checked').attr('data-color_option_id');
+
+        setCookie('design_color_position', color_position);
+
+        if (!jQuery.isEmptyObject(default_design_tile)) {//====== if  default_design_tile as Yes found for any associated simple(child) product  START=====
+            if ($('#design_pattern').val() == 'Default') {
+
+                $('#design_all_pattern_color_type').val(default_design_tile['color_type']);
+                setCookie('design_all_pattern_color_type', default_design_tile['color_type']);
+
+                var primarySwatchTitle = $('.color_position_'+selectedVariantId+':checked').attr('data-color_title');
+                var primarySwatchColor = $('.color_position_'+selectedVariantId+':checked').attr('data-swatch_image');
+
+                $('#design_all_pattern_color_title').val(primarySwatchTitle);
+                setCookie('design_all_pattern_color_title', primarySwatchTitle);
+
+                $('#design_all_pattern_tiles_color').val(primarySwatchColor);
+                setCookie('design_all_pattern_tiles_color', primarySwatchColor);
+                
+                $('#design_all_pattern_tiles_qty').val(total_all_pattern_tiles_qty);
+                setCookie('design_all_pattern_tiles_qty', total_all_pattern_tiles_qty);
+
+                setCookie('design_all_pattern_color_title_child', selectedChildProduct);
+                
+                $('#design_border_pattern_color_title').val('');
+                setCookie('design_border_pattern_color_title', '');
+
+                $('#design_border_pattern_color_type').val('');
+                setCookie('design_border_pattern_color_type', '');
+
+                $('#design_border_pattern_tiles_color').val('');
+                setCookie('design_border_pattern_tiles_color', '');
+
+                $('#design_border_pattern_tiles_qty').val('');
+                setCookie('design_border_pattern_tiles_qty', '');
+
+            
+                $('#design_primary_checkered_pattern_color_title').val('');
+                setCookie('design_primary_checkered_pattern_color_title', '');
+
+                $('#design_primary_checkered_pattern_color_type').val('');
+                setCookie('design_primary_checkered_pattern_color_type', '');
+
+                $('#design_primary_checkered_pattern_tiles_color').val('');
+                setCookie('design_primary_checkered_pattern_tiles_color', '');
+
+                $('#design_primary_checkered_pattern_tiles_qty').val('');
+                setCookie('design_primary_checkered_pattern_tiles_qty', '');
+
+                
+                $('#design_secondary_checkered_pattern_color_title').val('');
+                setCookie('design_secondary_checkered_pattern_color_title', '');
+
+                $('#design_secondary_checkered_pattern_color_type').val('');
+                setCookie('design_secondary_checkered_pattern_color_type', '');
+
+                $('#design_secondary_checkered_pattern_tiles_color').val('');
+                setCookie('design_secondary_checkered_pattern_tiles_color', '');
+
+                $('#design_secondary_checkered_pattern_tiles_qty').val('');
+                setCookie('design_secondary_checkered_pattern_tiles_qty', '');
+
+                design_single_pattern_tiles_arr = {};
+            
+            }
+        }//====== if  default_design_tile as Yes found for any associated simple(child) product  END===== 
+        
+        
+        if ($('#design_pattern').val() == 'All') {
+            var allFullSwatch = selectedVariantId+'_'+selectedColorOptionId;
+
+            $('#design_all_pattern_color_title').val(allFullSwatch);
+            setCookie('design_all_pattern_color_title', allFullSwatch);
+
+            setCookie('design_all_pattern_color_title_child', selectedChildProduct);
+
+            $('#design_all_pattern_color_type').val($('#design_'+color_position+'_color_type').val());
+            setCookie('design_all_pattern_color_type', $('#design_'+color_position+'_color_type').val());
+
+            $('#design_all_pattern_tiles_color').val(swatchImage);
+            setCookie('design_all_pattern_tiles_color', swatchImage);
+
+            $('#design_all_pattern_tiles_qty').val(total_all_pattern_tiles_qty);
+            setCookie('design_all_pattern_tiles_qty', total_all_pattern_tiles_qty);
+            
+            removeBorderCookie();
+
+            design_single_pattern_tiles_arr = {};
+        }
+        
+        if ($('#design_pattern').val() == 'Border') {
+            let design_border_pattern_tiles_qty = ((parseInt(grid_width_tiles) + parseInt(grid_length_tiles)) * 2) - 4;
+
+            if($('#design_all_pattern_color_title').val()!="" && ($('#design_all_pattern_color_title').val() != $('#design_'+color_position+'_color_title').val())){
+                var borderFullSwatch = selectedVariantId+'_'+selectedColorOptionId;
+
+                $('#design_border_pattern_color_title').val(borderFullSwatch);
+                setCookie('design_border_pattern_color_title', borderFullSwatch);
+
+                setCookie('design_border_pattern_color_title_child', selectedChildProduct);
+
+                $('#design_border_pattern_color_type').val($('#design_'+color_position+'_color_type').val());
+                setCookie('design_border_pattern_color_type', $('#design_'+color_position+'_color_type').val());
+
+                $('#design_border_pattern_tiles_color').val(swatchImage);
+                setCookie('design_border_pattern_tiles_color', swatchImage);
+
+                $('#design_border_pattern_tiles_qty').val(design_border_pattern_tiles_qty);
+                setCookie('design_border_pattern_tiles_qty', design_border_pattern_tiles_qty);
+
+                let remain_all_pattern_tiles_qty = parseInt(total_all_pattern_tiles_qty) - parseInt(design_border_pattern_tiles_qty);
+                $('#design_all_pattern_tiles_qty').val(remain_all_pattern_tiles_qty);
+                setCookie('design_all_pattern_tiles_qty', remain_all_pattern_tiles_qty);
+            
+            } else if ($('#design_all_pattern_color_title').val()!="" && ($('#design_all_pattern_color_title').val() == $('#design_'+color_position+'_color_title').val())) {
+                $('#design_border_pattern_color_title').val('');
+                setCookie('design_border_pattern_color_title', '');
+
+                $('#design_border_pattern_color_type').val('');
+                setCookie('design_border_pattern_color_type', '');
+
+                $('#design_border_pattern_tiles_color').val('');
+                setCookie('design_border_pattern_tiles_color', '');
+
+                $('#design_border_pattern_tiles_qty').val('');
+                setCookie('design_border_pattern_tiles_qty', '');
+
+                $('#design_all_pattern_tiles_qty').val(total_all_pattern_tiles_qty);
+                setCookie('design_all_pattern_tiles_qty', total_all_pattern_tiles_qty);
+            }
+            
+            if ($('#design_primary_checkered_pattern_color_title').val()!="") {
+                var borderFullSwatch = selectedVariantId+'_'+selectedColorOptionId;
+
+                $('#design_border_pattern_color_title').val(borderFullSwatch);
+                setCookie('design_border_pattern_color_title', borderFullSwatch);
+
+                setCookie('design_border_pattern_color_title_child', selectedChildProduct);
+
+                $('#design_border_pattern_color_type').val($('#design_'+color_position+'_color_type').val());
+                setCookie('design_border_pattern_color_type', $('#design_'+color_position+'_color_type').val());
+
+                $('#design_border_pattern_tiles_color').val($('#design_'+color_position+'_tiles_color').val());
+                setCookie('design_border_pattern_tiles_color', $('#design_'+color_position+'_tiles_color').val());
+
+                $('#design_border_pattern_tiles_qty').val(design_border_pattern_tiles_qty);
+                setCookie('design_border_pattern_tiles_qty', design_border_pattern_tiles_qty);
+
+                $('#design_primary_checkered_pattern_tiles_qty').val(parseInt(primary_half_tiles_qty) - (parseInt(design_border_pattern_tiles_qty)/2));
+                setCookie('design_primary_checkered_pattern_tiles_qty', parseInt(primary_half_tiles_qty) - (parseInt(design_border_pattern_tiles_qty)/2));
+
+                $('#design_secondary_checkered_pattern_tiles_qty').val(parseInt(secondary_half_tiles_qty) - (parseInt(design_border_pattern_tiles_qty)/2));
+                setCookie('design_secondary_checkered_pattern_tiles_qty', parseInt(secondary_half_tiles_qty) - (parseInt(design_border_pattern_tiles_qty)/2));
+            }
+            
+
+            for (var column = 1; column <= grid_width_tiles; column++) {
+                for (var row = 1; row <= grid_length_tiles; row++) 
+                {
+                    if(((row == 1 || row == grid_length_tiles) && column <= grid_width_tiles) || ((column == 1 || column == grid_width_tiles) && row <= grid_length_tiles)){
+                        delete design_single_pattern_tiles_arr['color_title_'+row+'_'+column];
+                    }
+                }
+            }
+        }
+        
+        if ($('#design_pattern').val() == 'Checkered') {
+            removeCheckedCookie();
+            $('#design_primary_checkered_pattern_color_type').val($('#design_primary_color_type').val());
+            setCookie('design_primary_checkered_pattern_color_type', $('#design_primary_color_type').val());
+
+            $('#design_secondary_checkered_pattern_color_type').val($('#design_secondary_color_type').val());
+            setCookie('design_secondary_checkered_pattern_color_type', $('#design_secondary_color_type').val());
+
+            var primarySwatchTitle = $('.color_position_'+selectedVariantId).eq(0).attr('data-color_title');
+            var primarySwatchColor = $('.color_position_'+selectedVariantId).eq(0).attr('data-swatch_image');
+            var primarySwatchColorOptionId = $('.color_position_'+selectedVariantId).eq(0).attr('data-color_option_id');
+
+            var secondarySwatchTitle = $('.color_position_'+selectedVariantId).eq(1).attr('data-color_title');
+            var secondarySwatchColor = $('.color_position_'+selectedVariantId).eq(1).attr('data-swatch_image');
+            var secondarySwatchColorOptionId = $('.color_position_'+selectedVariantId).eq(1).attr('data-color_option_id');
+
+            var primaryFullSwatch = selectedVariantId+'_'+primarySwatchColorOptionId;
+
+            $('#design_primary_checkered_pattern_color_title').val(primaryFullSwatch);
+            setCookie('design_primary_checkered_pattern_color_title', primaryFullSwatch);
+
+            $('#design_primary_checkered_pattern_tiles_color').val(primarySwatchColor);
+            setCookie('design_primary_checkered_pattern_tiles_color', primarySwatchColor);
+
+            $('#design_primary_checkered_pattern_tiles_qty').val(primary_half_tiles_qty);
+            setCookie('design_primary_checkered_pattern_tiles_qty', primary_half_tiles_qty);
+
+            var secondarySwatch = selectedVariantId+'_'+secondarySwatchColorOptionId;
+
+            $('#design_secondary_checkered_pattern_color_title').val(secondarySwatch);
+            setCookie('design_secondary_checkered_pattern_color_title', secondarySwatch);
+
+            $('#design_secondary_checkered_pattern_tiles_color').val(secondarySwatchColor);
+            setCookie('design_secondary_checkered_pattern_tiles_color', secondarySwatchColor);
+
+            $('#design_secondary_checkered_pattern_tiles_qty').val(secondary_half_tiles_qty);
+            setCookie('design_secondary_checkered_pattern_tiles_qty', secondary_half_tiles_qty);
+
+            var primaryChildId = $('.color_position_'+selectedVariantId).eq(0).attr('data-child_product_id');
+            var secondaryChildId = $('.color_position_'+selectedVariantId).eq(1).attr('data-child_product_id');
+
+            setCookie('design_primary_checkered_pattern_color_title_child', primaryChildId);
+            setCookie('design_secondary_checkered_pattern_color_title_child', secondaryChildId);
+
+            design_single_pattern_tiles_arr = {};
+        }
+
+        setCookie('design_single_pattern_tiles_arr', JSON.stringify(design_single_pattern_tiles_arr));
+
+        if(garage_clicked != 1){
+            undoStackAdd();
+        }
+
+        garage_clicked = 0;
+
+        edgeCornerHideShow(selectedVariantId);
+        
+        if ($('#design_pattern').val() != 'Single') {
+            floorAreaCanvasGenerate(px_per_width, px_per_length, selectedChildProduct);
+        }
+
+        designer_cart_items_html_generate(color_male_edge_arr, color_female_edge_arr, color_corner_arr);
+        $('.total_tiles_qty').html(total_all_pattern_tiles_qty);
+    });
+    /* ====== click on primary & secondary color   STOP ========= */
+    
+    /* ====== click on swap button   START ========= */
+    $('.swap_button').click(function() {
+        var selectedVariantId = getCookie('design_selected_variant_id');
+
+        var primaryRadio = $('.color_position_'+selectedVariantId+':first');
+        var design_primary_tiles_color = primaryRadio.attr('data-swatch_image');
+        var design_primary_color_title = primaryRadio.attr('data-color_title');
+        var primarySwatchChildId = primaryRadio.attr('data-child_product_id');
+        var primarySwatchColorOptionId = primaryRadio.attr('data-color_option_id');
+        var design_primary_color_value = primaryRadio.val();
+        
+        var secondaryRadio = $('.color_position_'+selectedVariantId).eq(1);
+        var design_secondary_tiles_color = secondaryRadio.attr('data-swatch_image');
+        var design_secondary_color_title = secondaryRadio.attr('data-color_title');
+        var secondarySwatchChildId = secondaryRadio.attr('data-child_product_id');
+        var secondarySwatchColorOptionId = secondaryRadio.attr('data-color_option_id');
+        var design_secondary_color_value = secondaryRadio.val();
+
+        secondaryRadio.attr('data-swatch_image', design_primary_tiles_color);
+        secondaryRadio.attr('data-color_title', design_primary_color_title);
+        secondaryRadio.attr('data-child_product_id', primarySwatchChildId);
+        secondaryRadio.attr('data-color_option_id', primarySwatchColorOptionId);
+
+        primaryRadio.attr('data-swatch_image', design_secondary_tiles_color);
+        primaryRadio.attr('data-color_title', design_secondary_color_title);
+        primaryRadio.attr('data-child_product_id', secondarySwatchChildId);
+        primaryRadio.attr('data-color_option_id', secondarySwatchColorOptionId);
+        
+        let design_primary_color_type = primaryRadio.attr('data-color_type');
+        
+        let design_secondary_color_type = secondaryRadio.attr('data-color_type');
+
+        $('#design_primary_color_title').val(design_secondary_color_title);
+        setCookie('design_primary_color_title', design_secondary_color_title);
+
+        $('#design_primary_color_type').val(design_secondary_color_type);
+        setCookie('design_primary_color_type', design_secondary_color_type);
+
+        $('#design_primary_tiles_color').val(design_secondary_tiles_color);
+        setCookie('design_primary_tiles_color', design_secondary_tiles_color);
+
+        $('#design_primary_color_value').val(design_secondary_color_value);
+        setCookie('design_primary_color_value', design_secondary_color_value);
+
+        $('#design_secondary_color_title').val(design_primary_color_title);
+        setCookie('design_secondary_color_title', design_primary_color_title);
+
+        $('#design_secondary_color_type').val(design_primary_color_type);
+        setCookie('design_secondary_color_type', design_primary_color_type);
+
+        $('#design_secondary_tiles_color').val(design_primary_tiles_color);
+        setCookie('design_secondary_tiles_color', design_primary_tiles_color);
+
+        $('#design_secondary_color_value').val(design_primary_color_value);
+        setCookie('design_secondary_color_value', design_primary_color_value);
+
+        $('.choose_color').each(function(){
+            if ($(this).hasClass('primary_active') ||  $(this).hasClass('secondary_active')) {
+                $(this).toggleClass('secondary_active primary_active');
+            }
+        })
+
+        $('#primary_color').attr('data-color_title',design_secondary_color_title);
+        $('#primary_color').attr('data-swatch_image',design_secondary_tiles_color);
+        $('#primary_color').attr('data-color_type',design_secondary_color_type);
+        $('#primary_color').val(design_secondary_color_value);
+
+        if($('#primary_color').attr('data-color_type') == 'swatch_color_url') {
+            $('.primary_container').find('.color_img_box_'+selectedVariantId).html('<img src="'+design_secondary_tiles_color+'"/>');
+        }
+        $('.primary_container').find('.color_title_'+selectedVariantId).html(design_secondary_color_title);
+        
+        $('#secondary_color').attr('data-color_title',design_primary_color_title);
+        $('#secondary_color').attr('data-swatch_image',design_primary_tiles_color);
+        $('#secondary_color').attr('data-color_type',design_primary_color_type);
+        $('#secondary_color').val(design_primary_color_value);
+
+        if($('#secondary_color').attr('data-color_type') == 'swatch_color_url') {
+            $('.secondary_container').find('.color_img_box_'+selectedVariantId).html('<img src="'+design_primary_tiles_color+'"/>');
+        }
+
+        $('.secondary_container').find('.color_title_'+selectedVariantId).html(design_primary_color_title);
+
+        if (primaryRadio.is(':checked')) {
+            $('.color_position_'+selectedVariantId).eq(1).prop("checked", true);
+        }
+
+        if (secondaryRadio.is(':checked')) {
+            $('.color_position_'+selectedVariantId+':first').prop("checked", true);
+        }
+        $('.color_position_'+selectedVariantId+':checked').trigger('click');
+        var colorOptionId = $('.color_position_'+selectedVariantId+':checked').attr('data-color_option_id');
+        $('.choose_color_'+selectedVariantId+'_'+colorOptionId).trigger('click');
+
+        edgeCornerHideShow(selectedVariantId);
+        
+    });
+    /* ====== click on swap button   STOP ========= */
+    
+    
+    /* ====== click on edge tools  START ========= */
+    $('input[name="edge_color"]').click(function() {
+
+        var designEdgeColor = $(this).attr('data-color_title');
+        var colorOptionId = $(this).attr('data-color_option_id');
+        var mainProductId = $(this).attr('data-main_product_id');
+
+        var productEdgeColorId = designEdgeColor+'_'+colorOptionId+'_'+mainProductId;
+
+        $('#design_edge_color_title').val(productEdgeColorId);
+        setCookie('design_edge_color_title', productEdgeColorId);
+
+        $('#design_edge_color_type').val($(this).attr('data-color_type'));
+        setCookie('design_edge_color_type', $(this).attr('data-color_type'));
+
+        $('#design_edge_color_value').val($(this).val());
+        setCookie('design_edge_color_value', $(this).val());
+        
+        if($(this).attr('data-color_type') == 'swatch_color_url') {
+            $('#design_edge_tiles_color').val($(this).attr('data-swatch_image'));
+            setCookie('design_edge_tiles_color', $(this).attr('data-swatch_image'));
+        }
+
+        $('.edge_color').removeClass('edge_active');
+        $(this).parent().find('.edge_color').addClass('edge_active');
+
+        var edgeMaleTop = $('#design_edge_male_top').val();
+        var edgeMaleRight = $('#design_edge_male_right').val();
+        var edgeFemaleBottom = $('#design_edge_female_bottom').val();
+        var edgeFemaleLeft = $('#design_edge_female_left').val();
+
+
+        $('#design_edge_male_top').val(edgeMaleTop);
+        $('#design_edge_male_right').val(edgeMaleRight);
+        $('#design_edge_female_bottom').val(edgeFemaleBottom);
+        $('#design_edge_female_left').val(edgeFemaleLeft);
+
+        color_male_edge_arr ={};
+        color_female_edge_arr ={};
+        var male_edge_qty = parseFloat(edgeMaleTop) + parseFloat(edgeMaleRight);
+        if(male_edge_qty > 0){
+            color_male_edge_arr[productEdgeColorId] =  male_edge_qty;
+        }
+
+        var female_edge_qty = parseFloat(edgeFemaleBottom) + parseFloat(edgeFemaleLeft);
+        if(female_edge_qty > 0){
+            color_female_edge_arr[productEdgeColorId] =  female_edge_qty;
+        }
+
+        undoStackAdd();
+
+        floorAreaCanvasGenerate(px_per_width, px_per_length);
+        designer_cart_items_html_generate(color_male_edge_arr, color_female_edge_arr, color_corner_arr);
+
+    });
+
+    $('input[name="edge-pattern"]').click(function(){
+        edge_pattern_calc_generate($(this));
+        corner_pattern_calc_generate();
+    });
+    
+    /* ====== click on edge tools  END ========= */
+    
+    /* ====== click on corner tools  START ========= */
+    $('input[name="corner_color"]').click(function(e){
+
+        var designCornerColor = $(this).attr('data-color_title');
+        var colorOptionId = $(this).attr('data-color_option_id');
+        var mainProductId = $(this).attr('data-product_id');
+        var cornerType = $(this).attr('data-corner_type');
+
+        var productCornerColorId = designCornerColor+'_'+colorOptionId+'_'+mainProductId+'_'+cornerType;
+
+        $('#design_corner_color_title').val(productCornerColorId);
+        setCookie('design_corner_color_title', productCornerColorId);
+
+        $('#design_corner_color_type').val($(this).attr('data-color_type'));
+        setCookie('design_corner_color_type', $(this).attr('data-color_type'));
+
+        $('#design_corner_color_value').val($(this).val());
+        setCookie('design_corner_color_value', $(this).val());
+
+        if($(this).attr('data-color_type') == 'swatch_color_url') {
+            $('#design_corner_tiles_color').val($(this).attr('data-swatch_image'));
+            setCookie('design_corner_tiles_color', $(this).attr('data-swatch_image'));
+        }
+    
+        $('.corner_color').removeClass('corner_active');
+        $(this).parent().find('.corner_color').addClass('corner_active');
+
+        color_corner_arr ={};
+
+        var cornerPatternChecked = false;
+
+        if($('input[name="corner-pattern"]').is(':checked')) {
+            cornerPatternChecked = true;
+        }
+
+        if(cornerPatternChecked) {
+            color_corner_arr[productCornerColorId] =  4;
+        }
+
+        undoStackAdd();
+
+        floorAreaCanvasGenerate(px_per_width, px_per_length);
+        designer_cart_items_html_generate(color_male_edge_arr, color_female_edge_arr, color_corner_arr);
+
+    });
+
+    $('input[name="corner-pattern"]').click(function(){
+        edge_pattern_calc_generate($(this));
+        corner_pattern_calc_generate();
+    });
+    
+    /* ====== click on corner tools  END ========= */
+
+    /* ====== click on add to cart   START ========= */
+    $('.design-addtocart-btn').click(function(){
+        $('.design-addtocart-btn').prop('disabled', true);
+        $('.design-cart-items-err-msg').addClass('hidden').html('');
+
+        $.ajax({
+            data:'cart_items='+JSON.stringify(design_cart_items_arr),
+            type:'post',
+            url:'<?= /* @noEscape */ $block->getUrl('designer/index/cartpost')?>',
+            //async:false,
+            dataType:    'json',
+            showLoader: true,
+            success:function(response){
+                if (response.success == 1) {
+                    window.location.href = '<?= /* @noEscape */ $block->getUrl("checkout/cart")?>'
+                } else {
+                    $('.design-cart-items-err-msg')
+                    .removeClass('hidden')   // Remove the hidden class
+                    .html(response.message); // Set the HTML content to the response message
+
+                    $('.design-addtocart-btn').prop('disabled', false);
+                }
+            },
+            error:function (XMLHttpRequest, textStatus, errorThrown) {
+                if (textStatus == 'timeout'){}
+                else if (textStatus == 'error'){}
+                else if (textStatus == 'parsererror'){}
+            }
+       });
+    });
+    /* ====== click on add to cart   END ========= */
+    
+});
+
+ /* ====== after page load canvas generated   END ========= */
+jQuery(window).on('load', function () {
+    
+    setTimeout(() => {
+        //resetDesignerCookie();
+        var selectedVariantId = getCookie('design_selected_variant_id');
+        if (selectedVariantId) {
+            $("#choose_variant").val(selectedVariantId);
+            $("#choose_variant").change();
+        } else {
+            $("#choose_variant").change();
+            var variantId = $("#choose_variant").val();
+            setCookie('design_selected_variant_id', variantId);
+
+            floor_area_canvas_width_height_generate();
+            
+            jQuery('.color_position_'+variantId+':first').prop('checked', true);
+            jQuery('.choose_color:first').trigger('click');
+        }
+
+        if (!getCookie('design_pattern')) {
+            setCookie('design_pattern', 'All');
+        }
+
+        /* =======================================================================
+        ==================== On page load color hidden field filled  START ======= 
+        ===========================================================================*/
+
+        /*-------------------- Width(ft), Length(ft) & related display size updated with cookie START ---------- */ 
+        if(getCookie('design_width')!=""){
+            $('#width').val(getCookie('design_width'));
+            let custom_width_cookie_ft_inch = decimalFeetToFeetInches(getCookie('design_width'));
+            //---- 'Start Designing Entered Size ' width update with cookie START-----
+            $('.feet_width').html(custom_width_cookie_ft_inch['feet']); 
+            $('.inches_width').html(custom_width_cookie_ft_inch['inches']);
+            //---- 'Start Designing Entered Size ' width update with cookie END-----
+            // ----- Grid Size width update with cookie  START ---------
+            var width_inch = parseFloat(getCookie('design_width'))*12;
+            var grid_width_tiles = parseFloat(width_inch) / parseFloat(exact_width_inch);
+            grid_width_tiles = Math.ceil(grid_width_tiles);
+            $('.grid_width_tiles').html(grid_width_tiles);
+            // ----- Grid Size width update with cookie  END ---------
+            // ----- Layout Size width update with cookie  START ---------
+            var layout_size_width_inch = parseInt(grid_width_tiles) * parseFloat(exact_width_inch);
+            var layout_size_width_ft = parseFloat(layout_size_width_inch)/12;
+            var layout_size_width_display_ft_inch = decimalFeetToFeetInches(layout_size_width_ft);
+            $('.layout_size_width_feet').html(layout_size_width_display_ft_inch['feet']);
+            $('.layout_size_width_inches').html(layout_size_width_display_ft_inch['inches']);
+            // ----- Layout Size width update with cookie  END ---------
+        }
+
+        if(getCookie('design_length')!=""){
+            $('#length').val(getCookie('design_length'));
+            let custom_length_cookie_ft_inch = decimalFeetToFeetInches(getCookie('design_length'));
+            //---- 'Start Designing Entered Size ' length update with cookie START-----
+            $('.feet_length').html(custom_length_cookie_ft_inch['feet']); 
+            $('.inches_length').html(custom_length_cookie_ft_inch['inches']);
+            //---- 'Start Designing Entered Size ' length update with cookie END-----
+            // ----- Grid Size length update with cookie  START ---------
+            var length_inch = parseFloat(getCookie('design_length'))*12;
+            var grid_length_tiles = parseFloat(length_inch) / parseFloat(exact_length_inch);
+            grid_length_tiles = Math.ceil(grid_length_tiles);
+            $('.grid_length_tiles').html(grid_length_tiles);
+            // ----- Grid Size length update with cookie  START ---------
+            // ----- Layout Size length update with cookie  START ---------
+            var layout_size_length_inch = parseInt(grid_length_tiles) * parseFloat(exact_length_inch);
+            var layout_size_length_ft = parseFloat(layout_size_length_inch)/12;
+            var layout_size_length_display_ft_inch = decimalFeetToFeetInches(layout_size_length_ft);
+            $('.layout_size_length_feet').html(layout_size_length_display_ft_inch['feet']);
+            $('.layout_size_length_inches').html(layout_size_length_display_ft_inch['inches']);
+            // ----- Layout Size length update with cookie  END ---------
+        }
+
+        if(getCookie('design_width')!="" || getCookie('design_length')!=""){
+
+            floor_area_canvas_width_height_generate();
+
+            // ----- floor_area_canvas Width x Height update with cookie  END ---------
+        }
+        /*--------------------  Width(ft), Length(ft) & related display size updated with cookie END ---------- */ 
+
+        /*--------------------   Common Sizes Garage updated with cookie START ---------- */ 
+        if(getCookie('design_car_garrage')!=""){
+            $('#design_car_garrage').val(getCookie('design_car_garrage'));
+        }
+        if(getCookie('design_car_garrage_size')!=""){
+            $('#design_car_garrage_size').val(getCookie('design_car_garrage_size'));
+            $('input[name="common_size_car_garage"][value="'+getCookie('design_car_garrage_size')+'"]').prop("checked",true);
+        }
+        /*--------------------  Common Sizes Garage updated with cookie END ---------- */
+
+        /* -------------------- choose_pattern & hidden fields updated with cookie  START -------------------- */
+        if(getCookie('design_pattern')!=""){
+            $('#design_pattern').val(getCookie('design_pattern'));
+            $('input[name="choose_pattern"][value="'+getCookie('design_pattern')+'"]').prop("checked",true);
+        }
+
+        var grid_width_tiles = $('.grid_width_tiles').text();
+        var grid_length_tiles = $('.grid_length_tiles').text();
+        var design_all_pattern_tiles_qty = parseInt(grid_width_tiles) * parseInt(grid_length_tiles);
+
+        /*---- 'All' pattern hidden fields updated with cookie  START ----*/
+    if(getCookie('design_all_pattern_color_title')!=""){
+        $('#design_all_pattern_color_title').val(getCookie('design_all_pattern_color_title'));
+        $('#design_all_pattern_color_type').val(getCookie('design_all_pattern_color_type'));
+        $('#design_all_pattern_tiles_color').val(getCookie('design_all_pattern_tiles_color'));
+        $('#design_all_pattern_tiles_qty').val(getCookie('design_all_pattern_tiles_qty'));
+
+        //color_tiles_arr[$('#design_all_pattern_color_title').val()] = $('#design_all_pattern_tiles_qty').val();
+    }else if(getCookie('design_primary_checkered_pattern_color_title')==""){ // --- checking checkered selected or not -----
+        $('#design_all_pattern_color_title').val($('#primary_color').attr('data-color_title'));
+        $('#design_all_pattern_color_type').val($('#primary_color').attr('data-color_type'));
+        if($('#primary_color').attr('data-color_type') == 'swatch_color_url') {
+            $('#design_all_pattern_tiles_color').val($('#primary_color').attr('data-swatch_image'));
+        }
+        $('#design_all_pattern_tiles_qty').val(design_all_pattern_tiles_qty);
+
+       // color_tiles_arr[$('#design_all_pattern_color_title').val()] = $('#design_all_pattern_tiles_qty').val();
+    }
+    /*---- 'All' pattern hidden fields updated with cookie  END ----*/
+    /*---- 'Checkered' pattern hidden fields updated with cookie  START ----*/
+    if(getCookie('design_primary_checkered_pattern_color_title')!=""){
+        $('#design_primary_checkered_pattern_color_title').val(getCookie('design_primary_checkered_pattern_color_title'));
+        $('#design_primary_checkered_pattern_color_type').val(getCookie('design_primary_checkered_pattern_color_type'));
+        $('#design_primary_checkered_pattern_tiles_color').val(getCookie('design_primary_checkered_pattern_tiles_color'));
+        $('#design_primary_checkered_pattern_tiles_qty').val(getCookie('design_primary_checkered_pattern_tiles_qty'));
+
+        //color_tiles_arr[$('#design_primary_checkered_pattern_color_title').val()] = $('#design_primary_checkered_pattern_tiles_qty').val();
+    }
+
+    if(getCookie('design_secondary_checkered_pattern_color_title')!=""){
+        $('#design_secondary_checkered_pattern_color_title').val(getCookie('design_secondary_checkered_pattern_color_title'));
+        $('#design_secondary_checkered_pattern_color_type').val(getCookie('design_secondary_checkered_pattern_color_type'));
+        $('#design_secondary_checkered_pattern_tiles_color').val(getCookie('design_secondary_checkered_pattern_tiles_color'));
+        $('#design_secondary_checkered_pattern_tiles_qty').val(getCookie('design_secondary_checkered_pattern_tiles_qty'));
+
+        //color_tiles_arr[$('#design_secondary_checkered_pattern_color_title').val()] = $('#design_secondary_checkered_pattern_tiles_qty').val();
+    }
+    /*---- 'Checkered' pattern hidden fields updated with cookie  END ----*/
+    /*---- 'Border' pattern hidden fields updated with cookie  START ----*/
+    if(getCookie('design_border_pattern_color_title')!=""){
+        $('#design_border_pattern_color_title').val(getCookie('design_border_pattern_color_title'));
+        $('#design_border_pattern_color_type').val(getCookie('design_border_pattern_color_type'));
+        $('#design_border_pattern_tiles_color').val(getCookie('design_border_pattern_tiles_color'));
+        $('#design_border_pattern_tiles_qty').val(getCookie('design_border_pattern_tiles_qty'));
+
+        //color_tiles_arr[$('#design_border_pattern_color_title').val()] = $('#design_border_pattern_tiles_qty').val();
+
+        /*if($('#design_primary_checkered_pattern_color_title').val() == $('#design_border_pattern_color_title').val()){
+            color_tiles_arr[$('#design_primary_checkered_pattern_color_title').val()] = parseInt($('#design_primary_checkered_pattern_tiles_qty').val()) + parseInt(getCookie('design_border_pattern_tiles_qty'));
+        }
+        
+        if($('#design_secondary_checkered_pattern_color_title').val() == $('#design_border_pattern_color_title').val()){
+            color_tiles_arr[$('#design_secondary_checkered_pattern_color_title').val()] = parseInt($('#design_secondary_checkered_pattern_tiles_qty').val()) + parseInt(getCookie('design_border_pattern_tiles_qty'));
+        }*/
+    }
+    /*---- 'Border' pattern hidden fields updated with cookie  END ----*/
+
+    /* ------------------- choose_pattern & hidden fields updated with cookie  END -------------------- */
+
+    /* -------------- color_position updated with cookie  START ------------- */
+    if(getCookie('design_color_position')!=""){
+        $('input[name="color_position"][data-color_position="'+getCookie('design_color_position')+'"]').prop("checked",true);
+    }
+    /* ---------- color_position updated with cookie  END ------------ */
+    
+    /*-------------------- primary color updated with cookie / by default START ---------- */ 
+    if(getCookie('design_primary_color_title')!=""){
+        $('#design_primary_color_title').val(getCookie('design_primary_color_title'));
+        $('#design_primary_color_type').val(getCookie('design_primary_color_type'));
+        //$('#design_primary_color_value').val(getCookie('design_primary_color_value'));
+        $('#design_primary_tiles_color').val(getCookie('design_primary_tiles_color'));
+
+        $('.choose_color').removeClass('primary_active');
+        $('.choose_color[data-color_title="'+getCookie('design_primary_color_title')+'"]').addClass('primary_active');
+
+        $('#primary_color').attr('data-color_title',getCookie('design_primary_color_title'));
+        $('#primary_color').attr('data-color_type',getCookie('design_primary_color_type'));
+        $('#primary_color').val(getCookie('design_primary_color_value'));
+        
+
+        if(getCookie('design_primary_color_type') == 'swatch_color_url') {
+            $('#primary_color').attr('data-swatch_image',getCookie('design_primary_tiles_color'));
+            $('.primary_container').find('.color_img_box').html('<img src="'+getCookie('design_primary_tiles_color')+'"/>');
+        }
+        $('.primary_container').find('.color_title').html(getCookie('design_primary_color_title'));
+        
+    }else{
+        $('#design_primary_color_title').val($('#primary_color').attr('data-color_title'));
+        $('#design_primary_color_type').val($('#primary_color').attr('data-color_type'));
+        $('#design_primary_color_value').val($('#primary_color').val());
+        if($('#primary_color').attr('data-color_type') == 'swatch_color_url') {
+            $('#design_primary_tiles_color').val($('#primary_color').attr('data-swatch_image'));
+        }
+    }
+
+    /*-------------------- primary color updated with cookie / by default END---------- */
+
+    /*-------------------- secondary color updated with cookie / by default START ---------- */ 
+    if(getCookie('design_secondary_color_title')!=""){
+        $('#design_secondary_color_title').val(getCookie('design_secondary_color_title'));
+        $('#design_secondary_color_type').val(getCookie('design_secondary_color_type'));
+        $('#design_secondary_color_value').val(getCookie('design_secondary_color_value'));
+        $('#design_secondary_tiles_color').val(getCookie('design_secondary_tiles_color'));
+
+        $('.choose_color').removeClass('secondary_active');
+        $('.choose_color[data-color_title="'+getCookie('design_secondary_color_title')+'"]').addClass('secondary_active');
+
+        $('#secondary_color').attr('data-color_title',getCookie('design_secondary_color_title'));
+        $('#secondary_color').attr('data-color_type',getCookie('design_secondary_color_type'));
+        $('#secondary_color').val(getCookie('design_secondary_color_value'));
+
+        if(getCookie('design_secondary_color_type') == 'swatch_color_url') {
+            $('#secondary_color').attr('data-swatch_image',getCookie('design_secondary_tiles_color'));
+            $('.secondary_container').find('.color_img_box').html('<img src="'+getCookie('design_secondary_tiles_color')+'"/>');
+        }
+        $('.secondary_container').find('.color_title').html(getCookie('design_secondary_color_title'));
+        
+    }else{
+        $('#design_secondary_color_title').val($('#secondary_color').attr('data-color_title'));
+        $('#design_secondary_color_type').val($('#secondary_color').attr('data-color_type'));
+        $('#design_secondary_color_value').val($('#secondary_color').val());
+        if($('#secondary_color').attr('data-color_type') == 'swatch_color_url') {
+            $('#design_secondary_tiles_color').val($('#secondary_color').attr('data-swatch_image'));
+        }
+    }
+    /*-------------------- secondary color updated with cookie / by default END ---------- */ 
+
+    /*-------------------- design_single_pattern_tiles_arr updated with cookie  START ---------- */ 
+    if(getCookie('design_single_pattern_tiles_arr')!=""){
+        design_single_pattern_tiles_arr = jQuery.parseJSON(getCookie('design_single_pattern_tiles_arr'));
+    }
+    /*-------------------- design_single_pattern_tiles_arr updated with cookie  STOP ---------- */ 
+    
+    /*-------------------- edge tools updated with cookie / by default   START ---------- */ 
+    if(getCookie('design_edge_color_title')!=""){
+        $('#design_edge_color_title').val(getCookie('design_edge_color_title'));
+        $('#design_edge_color_type').val(getCookie('design_edge_color_type'));
+        $('#design_edge_color_value').val(getCookie('design_edge_color_value'));
+        $('#design_edge_tiles_color').val(getCookie('design_edge_tiles_color'));
+
+        $('input[name="edge_color"][data-color_title="'+getCookie('design_edge_color_title')+'"]').prop("checked",true);
+        $('.edge_color').removeClass('edge_active');
+        $('input[name="edge_color"][data-color_title="'+getCookie('design_edge_color_title')+'"]').parent().find('.edge_color').addClass('edge_active');
+
+    }else{
+        $('#design_edge_color_title').val($('input[name="edge_color"]:eq(0)').attr('data-color_title'));
+        $('#design_edge_color_type').val($('input[name="edge_color"]:eq(0)').attr('data-color_type'));
+        $('#design_edge_color_value').val($('input[name="edge_color"]:eq(0)').val());
+        if($('input[name="edge_color"]:eq(0)').attr('data-color_type') == 'swatch_color_url') {
+            $('#design_edge_tiles_color').val($('input[name="edge_color"]:eq(0)').attr('data-swatch_image'));
+        }
+    }
+
+    if(getCookie('design_edge_female_left')!="" && getCookie('design_edge_female_left') > 0){
+        jQuery('#design_edge_female_left').val(getCookie('design_edge_female_left'));
+        $('input[name="edge-pattern"][value="Left"]').prop("checked",true);
+    }
+
+    if(getCookie('design_edge_male_right')!="" && getCookie('design_edge_male_right') > 0){
+        jQuery('#design_edge_male_right').val(getCookie('design_edge_male_right'));
+        $('input[name="edge-pattern"][value="Right"]').prop("checked",true);
+    }
+
+    if(getCookie('design_edge_male_top')!="" && getCookie('design_edge_male_top') > 0){
+        jQuery('#design_edge_male_top').val(getCookie('design_edge_male_top'));
+        $('input[name="edge-pattern"][value="Top"]').prop("checked",true);
+    }
+
+    if(getCookie('design_edge_female_bottom')!="" && getCookie('design_edge_female_bottom') > 0){
+        jQuery('#design_edge_female_bottom').val(getCookie('design_edge_female_bottom'));
+        $('input[name="edge-pattern"][value="Bottom"]').prop("checked",true);
+    }
+    var male_edge_qty = parseFloat($('#design_edge_male_top').val()) + parseFloat($('#design_edge_male_right').val());
+    if(male_edge_qty > 0){
+        color_male_edge_arr[$('#design_edge_color_title').val()] =  male_edge_qty;
+    }
+
+    var female_edge_qty = parseFloat($('#design_edge_female_bottom').val()) + parseFloat($('#design_edge_female_left').val());
+    if(female_edge_qty > 0){
+        color_female_edge_arr[$('#design_edge_color_title').val()] =  female_edge_qty;
+    }
+
+    /*-------------------- edge tools updated with cookie / by default   END ---------- */ 
+    
+    /* --------- corner tools updated with cookie / by default  START -------------------- */
+    if(getCookie('design_corner_color_title')!=""){
+        $('#design_corner_color_title').val(getCookie('design_corner_color_title'));
+        $('#design_corner_color_type').val(getCookie('design_corner_color_type'));
+        $('#design_corner_color_value').val(getCookie('design_corner_color_value'));
+        $('#design_corner_tiles_color').val(getCookie('design_corner_tiles_color'));
+
+        $('input[name="corner_color"][data-color_title="'+getCookie('design_corner_color_title')+'"]').prop("checked",true);
+        $('.corner_color').removeClass('corner_active');
+        $('input[name="corner_color"][data-color_title="'+getCookie('design_corner_color_title')+'"]').parent().find('.corner_color').addClass('corner_active');
+    }else{
+        $('#design_corner_color_title').val($('input[name="corner_color"]:eq(0)').attr('data-color_title'));
+        $('#design_corner_color_type').val($('input[name="corner_color"]:eq(0)').attr('data-color_type'));
+        $('#design_corner_color_value').val($('input[name="corner_color"]:eq(0)').val());
+        if($('input[name="corner_color"]:eq(0)').attr('data-color_type') == 'swatch_color_url') {
+            $('#design_corner_tiles_color').val($('input[name="corner_color"]:eq(0)').attr('data-swatch_image'));
+        }
+    }
+
+    if(getCookie('design_corner_top_left')!="" && getCookie('design_corner_top_left') > 0){
+        jQuery('#design_corner_top_left').val(getCookie('design_corner_top_left'));
+        $('input[name="corner-pattern"][value="All"]').prop("checked",true);
+    }
+
+    if(getCookie('design_corner_top_right')!="" && getCookie('design_corner_top_right') > 0){
+        jQuery('#design_corner_top_right').val(getCookie('design_corner_top_right'));
+        $('input[name="corner-pattern"][value="All"]').prop("checked",true);
+    }
+
+    if(getCookie('design_corner_bottom_left')!="" && getCookie('design_corner_bottom_left') > 0){
+        jQuery('#design_corner_bottom_left').val(getCookie('design_corner_bottom_left'));
+        $('input[name="corner-pattern"][value="All"]').prop("checked",true);
+    }
+
+    if(getCookie('design_corner_bottom_right')!="" && getCookie('design_corner_bottom_right') > 0){
+        jQuery('#design_corner_bottom_right').val(getCookie('design_corner_bottom_right'));
+        $('input[name="corner-pattern"][value="All"]').prop("checked",true);
+    }
+    var corner_qty = parseInt($('#design_corner_top_left').val()) + parseFloat($('#design_corner_top_right').val()) + parseFloat($('#design_corner_bottom_left').val()) + parseFloat($('#design_corner_bottom_right').val());
+    if(corner_qty > 0){
+        color_corner_arr[$('#design_corner_color_title').val()] =  corner_qty;
+    }
+    /* --------- corner tools updated with cookie / by default  END -------------------- */
+    
+    floor_area_canvas_width_height_generate();
+    floorAreaCanvasGenerate(px_per_width, px_per_length);
+    designer_cart_items_html_generate(color_male_edge_arr, color_female_edge_arr, color_corner_arr);
+    $('.total_tiles_qty').html($('#design_all_pattern_tiles_qty').val());
+
+    $("#choose_variant").change();
+
+    undoStackAdd();
+    
+    /* =======================================================================
+    ==================== On page load color hidden field filled  STOP ======= 
+    ===========================================================================*/
+
+
+    }, "300");
+});
+ /* ======  after page load canvas generated   END ========= */
+
+function edgeCornerHideShow(selectedValue) {
+    var childProductId = $('.color_position_'+selectedValue+':checked').attr('data-child_product_id');
+    
+    $(".edge_color_list").hide();
+    $(".edge_color_list_"+childProductId).show();
+
+    $(".corner_color_list").hide();
+    $(".corner_color_list_"+childProductId).show();
+}
+
+function removeAllCookie() {
+    $('#design_all_pattern_color_title').val('');
+    setCookie('design_all_pattern_color_title', '');
+
+    $('#design_all_pattern_color_type').val('');
+    setCookie('design_all_pattern_color_type', '');
+
+    $('#design_all_pattern_tiles_color').val('');
+    setCookie('design_all_pattern_tiles_color', '');
+
+    $('#design_all_pattern_tiles_qty').val('');
+    setCookie('design_all_pattern_tiles_qty', '');
+    
+    $('#design_border_pattern_color_title').val('');
+    setCookie('design_border_pattern_color_title', '');
+
+    $('#design_border_pattern_color_type').val('');
+    setCookie('design_border_pattern_color_type', '');
+
+    $('#design_border_pattern_tiles_color').val('');
+    setCookie('design_border_pattern_tiles_color', '');
+
+    $('#design_border_pattern_tiles_qty').val('');
+    setCookie('design_border_pattern_tiles_qty', '');
+
+    setCookie('design_border_pattern_color_title_child', '');
+}
+
+function removeBorderCookie() {
+    $('#design_border_pattern_color_title').val('');
+    setCookie('design_border_pattern_color_title', '');
+
+    $('#design_border_pattern_color_type').val('');
+    setCookie('design_border_pattern_color_type', '');
+
+    $('#design_border_pattern_tiles_color').val('');
+    setCookie('design_border_pattern_tiles_color', '');
+
+    $('#design_border_pattern_tiles_qty').val('');
+    setCookie('design_border_pattern_tiles_qty', '');
+
+    $('#design_all_pattern_tiles_qty').val('');
+    setCookie('design_all_pattern_tiles_qty', '');
+
+    $('#design_primary_checkered_pattern_color_title').val('');
+    setCookie('design_primary_checkered_pattern_color_title', '');
+
+    $('#design_primary_checkered_pattern_color_type').val('');
+    setCookie('design_primary_checkered_pattern_color_type', '');
+
+    $('#design_primary_checkered_pattern_tiles_color').val('');
+    setCookie('design_primary_checkered_pattern_tiles_color', '');
+
+    $('#design_primary_checkered_pattern_tiles_qty').val('');
+    setCookie('design_primary_checkered_pattern_tiles_qty', '');
+
+    
+    $('#design_secondary_checkered_pattern_color_title').val('');
+    setCookie('design_secondary_checkered_pattern_color_title', '');
+
+    $('#design_secondary_checkered_pattern_color_type').val('');
+    setCookie('design_secondary_checkered_pattern_color_type', '');
+
+    $('#design_secondary_checkered_pattern_tiles_color').val('');
+    setCookie('design_secondary_checkered_pattern_tiles_color', '');
+
+    $('#design_secondary_checkered_pattern_tiles_qty').val('');
+    setCookie('design_secondary_checkered_pattern_tiles_qty', '');
+}
+
+function removeCheckedCookie() {
+    $('#design_all_pattern_color_title').val('');
+    setCookie('design_all_pattern_color_title', '');
+
+    $('#design_all_pattern_color_type').val('');
+    setCookie('design_all_pattern_color_type', '');
+
+    $('#design_all_pattern_tiles_color').val('');
+    setCookie('design_all_pattern_tiles_color', '');
+
+    $('#design_all_pattern_tiles_qty').val('');
+    setCookie('design_all_pattern_tiles_qty', '');
+    
+    $('#design_border_pattern_color_title').val('');
+    setCookie('design_border_pattern_color_title', '');
+
+    $('#design_border_pattern_color_type').val('');
+    setCookie('design_border_pattern_color_type', '');
+
+    $('#design_border_pattern_tiles_color').val('');
+    setCookie('design_border_pattern_tiles_color', '');
+
+    $('#design_border_pattern_tiles_qty').val('');
+    setCookie('design_border_pattern_tiles_qty', '');
+
+    setCookie('design_border_pattern_color_title_child', '');
+}
+
+function floor_area_canvas_width_height_generate(){
+    var width_inch = parseFloat($('#width').val())*12;
+    var length_inch = parseFloat($('#length').val())*12;
+
+    var grid_width_tiles = $('.grid_width_tiles').text();
+    var grid_length_tiles = $('.grid_length_tiles').text();
+
+    if (parseFloat(width_inch) == parseFloat(length_inch)) {
+        px_per_width = parseInt(canvas_calc_area/parseInt(grid_width_tiles));
+        px_per_length = parseInt(canvas_calc_area/parseInt(grid_length_tiles));
+    } else if (parseFloat(width_inch) > parseFloat(length_inch)) {
+        px_per_width = parseInt(canvas_calc_area/parseInt(grid_width_tiles));
+
+        var length_calc_area = (canvas_calc_area / parseFloat(width_inch)) * parseFloat(length_inch);
+        px_per_length = parseInt(length_calc_area/parseInt(grid_length_tiles));
+
+    } else if (parseFloat(width_inch) < parseFloat(length_inch)) {
+        px_per_length = parseInt(canvas_calc_area/parseInt(grid_length_tiles));
+
+        var width_calc_area = (canvas_calc_area / parseFloat(length_inch)) * parseFloat(width_inch);
+        px_per_width = parseInt(width_calc_area/parseInt(grid_width_tiles));
+    }
+
+    floor_area_width_total_px = (parseInt(grid_width_tiles) * parseInt(px_per_width)) ;
+    floor_area_length_total_px = (parseInt(grid_length_tiles) * parseInt(px_per_length));
+
+    $(".floor_area_canvas").attr("width", floor_area_width_total_px+100);
+    $(".floor_area_canvas").attr("height", floor_area_length_total_px+100);
+}
+
+function edge_pattern_calc_generate(current_edge_obj){
+    var grid_width_tiles = jQuery('.grid_width_tiles').text();
+    var grid_length_tiles = jQuery('.grid_length_tiles').text();
+
+    var cornerColorTitle = getCookie('design_corner_color_title');
+    let cornerType = "";
+
+    if (cornerColorTitle) {
+        // Split the string by underscores
+        let parts = cornerColorTitle.split('_');
+
+        // Access the split parts
+        let colorTitle = parts[0];     // "Gray"
+        let colorOptionId = parts[1];   // "104027"
+        let productId = parts[2];   // "290318"
+        cornerType = parts[3];   // "corneruniversal"
+    }
+
+    if($('input[name="corner-pattern"]').is(':checked')) {
+        if (cornerType == 'singleuniversal') {
+            grid_width_tiles = grid_width_tiles - 1;
+            grid_length_tiles = grid_length_tiles - 1;
+        } else if (cornerType == 'doubleuniversal') {
+            grid_width_tiles = grid_width_tiles - 2;
+            grid_length_tiles = grid_length_tiles - 2;
+        }
+    }
+    
+    // Get all checked checkboxes
+    const checkedCheckboxes = document.querySelectorAll('input[name="edge-pattern"]:checked');
+
+    // Loop through them
+    for (let i = 0; i < checkedCheckboxes.length; i++) {
+        if (checkedCheckboxes[i].value == 'Left') {
+            jQuery('#design_edge_female_left').val(grid_length_tiles);
+            setCookie('design_edge_female_left', grid_length_tiles);
+        }
+
+        if (checkedCheckboxes[i].value == 'Right') {
+            jQuery('#design_edge_male_right').val(grid_length_tiles);
+            setCookie('design_edge_male_right', grid_length_tiles);
+        }
+
+        if (checkedCheckboxes[i].value == 'Top') {
+            jQuery('#design_edge_male_top').val(grid_width_tiles);
+            setCookie('design_edge_male_top', grid_width_tiles);
+        }
+
+        if (checkedCheckboxes[i].value == 'Bottom') {
+            jQuery('#design_edge_female_bottom').val(grid_width_tiles);
+            setCookie('design_edge_female_bottom', grid_width_tiles);
+        }
+    }
+
+    if(current_edge_obj.val() == 'Left'){
+        if(current_edge_obj.is(':checked')){
+            jQuery('#design_edge_female_left').val(grid_length_tiles);
+            setCookie('design_edge_female_left', grid_length_tiles);
+
+        }else{
+            jQuery('#design_edge_female_left').val(0);
+            setCookie('design_edge_female_left', 0);
+        }
+    }else if(current_edge_obj.val()=='Right'){
+        if(current_edge_obj.is(':checked')){
+            jQuery('#design_edge_male_right').val(grid_length_tiles);
+            setCookie('design_edge_male_right', grid_length_tiles);
+        }else{
+            jQuery('#design_edge_male_right').val(0);
+            setCookie('design_edge_male_right', 0);
+        }
+    }else if(current_edge_obj.val()=='Top'){
+        if(current_edge_obj.is(':checked')){
+            jQuery('#design_edge_male_top').val(grid_width_tiles);
+            setCookie('design_edge_male_top', grid_width_tiles);
+        }else{
+            jQuery('#design_edge_male_top').val(0);
+            setCookie('design_edge_male_top', 0);
+        }
+    }else if(current_edge_obj.val()=='Bottom'){
+        if(current_edge_obj.is(':checked')){
+            jQuery('#design_edge_female_bottom').val(grid_width_tiles);
+            setCookie('design_edge_female_bottom', grid_width_tiles);
+        }else{
+            jQuery('#design_edge_female_bottom').val(0);
+            setCookie('design_edge_female_bottom', 0);
+        }
+    }
+
+    jQuery('input[name="edge_color"]:checked').trigger('click');
+}
+
+
+function isEdgeChecked($edgeName) {
+    var isChecked = false;
+    // Get all checked checkboxes
+    const checkedCheckboxes = document.querySelectorAll('input[name="edge-pattern"]:checked');
+
+    // Loop through them
+    for (let i = 0; i < checkedCheckboxes.length; i++) {
+        if (checkedCheckboxes[i].value == $edgeName) {
+            return true;
+        }
+    }
+
+    return isChecked;
+}
+
+function corner_pattern_calc_generate(){
+    jQuery('#design_corner_top_left').val(0);
+    setCookie('design_corner_top_left', 0);
+
+    jQuery('#design_corner_top_right').val(0);
+    setCookie('design_corner_top_right', 0);
+
+    jQuery('#design_corner_bottom_left').val(0);
+    setCookie('design_corner_bottom_left', 0);
+
+    jQuery('#design_corner_bottom_right').val(0);
+    setCookie('design_corner_bottom_right', 0);
+
+    var cornerColorTitle = getCookie('design_corner_color_title');
+    let cornerType = "";
+
+    if (cornerColorTitle) {
+        // Split the string by underscores
+        let parts = cornerColorTitle.split('_');
+
+        // Access the split parts
+        let colorTitle = parts[0];     // "Gray"
+        let colorOptionId = parts[1];   // "104027"
+        let productId = parts[2];   // "290318"
+        cornerType = parts[3];   // "corneruniversal"
+    }
+
+    var corerDefault = 1;
+
+    if($('input[name="corner-pattern"]').is(':checked')){
+        if(jQuery('#design_edge_male_top').val() > 0 && jQuery('#design_edge_female_left').val() > 0){
+            jQuery('#design_corner_top_left').val(corerDefault);
+            setCookie('design_corner_top_left', corerDefault);
+        }
+        if(jQuery('#design_edge_male_top').val() > 0 && jQuery('#design_edge_male_right').val() > 0){
+            jQuery('#design_corner_top_right').val(corerDefault);
+            setCookie('design_corner_top_right', corerDefault);
+        }
+        if(jQuery('#design_edge_female_left').val() > 0 && jQuery('#design_edge_female_bottom').val() > 0){
+            jQuery('#design_corner_bottom_left').val(corerDefault);
+            setCookie('design_corner_bottom_left', corerDefault);
+        }
+        if(jQuery('#design_edge_female_bottom').val() > 0 && jQuery('#design_edge_male_right').val() > 0){
+            jQuery('#design_corner_bottom_right').val(corerDefault);
+            setCookie('design_corner_bottom_right', corerDefault);
+        }
+    }
+    
+    jQuery('input[name="corner_color"]:checked').trigger('click');
+}
+
+// Function to dynamically group and display data by pattern type
+function displayPatternByType(data) {
+    // Create an object to group by pattern type
+    let groupedPatterns = {};
+
+    // Group patterns by their type
+    data.forEach(pattern => {
+        if (!groupedPatterns[pattern.type]) {
+            groupedPatterns[pattern.type] = [];
+        }
+        groupedPatterns[pattern.type].push(pattern);
+    });
+
+    // Display each pattern type separately
+    for (let patternType in groupedPatterns) {
+        jQuery('.designer_cart_items').append('<h3 class="text-size16 font-semibold my-4">'+patternType+'</h3>');
+        groupedPatterns[patternType].forEach(pattern => {
+            jQuery('.designer_cart_items').append(pattern.html);
+        });
+    }
+}
+
+function designer_cart_items_html_generate(color_male_edge_arr, color_female_edge_arr, color_corner_arr) {
+    let color_items_json = '<?= /* @noEscape */ addslashes(json_encode($block->getVariantColorCombination($block->getProductId(), $block->getChildId())));?>';
+    let color_items = jQuery.parseJSON(color_items_json);
+    let corner_items_json = '<?= /* @noEscape */ addslashes(json_encode($block->getCornerItems()));?>';
+    let corner_items = jQuery.parseJSON(corner_items_json);
+    let total_edges_qty = 0;
+
+    jQuery('.designer_cart_items').html('');
+    let all_total_price = 0; 
+    let all_total_regular_price = 0; 
+
+    design_cart_items_arr = [];
+
+    let patterns = [];
+
+    for (key in color_items){
+        var color_in_cell_count = 0;
+        var childProductId = "";
+        
+        for (row_column_key in color_in_cell) {
+            if (color_items[key] == color_in_cell[row_column_key]) {
+                childProductId = color_in_cell[row_column_key+"_child"];
+                color_in_cell_count++;
+            }
+        }
+
+        if (color_in_cell_count > 0) {
+            var productRegularPrice = $(".choose_color_"+color_items[key]).attr('data-product_regular_price');
+            var productFinalPrice = $(".choose_color_"+color_items[key]).attr('data-product_final_price');
+            var productColorTitle = $(".choose_color_"+color_items[key]).attr('data-color_title');
+            
+            let row_total_tiles_price = parseFloat(color_in_cell_count) * parseFloat(productFinalPrice);
+            all_total_price = parseFloat(all_total_price) + parseFloat(row_total_tiles_price.toFixed(2));
+
+            let row_total_tiles_regular_price = parseFloat(color_in_cell_count) * parseFloat(productRegularPrice);
+            all_total_regular_price = parseFloat(all_total_regular_price) + parseFloat(row_total_tiles_regular_price.toFixed(2));
+
+            design_cart_items_arr.push({'product_id': childProductId, 'qty': color_in_cell_count});
+
+            var variantTitle = jQuery(".child_id_"+childProductId).attr('data-variant_title');
+
+            patterns.push({ type: variantTitle, html: '<tr><td>'+color_in_cell_count+' tiles</td><td>'+productColorTitle+'</td><td>('+color_in_cell_count+' @ '+hyva.formatPrice(productFinalPrice)+') '+ hyva.formatPrice(row_total_tiles_price)+'</td></tr>' });   
+        }
+    }
+
+    // Call the function to display patterns
+    displayPatternByType(patterns);
+    jQuery('.designer_cart_items').append('<p class="empty-space my-4"></p>');
+
+    for (key in color_male_edge_arr) {
+        // Split the string by underscores
+        let parts = key.split('_');
+
+        // Access the split parts
+        let colorTitle = parts[0];     // "Gray"
+        let colorOptionId = parts[1];   // "104027"
+        let mainProductId = parts[2];   // "290318"
+
+        var selectedOption = $("#edge_color_"+colorOptionId+"_"+mainProductId);
+
+        var maleProductId = selectedOption.attr('data-male_product_id');
+        var maleProductFinalPrice = selectedOption.attr('data-male_product_final_price');
+        var maleProductRegularPrice = selectedOption.attr('data-male_product_regular_price');
+
+        if (typeof maleProductId != 'undefined') {
+            let row_total_male_edge_price = parseFloat(color_male_edge_arr[key]) * parseFloat(maleProductFinalPrice);
+            all_total_price = parseFloat(all_total_price) + parseFloat(row_total_male_edge_price.toFixed(2));
+
+            let row_total_male_edge_regular_price = parseFloat(color_male_edge_arr[key]) * parseFloat(maleProductRegularPrice);
+            all_total_regular_price = parseFloat(all_total_regular_price) + parseFloat(row_total_male_edge_regular_price.toFixed(2));
+
+            design_cart_items_arr.push({'product_id': maleProductId,'qty': color_male_edge_arr[key]});
+
+            jQuery('.designer_cart_items').append('<tr><td>'+color_male_edge_arr[key]+' male edges</td><td>'+colorTitle+'</td><td>('+color_male_edge_arr[key]+' @ '+hyva.formatPrice(maleProductFinalPrice)+') '+ hyva.formatPrice(row_total_male_edge_price)+'</td></tr>');
+
+            total_edges_qty = total_edges_qty + color_male_edge_arr[key];
+        }
+    }
+
+    for (key in color_female_edge_arr) {
+        // Split the string by underscores
+        let parts = key.split('_');
+
+        // Access the split parts
+        let colorTitle = parts[0];     // "Gray"
+        let colorOptionId = parts[1];   // "104027"
+        let mainProductId = parts[2];   // "290318"
+
+        var selectedOption = $("#edge_color_"+colorOptionId+"_"+mainProductId);
+        var feMaleProductId = selectedOption.attr('data-female_product_id');
+        var feMaleProductFinalPrice = selectedOption.attr('data-female_product_final_price');
+        var feMaleProductRegularPrice = selectedOption.attr('data-female_product_regular_price');
+
+        if (typeof feMaleProductId != 'undefined') {
+            let row_total_female_edge_price = parseFloat(color_female_edge_arr[key]) * parseFloat(feMaleProductFinalPrice);
+            all_total_price = parseFloat(all_total_price) + parseFloat(row_total_female_edge_price.toFixed(2));
+
+            let row_total_female_edge_regular_price = parseFloat(color_female_edge_arr[key]) * parseFloat(feMaleProductRegularPrice);
+            all_total_regular_price = parseFloat(all_total_regular_price) + parseFloat(row_total_female_edge_regular_price.toFixed(2));
+
+            design_cart_items_arr.push({'product_id': feMaleProductId,'qty': color_female_edge_arr[key]});
+
+            jQuery('.designer_cart_items').append('<tr><td>'+color_female_edge_arr[key]+' female edges</td><td>'+colorTitle+'</td><td>('+color_female_edge_arr[key]+' @ '+hyva.formatPrice(feMaleProductFinalPrice)+') '+ hyva.formatPrice(row_total_female_edge_price)+'</td></tr>');
+
+            total_edges_qty = total_edges_qty + color_female_edge_arr[key];
+        }
+    }
+
+    for (key in color_corner_arr){
+
+        // Split the string by underscores
+        let parts = key.split('_');
+
+        // Access the split parts
+        let colorTitle = parts[0];     // "Gray"
+        let colorOptionId = parts[1];   // "104027"
+        let productId = parts[2];   // "290318"
+        let cornerType = parts[3];   // "corner_universal"
+
+        var selectedOption = $("#corner_color_"+colorOptionId+"_"+productId);
+        var productFinalPrice = selectedOption.attr('data-product_final_price');
+        var productRegularPrice = selectedOption.attr('data-product_regular_price');
+        var selectedProductId = selectedOption.attr('data-main_product_id');
+
+        let row_total_corner_price = parseFloat(color_corner_arr[key]) * parseFloat(productFinalPrice);
+        all_total_price = parseFloat(all_total_price) + parseFloat(row_total_corner_price.toFixed(2));
+
+        let row_total_corner_regular_price = parseFloat(color_corner_arr[key]) * parseFloat(productRegularPrice);
+        all_total_regular_price = parseFloat(all_total_regular_price) + parseFloat(row_total_corner_regular_price.toFixed(2));
+
+        design_cart_items_arr.push({'product_id': selectedProductId,'qty': color_corner_arr[key]});
+
+        jQuery('.designer_cart_items').append('<tr><td>'+color_corner_arr[key]+' universal corners</td><td>'+colorTitle+'</td><td>('+color_corner_arr[key]+' @ '+hyva.formatPrice(productFinalPrice)+') '+ hyva.formatPrice(row_total_corner_price)+'</td></tr>'); 
+        
+        total_edges_qty = total_edges_qty + color_corner_arr[key];
+    }
+
+    jQuery('.all_total_price').html(hyva.formatPrice(all_total_price));
+    if(all_total_price < all_total_regular_price){
+        jQuery('.all_total_regular_price').html(hyva.formatPrice(all_total_regular_price));
+    }else{
+        jQuery('.all_total_regular_price').html('');
+    }
+
+    jQuery('.total_edges_qty').html(total_edges_qty);
+
+    let grid_width_tiles = $('.grid_width_tiles').text();
+    let grid_length_tiles = $('.grid_length_tiles').text();
+    let total_all_pattern_tiles_qty = parseInt(grid_width_tiles) * parseInt(grid_length_tiles);
+
+    $('#design_all_pattern_tiles_qty').val(total_all_pattern_tiles_qty);
+}
+
+// Set a Cookie
+function setCookie(cName, cValue, expDays = 30, productId='<?= /* @noEscape */ $block->getProductId();?>', childId ='<?= /* @noEscape */ $block->getChildId();?>') {
+    let date = new Date();
+    date.setTime(date.getTime() + (expDays * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = cName+'_'+productId+'_'+childId + "=" + cValue + "; " + expires + "; path=/";
+}
+
+function getCookie(cName, productId='<?= /* @noEscape */ $block->getProductId();?>', childId ='<?= /* @noEscape */ $block->getChildId();?>') {
+    cName = cName+'_'+productId+'_'+childId;
+    const name = cName + "=";
+    let cookieString = document.cookie;
+
+    cookieString = cookieString.replace(/%/g, "%25");
+
+    const cDecoded = decodeURIComponent(cookieString); //to be careful
+    const cArr = cDecoded .split('; ');
+    let res;
+    cArr.forEach(val => {
+        if (val.indexOf(name) === 0) res = val.substring(name.length);
+    })
+    if(res === '' || res === null || res == null){
+        res = '';
+    }
+    
+    return res;
+}
+    
+function decimalFeetToFeetInches(measurement){
+    let feetInchesObj = {};
+    let feet = parseInt(measurement);
+    let fraction = parseFloat(measurement) - parseInt(feet);
+    let inches = parseInt(12.0 * parseFloat(fraction));
+    feetInchesObj['feet'] = feet;
+    feetInchesObj['inches'] = inches;
+    return feetInchesObj;
+}
+
+function floorAreaCanvasGenerate(px_per_width, px_per_length, selectedChildProduct = null) {
+    //let floor_canvas = document.getElementById('floor_area_canvas');
+   // let context = floor_canvas.getContext('2d');
+    context.clearRect(0, 0, floor_canvas.width, floor_canvas.height);
+    context.beginPath();
+
+    let color_items_json = '<?= /* @noEscape */ addslashes(json_encode($block->getColorItems($block->getProductId(), $block->getChildId())));?>';
+    let color_items = jQuery.parseJSON(color_items_json);
+    
+    var grid_width_tiles = parseInt($('.grid_width_tiles').html());
+    var grid_length_tiles = parseInt($('.grid_length_tiles').html());
+
+    var all_img = new Image;
+    all_img.src = $('#design_all_pattern_tiles_color').val();
+
+    var designPattern = $('#design_pattern').val();
+
+    var border_img = new Image;
+    border_img.src = $('#design_border_pattern_tiles_color').val();
+
+    var primary_checkered_img = new Image;
+    primary_checkered_img.src = $('#design_primary_checkered_pattern_tiles_color').val();
+
+    var secondary_checkered_img = new Image;
+    secondary_checkered_img.src = $('#design_secondary_checkered_pattern_tiles_color').val();
+
+    var edge_img = new Image;
+    edge_img.src = $('#design_edge_tiles_color').val();
+
+    var corner_img = new Image;
+    corner_img.src = $('#design_corner_tiles_color').val();
+
+    rects = [];
+    var i = 0;
+    var p= 0.2;
+
+    color_in_cell = {};
+    var cell_x = 50;
+    var cell_y = 50;
+    var max_cell_x = 0;
+    var max_cell_y = 0;
+    for (var j = 1; j <= grid_width_tiles; j++) {
+        for (var k = 1; k <= grid_length_tiles; k++)
+        {
+            rects[i]={x: cell_x, y: cell_y, row: k, column: j, w: px_per_width, h: px_per_length};
+            max_cell_y = cell_y;
+            cell_y = parseInt(cell_y) + (parseInt(px_per_length) + parseFloat(p));
+            i++;
+        }
+        max_cell_x = cell_x;
+        cell_x = parseInt(cell_x) + (parseInt(px_per_width) + parseFloat(p));
+        cell_y = 50;
+    }
+
+    var uncheck_edging_conner_color = '#fff';
+    var edging_px_per_width = parseInt(px_per_width);
+    var edging_px_per_length = parseInt(px_per_length);
+    var corner_px_per_unit = 10;
+
+     //img.onload = function() {
+    for (var i = 0, len = rects.length; i < len; i++) {
+        if(design_single_pattern_tiles_arr['color_title_'+rects[i].row+'_'+rects[i].column] != "" && typeof design_single_pattern_tiles_arr['color_title_'+rects[i].row+'_'+rects[i].column]  !== 'undefined'){
+            var singlePatternTile = design_single_pattern_tiles_arr['color_title_'+rects[i].row+'_'+rects[i].column];
+
+            var childProductId = $(".choose_color_"+singlePatternTile).attr('data-child_product_id');
+            var swatchImage = $(".choose_color_"+singlePatternTile).attr('data-swatch_image');
+            
+            var single_img = new Image;
+            single_img.src = swatchImage;
+
+            context.drawImage(single_img,rects[i].x,rects[i].y,rects[i].w,rects[i].h);
+            color_in_cell[rects[i].row+'_'+rects[i].column] = singlePatternTile;
+            color_in_cell[rects[i].row+'_'+rects[i].column+'_child'] = childProductId;
+            
+        } else if($('#design_border_pattern_color_title').val() != "" && 
+            (((rects[i].row == 1 || rects[i].row == grid_length_tiles) && rects[i].column <= grid_width_tiles) || ((rects[i].column == 1 || rects[i].column == grid_width_tiles) && rects[i].row <= grid_length_tiles))){
+
+            if($('#design_border_pattern_color_type').val() == 'swatch_color_url') {
+                context.drawImage(border_img,rects[i].x,rects[i].y,rects[i].w,rects[i].h);
+            }
+            color_in_cell[rects[i].row+'_'+rects[i].column] = $('#design_border_pattern_color_title').val();
+            color_in_cell[rects[i].row+'_'+rects[i].column+'_child'] = getCookie('design_border_pattern_color_title_child');
+
+        } else if($('#design_all_pattern_color_title').val() != ""){
+            if($('#design_all_pattern_color_type').val() == 'swatch_color_url') {
+                context.drawImage(all_img,rects[i].x,rects[i].y,rects[i].w,rects[i].h);
+            }
+            color_in_cell[rects[i].row+'_'+rects[i].column] = $('#design_all_pattern_color_title').val();
+            color_in_cell[rects[i].row+'_'+rects[i].column+'_child'] = getCookie('design_all_pattern_color_title_child');
+
+        } else if ($('#design_primary_checkered_pattern_color_title').val() != "" && 
+            ((rects[i].row % 2 != 0 && rects[i].column % 2 != 0) || (rects[i].row % 2 == 0 && rects[i].column % 2 == 0))) {
+              
+               if($('#design_primary_checkered_pattern_color_type').val() == 'swatch_color_url') {
+                    context.drawImage(primary_checkered_img,rects[i].x,rects[i].y,rects[i].w,rects[i].h);
+                }
+                color_in_cell[rects[i].row+'_'+rects[i].column] = $('#design_primary_checkered_pattern_color_title').val();
+
+                color_in_cell[rects[i].row+'_'+rects[i].column+'_child'] = getCookie('design_primary_checkered_pattern_color_title_child');
+            } else if($('#design_secondary_checkered_pattern_color_title').val() != "" && 
+            ((rects[i].row % 2 != 0 && rects[i].column % 2 == 0) || (rects[i].row % 2 == 0 && rects[i].column % 2 != 0))){
+
+                if($('#design_secondary_checkered_pattern_color_type').val() == 'swatch_color_url') {
+                    context.drawImage(secondary_checkered_img,rects[i].x,rects[i].y,rects[i].w,rects[i].h);
+                }
+                color_in_cell[rects[i].row+'_'+rects[i].column] = $('#design_secondary_checkered_pattern_color_title').val();
+                color_in_cell[rects[i].row+'_'+rects[i].column+'_child'] = getCookie('design_secondary_checkered_pattern_color_title_child');
+            }
+     }
+
+    //context.closePath();
+
+    var cornerColorTitle = getCookie('design_corner_color_title');
+    let cornerType = "";
+
+    if (cornerColorTitle) {
+        // Split the string by underscores
+        let parts = cornerColorTitle.split('_');
+
+        // Access the split parts
+        let colorTitle = parts[0];     // "Gray"
+        let colorOptionId = parts[1];   // "104027"
+        let productId = parts[2];   // "290318"
+        cornerType = parts[3];   // "corneruniversal"
+    }
+    
+    var cornerPatternChecked = false;
+
+    if($('input[name="corner-pattern"]').is(':checked')) {
+        cornerPatternChecked = true;
+    }
+
+    //------------ Top edging  START -----------------------
+    var edging_x = 50;
+    var edging_y = 38;
+    for (var column = 1; column <= grid_width_tiles; column++)
+    {
+        var finalImg = edge_img;
+        var removeSpace = 2;
+        var removeEdgingX = 1;
+        var drawImage = false;
+
+        var desigEedgMaleTop = $('#design_edge_male_top').val();
+
+        if (cornerPatternChecked) {
+            if ((cornerType == 'doubleuniversal' || cornerType == 'singleuniversal') && column >= grid_width_tiles) {
+                finalImg = corner_img;
+                removeSpace = 0;
+                drawImage = true;
+
+            }
+
+            if (column == 1 && cornerType == 'doubleuniversal') {
+                finalImg = corner_img;
+                removeEdgingX = -2;
+                drawImage = true;
+            }
+        }
+
+        var isCheckedTop = isEdgeChecked("Top");
+
+        if (isCheckedTop) {
+            drawImage = true;
+        }
+        
+        if(isDisplayEdging){
+            if ($('#design_edge_color_type').val() == 'swatch_color_url') {
+                if(((parseFloat($('#width').val()) >= 100 || parseFloat($('#length').val()) >= 100) && exact_width_inch <= 10) || 
+                (parseFloat($('#width').val()) >= 100 && $(window).width() <= 767) || 
+                (parseFloat($('#length').val()) >= 100 && $(window).width() <= 767)){
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x, edging_y, corner_px_per_unit, corner_px_per_unit);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x, edging_y, edging_px_per_width, corner_px_per_unit);
+                    }
+                    
+                } else {
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x + (removeEdgingX), edging_y, edging_px_per_width - removeSpace, corner_px_per_unit);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x + (removeEdgingX), edging_y, edging_px_per_width - removeSpace, corner_px_per_unit);
+                    }
+                }
+            }
+        }
+        
+        
+        edging_x = parseInt(edging_x) + (parseInt(edging_px_per_width) + parseFloat(p));
+    }
+    //------------ Top edging  STOP -----------------------
+    //------------ corner_top_right  START -----------------------
+    if(isDisplayCorner && cornerPatternChecked){
+        if($('#design_corner_color_type').val() == 'swatch_color_url') {
+            context.drawImage(corner_img, edging_x + 1, edging_y, corner_px_per_unit , corner_px_per_unit);
+        }else{
+            context.fillStyle = uncheck_edging_conner_color;
+            context.fillRect(edging_x + 1, edging_y, corner_px_per_unit , corner_px_per_unit);
+        }
+    }
+    //------------ corner_top_right  START -----------------------
+
+    //------------ Bottom edging  START -----------------------
+    var edging_x = 50;
+    var edging_y = parseInt(max_cell_y) + parseInt(edging_px_per_length) + parseInt(2);
+    for (var column = 1; column <= grid_width_tiles; column++)
+    {
+        var finalImg = edge_img;
+        var removeSpace = 2;
+        var removeEdgingX = 1;
+        var removeExgingY = 0;
+        var drawImage = false;
+
+        var designEdgeFemaleBottom = $('#design_edge_female_bottom').val();
+
+        if (cornerPatternChecked) {
+            if ((cornerType == 'doubleuniversal' || cornerType == 'singleuniversal') && column == 1) {
+                finalImg = corner_img;
+                removeSpace = 0;
+                removeEdgingX = -2;
+                removeExgingY = -1;
+                drawImage = true;
+            }
+
+            if (column >= grid_width_tiles && cornerType == 'doubleuniversal') {
+                finalImg = corner_img;
+                removeEdgingX = 4;
+                removeExgingY = -1;
+                drawImage = true;
+            }
+        }
+
+        var isCheckedBottom = isEdgeChecked("Bottom");
+
+        if (isCheckedBottom) {
+            drawImage = true;
+        }
+
+        if(isDisplayEdging){
+            if($('#design_edge_color_type').val() == 'swatch_color_url') {    
+                if(((parseFloat($('#width').val()) >= 100 || parseFloat($('#length').val()) >= 100) && exact_width_inch <= 10) || 
+                (parseFloat($('#width').val()) >= 100 && $(window).width() <= 767) || 
+                (parseFloat($('#length').val()) >= 100 && $(window).width() <= 767)){
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x, edging_y, corner_px_per_unit, corner_px_per_unit);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x, edging_y, edging_px_per_width, corner_px_per_unit);
+                    }
+                    
+                }else{
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x + (removeEdgingX), edging_y + (removeExgingY), edging_px_per_width - removeSpace, corner_px_per_unit);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x + (removeEdgingX), edging_y, edging_px_per_width - removeSpace, corner_px_per_unit);
+                    }
+                }
+            }
+        }
+
+        edging_x = parseInt(edging_x) + (parseInt(edging_px_per_width) + parseFloat(p));
+    }
+    //------------ Bottom edging  STOP -----------------------
+
+    //------------ Left edging  START -----------------------
+    var edging_x = 38;
+    var edging_y = 50;
+    for (var row = 1; row <= grid_length_tiles; row++)
+    {
+        var finalImg = edge_img;
+        var removeSpace = 2;
+        var removeEdgingX = 0;
+        var removeExgingY = 1;
+        var drawImage = false;
+
+        var designEdgeFemaleLeft = $('#design_edge_female_left').val();
+
+        if (cornerPatternChecked) {
+            if ((cornerType == 'doubleuniversal' || cornerType == 'singleuniversal') && row == 1) {
+                finalImg = corner_img;
+                removeSpace = 0;
+                removeExgingY = -2;
+                drawImage = true;
+            }
+
+            if (row >= grid_length_tiles && cornerType == 'doubleuniversal') {
+                finalImg = corner_img;
+                removeExgingY = 3;
+                drawImage = true;
+            }
+        }
+
+        var isCheckedLeft = isEdgeChecked("Left");
+
+        if (isCheckedLeft) {
+            drawImage = true;
+        }
+
+        if(isDisplayEdging){
+            if($('#design_edge_color_type').val() == 'swatch_color_url') {
+                if(parseFloat($('#width').val()) >= 100 && $(window).width() <= 390){
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x, edging_y, corner_px_per_unit, corner_px_per_unit);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x, edging_y, corner_px_per_unit, corner_px_per_unit);
+                    }
+                }else{
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x, edging_y + (removeExgingY), corner_px_per_unit, edging_px_per_length - removeSpace);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x, edging_y + (removeExgingY), corner_px_per_unit, edging_px_per_length - removeSpace);
+                    }
+                }
+            }
+        }
+
+        edging_y = parseInt(edging_y) + (parseInt(edging_px_per_length) + parseFloat(p));
+    }
+    //------------ Left edging  STOP -----------------------
+    //------------ corner_bottom_left  START -----------------------
+    if(isDisplayCorner && cornerPatternChecked){
+        if($('#design_corner_color_type').val() == 'swatch_color_url') {
+            context.drawImage(corner_img, edging_x, edging_y + 1, corner_px_per_unit , corner_px_per_unit);
+        }else{
+            context.fillStyle = uncheck_edging_conner_color;
+            context.fillRect(edging_x, edging_y + 1, corner_px_per_unit , corner_px_per_unit);
+        }
+    }
+    //------------ corner_bottom_left  START -----------------------
+
+    //------------ Right edging  START -----------------------
+    var edging_x = parseInt(max_cell_x) + parseInt(edging_px_per_width) + parseInt(2);
+    var edging_y = 50;
+    for (var row = 1; row <= grid_length_tiles; row++)
+    {
+        var finalImg = edge_img;
+        var removeSpace = 2;
+        var removeEdgingX = 0;
+        var removeExgingY = 1;
+        var drawImage = false;
+
+        var designEdgeMaleRight = $('#design_edge_male_right').val();
+
+        if (cornerPatternChecked) {
+            if ((cornerType == 'doubleuniversal' || cornerType == 'singleuniversal') && row >= grid_length_tiles) {
+                finalImg = corner_img;
+                removeSpace = 0;
+                drawImage = true;
+            }
+
+            if (row == 1 && cornerType === 'doubleuniversal') {
+                finalImg = corner_img;
+                removeEdgingX = -1;
+                removeExgingY = -2;
+                drawImage = true;
+            }
+        }
+
+        var isCheckedRight = isEdgeChecked("Right");
+
+        if (isCheckedRight) {
+            drawImage = true;
+        }
+
+        if(isDisplayEdging){
+            if($('#design_edge_color_type').val() == 'swatch_color_url') {
+                if(parseFloat($('#width').val()) >= 100 && $(window).width() <= 390){
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x, edging_y, corner_px_per_unit, corner_px_per_unit);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x, edging_y, corner_px_per_unit, corner_px_per_unit);
+                    }
+                }else{
+                    if (drawImage) {
+                        context.drawImage(finalImg, edging_x + (removeEdgingX), edging_y + (removeExgingY), corner_px_per_unit, edging_px_per_length - removeSpace);
+                    } else {
+                        context.fillStyle = uncheck_edging_conner_color;
+                        context.fillRect(edging_x, edging_y + (removeExgingY), corner_px_per_unit, edging_px_per_length - removeSpace);
+                    }
+                }
+            }
+        }
+        edging_y = parseInt(edging_y) + (parseInt(edging_px_per_length) + parseFloat(p));
+    }
+    //------------ Right edging  STOP -----------------------
+    //------------ corner_bottom_right  START -----------------------
+    if(isDisplayCorner && cornerPatternChecked){
+        if($('#design_corner_color_type').val() == 'swatch_color_url') {
+            context.drawImage(corner_img, edging_x, edging_y + 1, corner_px_per_unit , corner_px_per_unit);
+        }else{
+            context.fillStyle = uncheck_edging_conner_color;
+            context.fillRect(edging_x, edging_y + 1, corner_px_per_unit , corner_px_per_unit);
+        }
+    }
+    //------------ corner_bottom_right  START -----------------------
+
+    //------------ corner_top_left  START -----------------------
+    if(isDisplayCorner && cornerPatternChecked){
+        var corner_x = 38;
+        var corner_y = 38;
+        //alert($('#design_corner_top_left').val() +'--' + $('#design_corner_color_type').val());
+        if($('#design_corner_color_type').val() == 'swatch_color_url') {
+            context.drawImage(corner_img, corner_x, corner_y, corner_px_per_unit , corner_px_per_unit);
+        }else{
+            context.fillStyle = uncheck_edging_conner_color;
+            context.fillRect(corner_x, corner_y, corner_px_per_unit , corner_px_per_unit);
+        }
+    }
+    //------------ corner_top_left  STOP -----------------------
+    context.closePath();
+}
+
+// mousedown listener   
+floor_canvas.addEventListener('mousedown', function(e) {
+    isDown = true; 
+        
+}, false);
+
+// mouseup listener 
+floor_canvas.addEventListener('mouseup', function(e) {
+    if(isDown){isDown = false;}
+});
+
+floor_canvas.addEventListener('mousemove', function(e) {
+    if (isDown){
+        singlePatternImageColorAdd(e);
+    }
+
+}, false);
+
+floor_canvas.addEventListener('click', function(e) {
+    singlePatternImageColorAdd(e);
+}, false);
+
+function singlePatternImageColorAdd(e) {
+    var selectedVariantId = getCookie('design_selected_variant_id');
+    
+    $('input[name="choose_pattern"][value="Single"]').prop("checked",true);
+    $('#design_pattern').val('Single');
+    var color_position = $('.color_position:checked').attr('data-color_position');
+    var colorOptionId = $('.color_position:checked').attr('data-color_option_id');
+
+    var singlePatternSwatch = selectedVariantId+'_'+colorOptionId;
+    
+    if($('#design_'+color_position+'_color_type').val() == 'swatch_color_url') {
+        var single_img = new Image;
+        single_img.src = $('.color_position_'+selectedVariantId+':checked').attr('data-swatch_image');
+    }
+
+    var rect = [];
+    var rect = collides(rects, e.offsetX, e.offsetY);
+    if (rect) {
+        if (color_in_cell[rect.row+'_'+rect.column] != $("#design_"+color_position+"_color_title").val()) {
+            context.clearRect(rect.x, rect.y, rect.w, rect.h);
+
+            if ($('#design_'+color_position+'_color_type').val() == 'swatch_color_url') {
+                context.drawImage(single_img, rect.x, rect.y, rect.w, rect.h);
+            }
+
+            color_in_cell[rect.row+'_'+rect.column] = singlePatternSwatch;
+
+            color_in_cell[rect.row+'_'+rect.column+'_child'] = getCookie('design_'+color_position+'_child_product');
+
+            design_single_pattern_tiles_arr['color_title_'+rect.row+'_'+rect.column] = singlePatternSwatch;
+
+            $('.color_position:checked').trigger('click');
+        }
+
+    } else {
+        console.log('no collision');
+    }
+}
+
+function collides(rects, x, y) {
+    var isCollision = false;
+    for (var i = 0, len = rects.length; i < len; i++) {
+        var left = rects[i].x, right = rects[i].x+rects[i].w;
+        var top = rects[i].y, bottom = rects[i].y+rects[i].h;
+        if (right >= x
+            && left <= x
+            && bottom >= y
+            && top <= y) {
+            isCollision = rects[i];
+        }
+    }
+    return isCollision;
+}
+
+
+var undoStackCount = 1;
+var undoStackShowIndex = -1;
+function undoStackAdd() {
+    var lastElementObj = undoStack[undoStack.length - 1];
+    var is_not_same_as_lastElement = 0;
+    if(undoStack.length > 0){
+        $('#undo_btn').prop('disabled', false);
+        for (key in lastElementObj){
+            if(key != 'design_single_pattern_tiles_arr' && key != 'color_male_edge_arr' && key != 'color_female_edge_arr' && key != 'color_corner_arr' && lastElementObj[key] != $('#'+key).val()){
+                is_not_same_as_lastElement = 1;
+                break;
+            }else if(key == 'design_single_pattern_tiles_arr' && lastElementObj[key] != JSON.stringify(design_single_pattern_tiles_arr)){
+                is_not_same_as_lastElement = 1;
+                break;
+            }
+        }
+    }else{
+        is_not_same_as_lastElement = 1;
+    }
+
+    if(is_not_same_as_lastElement == 1 ){
+        undoStack.push({
+            'width':$('#width').val(),
+            'length':$('#length').val(),
+            'design_all_pattern_color_title':$('#design_all_pattern_color_title').val(),
+            'design_all_pattern_color_type':$('#design_all_pattern_color_type').val(),
+            'design_all_pattern_tiles_color':$('#design_all_pattern_tiles_color').val(),
+            'design_all_pattern_tiles_qty':$('#design_all_pattern_tiles_qty').val(),
+            'design_border_pattern_color_title':$('#design_border_pattern_color_title').val(),
+            'design_border_pattern_color_type':$('#design_border_pattern_color_type').val(),
+            'design_border_pattern_tiles_color':$('#design_border_pattern_tiles_color').val(),
+            'design_border_pattern_tiles_qty':$('#design_border_pattern_tiles_qty').val(),
+            'design_primary_checkered_pattern_color_title':$('#design_primary_checkered_pattern_color_title').val(),
+            'design_primary_checkered_pattern_color_type':$('#design_primary_checkered_pattern_color_type').val(),
+            'design_primary_checkered_pattern_tiles_color':$('#design_primary_checkered_pattern_tiles_color').val(),
+            'design_primary_checkered_pattern_tiles_qty':$('#design_primary_checkered_pattern_tiles_qty').val(),
+            'design_secondary_checkered_pattern_color_title':$('#design_secondary_checkered_pattern_color_title').val(),
+            'design_secondary_checkered_pattern_color_type':$('#design_secondary_checkered_pattern_color_type').val(),
+            'design_secondary_checkered_pattern_tiles_color':$('#design_secondary_checkered_pattern_tiles_color').val(),
+            'design_secondary_checkered_pattern_tiles_qty':$('#design_secondary_checkered_pattern_tiles_qty').val(),
+            'design_edge_color_title':$('#design_edge_color_title').val(),
+            'design_edge_color_type':$('#design_edge_color_type').val(),
+            'design_edge_tiles_color':$('#design_edge_tiles_color').val(),
+            'design_edge_color_value':$('#design_edge_color_value').val(),
+            'design_edge_female_left':$('#design_edge_female_left').val(),
+            'design_edge_male_right':$('#design_edge_male_right').val(),
+            'design_edge_male_top':$('#design_edge_male_top').val(),
+            'design_edge_female_bottom':$('#design_edge_female_bottom').val(),
+            'design_corner_color_title':$('#design_corner_color_title').val(),
+            'design_corner_color_type':$('#design_corner_color_type').val(),
+            'design_corner_tiles_color':$('#design_corner_tiles_color').val(),
+            'design_corner_color_value':$('#design_corner_color_value').val(),
+            'design_corner_top_left':$('#design_corner_top_left').val(),
+            'design_corner_top_right':$('#design_corner_top_right').val(),
+            'design_corner_bottom_left':$('#design_corner_bottom_left').val(),
+            'design_corner_bottom_right':$('#design_corner_bottom_right').val(),
+            //'design_single_pattern_tiles_arr_count': Object.keys(design_single_pattern_tiles_arr).length,
+            'design_single_pattern_tiles_arr':JSON.stringify(design_single_pattern_tiles_arr),
+            'color_male_edge_arr':JSON.stringify(color_male_edge_arr),
+            'color_female_edge_arr':JSON.stringify(color_female_edge_arr),
+            'color_corner_arr':JSON.stringify(color_corner_arr),
+            'choose_variant':$('#choose_variant').val()
+        });
+
+        undoStackShowIndex = undoStack.length - 1;
+    }
+
+}
+
+function undoEvent() {
+    if(undoStackShowIndex > 0){
+        undoStackShowIndex--;
+        for (key in undoStack[undoStackShowIndex]){
+            if(key != 'design_single_pattern_tiles_arr' && key != 'color_male_edge_arr' && key != 'color_female_edge_arr' && key != 'color_corner_arr'){
+                $('#'+key).val(undoStack[undoStackShowIndex][key]);
+                setCookie(key, undoStack[undoStackShowIndex][key]);
+            }
+        }
+        design_single_pattern_tiles_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['design_single_pattern_tiles_arr']);
+        setCookie('design_single_pattern_tiles_arr', JSON.stringify(design_single_pattern_tiles_arr));
+
+        color_male_edge_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['color_male_edge_arr']);
+        color_female_edge_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['color_female_edge_arr']);
+        color_corner_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['color_corner_arr']);
+        undo_redo_grid_layout_canvas_update();
+
+        if(undoStackShowIndex == 0){
+            $('#undo_btn').prop('disabled', true);
+        }
+    }
+    $("#redo_btn").show();
+    $('#redo_btn').prop('disabled', false);
+
+    var variantId = undoStack[undoStackShowIndex]['choose_variant'];
+
+    if (variantId) {
+        $("#choose_variant").val(variantId);
+        $("#choose_variant").change();
+    }
+}
+
+function redoEvent(){
+    if(undoStackShowIndex < (undoStack.length - 1)){
+        undoStackShowIndex++;
+        for (key in undoStack[undoStackShowIndex]){
+            if(key != 'design_single_pattern_tiles_arr' && key != 'color_male_edge_arr' && key != 'color_female_edge_arr' && key != 'color_corner_arr'){
+                $('#'+key).val(undoStack[undoStackShowIndex][key]);
+                setCookie(key, undoStack[undoStackShowIndex][key]);
+            }
+        }
+        design_single_pattern_tiles_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['design_single_pattern_tiles_arr']);
+        setCookie('design_single_pattern_tiles_arr', JSON.stringify(design_single_pattern_tiles_arr));
+
+        color_male_edge_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['color_male_edge_arr']);
+        color_female_edge_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['color_female_edge_arr']);
+        color_corner_arr = jQuery.parseJSON(undoStack[undoStackShowIndex]['color_corner_arr']);
+        undo_redo_grid_layout_canvas_update();
+
+        if(undoStackShowIndex == (undoStack.length - 1)){
+            $('#redo_btn').prop('disabled', true);
+        }
+
+        var variantId = undoStack[undoStackShowIndex]['choose_variant'];
+    
+        if (variantId) {
+            $("#choose_variant").val(variantId);
+            $("#choose_variant").change();
+        }
+    }
+    $('#undo_btn').prop('disabled', false);
+}
+
+function undo_redo_grid_layout_canvas_update(){
+    //-------------------- Width(ft), Length(ft) & related display size updated with  undo redo START ---------- 
+    let custom_width_cookie_ft_inch = decimalFeetToFeetInches($('#width').val());
+    //---- 'Start Designing Entered Size ' width update with cookie START-----
+    $('.feet_width').html(custom_width_cookie_ft_inch['feet']); 
+    $('.inches_width').html(custom_width_cookie_ft_inch['inches']);
+    //---- 'Start Designing Entered Size ' width update with cookie END-----
+    // ----- Grid Size width update with cookie  START ---------
+    var width_inch = parseFloat($('#width').val())*12;
+    var grid_width_tiles = parseFloat(width_inch) / parseFloat(exact_width_inch);
+    grid_width_tiles = Math.ceil(grid_width_tiles);
+    $('.grid_width_tiles').html(grid_width_tiles);
+    // ----- Grid Size width update with cookie  END ---------
+    // ----- Layout Size width update with cookie  START ---------
+    var layout_size_width_inch = parseInt(grid_width_tiles) * parseFloat(exact_width_inch);
+    var layout_size_width_ft = parseFloat(layout_size_width_inch)/12;
+    var layout_size_width_display_ft_inch = decimalFeetToFeetInches(layout_size_width_ft);
+    $('.layout_size_width_feet').html(layout_size_width_display_ft_inch['feet']);
+    $('.layout_size_width_inches').html(layout_size_width_display_ft_inch['inches']);
+    // ----- Layout Size width update with cookie  END ---------
+
+
+    let custom_length_cookie_ft_inch = decimalFeetToFeetInches($('#length').val());
+    //---- 'Start Designing Entered Size ' length update with cookie START-----
+    $('.feet_length').html(custom_length_cookie_ft_inch['feet']); 
+    $('.inches_length').html(custom_length_cookie_ft_inch['inches']);
+    //---- 'Start Designing Entered Size ' length update with cookie END-----
+    // ----- Grid Size length update with cookie  START ---------
+    var length_inch = parseFloat($('#length').val())*12;
+    var grid_length_tiles = parseFloat(length_inch) / parseFloat(exact_length_inch);
+    grid_length_tiles = Math.ceil(grid_length_tiles);
+    $('.grid_length_tiles').html(grid_length_tiles);
+    // ----- Grid Size length update with cookie  START ---------
+    // ----- Layout Size length update with cookie  START ---------
+    var layout_size_length_inch = parseInt(grid_length_tiles) * parseFloat(exact_length_inch);
+    var layout_size_length_ft = parseFloat(layout_size_length_inch)/12;
+    var layout_size_length_display_ft_inch = decimalFeetToFeetInches(layout_size_length_ft);
+    $('.layout_size_length_feet').html(layout_size_length_display_ft_inch['feet']);
+    $('.layout_size_length_inches').html(layout_size_length_display_ft_inch['inches']);
+    // ----- Layout Size length update with cookie  END ---------
+
+
+    // ----- floor_area_canvas Width x Height update with  undo redo  START ---------
+    floor_area_canvas_width_height_generate();
+    // ----- floor_area_canvas Width x Height update with undo redo  END ---------
+//--------------------  Width(ft), Length(ft) & related display size updated with undo redo END ---------- 
+
+    floorAreaCanvasGenerate(px_per_width, px_per_length);
+    designer_cart_items_html_generate(color_male_edge_arr, color_female_edge_arr, color_corner_arr);
+    $('.total_tiles_qty').html($('#design_all_pattern_tiles_qty').val());
+
+}
+
+
+function resetDesignerCookie() {
+    setCookie('design_width', '');
+    setCookie('design_length', '');
+
+    setCookie('design_car_garrage', '');
+    setCookie('design_car_garrage_size', '');
+
+    setCookie('design_pattern', '');
+
+    setCookie('design_primary_color_title', '');
+    setCookie('design_primary_color_type', '');
+    setCookie('design_primary_tiles_color', '');
+    setCookie('design_primary_color_value', '');
+
+    setCookie('design_secondary_color_title', '');
+    setCookie('design_secondary_color_type', '');
+    setCookie('design_secondary_tiles_color', '');
+    setCookie('design_secondary_color_value', '');
+
+    setCookie('design_all_pattern_color_title', '');
+    setCookie('design_all_pattern_color_type', '');
+    setCookie('design_all_pattern_tiles_color', '');
+    setCookie('design_all_pattern_tiles_qty', '');
+
+    setCookie('design_border_pattern_color_title', '');
+    setCookie('design_border_pattern_color_type', '');
+    setCookie('design_border_pattern_tiles_color', '');
+    setCookie('design_border_pattern_tiles_qty', '');
+
+    setCookie('design_primary_checkered_pattern_color_title', '');
+    setCookie('design_primary_checkered_pattern_color_type', '');
+    setCookie('design_primary_checkered_pattern_tiles_color', '');
+    setCookie('design_primary_checkered_pattern_tiles_qty', '');
+
+    setCookie('design_secondary_checkered_pattern_color_title', '');
+    setCookie('design_secondary_checkered_pattern_color_type', '');
+    setCookie('design_secondary_checkered_pattern_tiles_color', '');
+    setCookie('design_secondary_checkered_pattern_tiles_qty', '');
+
+    setCookie('design_edge_color_title', '');
+    setCookie('design_edge_color_type', '');
+    setCookie('design_edge_tiles_color', '');
+    setCookie('design_edge_color_value', '');
+
+    setCookie('design_edge_female_left', 0);
+    setCookie('design_edge_male_right', 0);
+    setCookie('design_edge_male_top', 0);
+    setCookie('design_edge_female_bottom', 0);
+
+    setCookie('design_corner_color_title', '');
+    setCookie('design_corner_color_type', '');
+    setCookie('design_corner_tiles_color', '');
+    setCookie('design_corner_color_value', '');
+
+    setCookie('design_corner_top_left', 0);
+    setCookie('design_corner_top_right', 0);
+    setCookie('design_corner_bottom_left', 0);
+    setCookie('design_corner_bottom_right', 0);
+
+    setCookie('design_selected_variant_id', '');
+    setCookie('design_primary_checkered_pattern_color_title_child', '');
+    setCookie('design_secondary_checkered_pattern_color_title_child', '');
+
+    design_single_pattern_tiles_arr = {};
+    setCookie('design_single_pattern_tiles_arr', JSON.stringify(design_single_pattern_tiles_arr));
+}
+
+function resetDesigner() {
+    resetDesignerCookie();
+    window.location.reload();
+}
+</script>

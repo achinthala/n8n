@@ -1,0 +1,533 @@
+<?php
+/**
+ * BSS Commerce Co.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the EULA
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://bsscommerce.com/Bss-Commerce-License.txt
+ *
+ * @category   BSS
+ * @package    Hyva_BssSocialLogin
+ * @author     Extension Team
+ * @copyright  Copyright (c) 2022 BSS Commerce Co. ( http://bsscommerce.com )
+ * @license    http://bsscommerce.com/Bss-Commerce-License.txt
+ */
+?>
+<?php
+use Bss\SocialLogin\Block\SocialLogin;
+use Magento\Framework\Escaper;
+use Hyva\BssSocialLogin\ViewModels\Helper as ModuleViewModel;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/** @var SocialLogin $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+$moduleViewModel = $viewModels->require(ModuleViewModel::class);
+$helperSocial = $moduleViewModel->getHelper();
+$checkButtonLogin = $moduleViewModel->checkButtonLogin();
+$checkButtonRegister = $moduleViewModel->checkButtonRegister();
+?>
+<script>
+    function initAuthenticationBss() {
+        return {
+            open: false,
+            openLogin : false,
+            openRegister : false,
+            openForgot : false,
+            openCreate : true,
+            passwordsMatching: true,
+            openMessage: false,
+            errors: 0,
+            message: "",
+            hasCaptchaToken: 0,
+            openButtonLogin : false,
+            openButtonRegister : false,
+            openSuccessMessage : false,
+            checkUseReCaptcha: <?= $moduleViewModel->checkReCaptcha() ? 1 : 0 ?>,
+            initSocial() {
+                const recaptchaUrl = `https://www.google.com/recaptcha/api.js?render=<?= $helperSocial->getSiteKey() ?>&hl=en`;
+                const script = document.createElement('script');
+                script.setAttribute('type', 'text/javascript');
+                script.setAttribute('src', recaptchaUrl);
+                document.head.appendChild(script);
+            },
+            checkPasswordsMatch() {
+                if (document.getElementById('password').value ===
+                    document.getElementById('password-confirmation').value) {
+                    this.passwordsMatching = true;
+                    return true;
+                }
+                this.passwordsMatching = false;
+                return false;
+            },
+            submitForm: function () {
+                const $form = document.querySelector('#login-form');
+                if (this.errors === 0) {
+                    this.dispatchLoginRequest($form);
+                }
+            },
+            submitForgotForm : function () {
+                const $form = document.querySelector('#fotgot-form');
+                if (this.errors === 0) {
+                    this.dispatchForgotRequest($form);
+                }
+            },
+            submitRegisterForm : function () {
+                const $form = document.querySelector('#create-form');
+                if (this.errors === 0) {
+                    this.dispatchRegisterRequest($form);
+                }
+            },
+            validateCaptcha : function () {
+                return new Promise((resolve, reject) => {
+
+                    var executeGreCaptcha = () => {
+                        grecaptcha.ready(function () {
+                            grecaptcha.execute('<?= $helperSocial->getSiteKey() ?>', {action: 'submit'}).then(function (token) {
+                                return resolve(token);
+                            });
+                        });
+                    }
+                    executeGreCaptcha();
+                });
+            },
+            dispatchLoginRequest:async function (form) {
+                if (this.checkUseReCaptcha) {
+                    let token = await this.validateCaptcha();
+                    if(token)
+                    {
+                        document.getElementById("g-recaptcha-response").setAttribute('value',token);
+                    }
+                }
+                const username = this.$refs['customer-email'].value;
+                const password = this.$refs['customer-password'].value;
+                const recaptchaValue = document.getElementById("g-recaptcha-response").value;
+                const postUrl = "<?php echo $block->getLoginUrl(); ?>";
+                fetch(postUrl, {
+                    headers: {
+                        contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                    },
+                    body: new URLSearchParams({
+                        username: username,
+                        password: password,
+                        ['g-recaptcha-response']: recaptchaValue,
+                        form_key: hyva.getFormKey(),
+                    }),
+                    method: "POST",
+                    mode: "cors",
+                    credentials: "include",
+                }).then(response => {
+                        return response.json()
+                    }
+                ).then(data => {
+                    this.isLoading = false;
+                    if (data.error) {
+                        this.message = data.message;
+                        this.openMessage = true;
+                        this.errors = 1;
+                        this.hasCaptchaToken = 0;
+                    } else {
+                        this.message = data.message;
+                        this.openMessage = false;
+                        this.openSuccessMessage = true;
+                        if (data.redirect !== '' && data.redirect != null) {
+                            window.location.href = data.redirect;
+                        } else {
+                            location.reload(true);
+                        }
+                    }
+                });
+            },
+            dispatchForgotRequest:async function (form) {
+                if (this.checkUseReCaptcha) {
+                    let token = await this.validateCaptcha();
+                    if(token)
+                    {
+                        document.getElementById("g-recaptcha-response").setAttribute('value',token);
+                    }
+                }
+                const email = form.querySelector("#email_address").value;
+                const recaptchaValue = document.getElementById("g-recaptcha-response").value;
+                const postUrl = "<?php echo $block->getForgotUrl() ?>";
+                fetch(postUrl, {
+                    headers: {
+                        contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                    },
+                    body: new URLSearchParams({
+                        email: email,
+                        ['g-recaptcha-response']: recaptchaValue,
+                        form_key: hyva.getFormKey(),
+                    }),
+                    method: "POST",
+                    mode: "cors",
+                    credentials: "include",
+                }).then(response => {
+                        return response.json()
+                    }
+                ).then(data => {
+                    this.isLoading = false;
+                    if (data.error) {
+                        this.message = data.message;
+                        this.openMessage = true;
+                        this.errors = 1;
+                        this.hasCaptchaToken = 0;
+                    } else {
+                        if (data.redirect !== '' && data.redirect != null) {
+                            window.location.href = data.redirect;
+                        } else {
+                            location.reload(true);
+                        }
+                    }
+                });
+            },
+            dispatchRegisterRequest:async function (form) {
+                if (this.checkUseReCaptcha) {
+                    let token = await this.validateCaptcha();
+                    if(token)
+                    {
+                        document.getElementById("g-recaptcha-response").setAttribute('value',token);
+                    }
+                }
+                const firstname = form.querySelector("#firstname").value;
+                const lastname = form.querySelector("#lastname").value;
+                const email = form.querySelector("#email_address").value;
+                const password = form.querySelector("#password").value;
+                const passwordConfirmation = form.querySelector("#password-confirmation").value;
+                const recaptchaValue = document.getElementById("g-recaptcha-response").value;
+                const postUrl = "<?php echo $block->getCreateUrl() ?>";
+                fetch(postUrl, {
+                    headers: {
+                        contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                    },
+                    body: new URLSearchParams({
+                        ['g-recaptcha-response']: recaptchaValue,
+                        firstname: firstname,
+                        lastname: lastname,
+                        email: email,
+                        password: password,
+                        password_confirmation: passwordConfirmation,
+                        form_key: hyva.getFormKey(),
+                    }),
+                    method: "POST",
+                    mode: "cors",
+                    credentials: "include",
+                }).then(response => {
+                        return response.json()
+                    }
+                ).then(data => {
+                    this.isLoading = false;
+                    if (data.error) {
+                        this.message = data.message;
+                        this.openMessage = true;
+                        this.hasCaptchaToken = 0;
+                    } else {
+                        this.message = data.message;
+                        this.openMessage = false;
+                        this.openSuccessMessage = true;
+                        if (data.redirect !== '' && data.redirect != null) {
+                            window.location.href = data.redirect;
+                        } else {
+                            location.reload(true);
+                        }
+                    }
+                });
+            },
+            eventListeners: {
+                ['@popup-register.window']($event) {
+                    this.open = true;
+                    this.openRegister = $event.detail.openRegister;
+                    this.openLogin = $event.detail.openLogin;
+                    this.openCreate = $event.detail.openCreate;
+                    this.openButtonLogin = $event.detail.openButtonLogin;
+                    this.openButtonRegister = $event.detail.openButtonRegister;
+                }
+            }
+        }
+    }
+</script>
+
+<section id="authentication-popup-bss"
+         x-data="initAuthenticationBss()" x-init="initSocial()"
+         @keydown.window.escape="open = false"
+<div role="dialog"
+     aria-modal="true"
+     class="hidden inset-y-0 right-0 z-30 flex max-w-full"
+     :class="{ 'hidden': !open, 'fixed': open }"
+     x-bind="eventListeners"
+>
+    <div class="relative w-screen max-w-md pt-16 bg-container-lighter"
+         x-show="open"
+         @click.outside="open = false"
+         x-transition:enter="transform transition ease-in-out duration-500 sm:duration-700"
+         x-transition:enter-start="translate-x-full"
+         x-transition:enter-end="translate-x-0"
+         x-transition:leave="transform transition ease-in-out duration-500 sm:duration-700"
+         x-transition:leave-start="translate-x-0"
+         x-transition:leave-end="translate-x-full"
+    >
+        <div
+            x-show="open"
+            x-transition:enter="ease-in-out duration-500"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in-out duration-500"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0" class="absolute top-0 right-0 flex p-2 mt-2">
+            <button @click="open = false;" aria-label="Close panel"
+                    class="p-2 text-gray-300 transition duration-150 ease-in-out hover:text-black">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col h-full py-6 space-y-6 bg-white shadow-xl overflow-y-auto" >
+            <div class="message mx-4 message-error" x-show="openMessage">
+                <div>
+                    <span x-html="message"></span>
+                </div>
+                <div class="cursor-pointer" title="close" @click="openMessage = false">
+                    <svg class="fill-current text-white" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47
+                                                4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z">
+                        </path>
+                    </svg>
+                </div>
+            </div>
+            <div class="message mx-4 message-error success" x-show="openSuccessMessage">
+                <div>
+                    <span x-html="message"></span>
+                </div>
+                <div class="cursor-pointer" title="close" @click="openSuccessMessage = false">
+                    <svg class="fill-current text-white" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47
+                                                4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z">
+                        </path>
+                    </svg>
+                </div>
+            </div>
+            <?php echo $block->getChildHtml('popup.login') ?>
+            <?php echo $block->getChildHtml('popup.forgotpassword') ?>
+            <?php echo $block->getChildHtml('popup.register') ?>
+
+            <div class="w-full">
+                <input id="g-recaptcha-response" type="hidden" value=""/>
+            </div>
+            <div class="block-new-customer bg-container border border-container mx-4 p-4 shadow-sm" x-show ="openCreate">
+                <h2 id="authenticate-new-customer" class="text-lg mb-2 font-medium leading-7 text-gray-900">
+                    <?= $escaper->escapeHtml(__('New Customers')) ?>
+                </h2>
+                <div class="block-content">
+                    <p class="mb-1">
+                        <?= $escaper->escapeHtml(__('Creating an account has many benefits: check out faster, keep more than one address, track orders and more.')) ?>
+                    </p>
+                    <div class="actions-toolbar flex justify-between mt-6 mb-2 items-center">
+                        <a class="inline-flex btn btn-primary cursor-pointer"
+                           @click= "openRegister = true,openForgot = false,
+                           openLogin = false,openCreate=false,openButtonLogin=false,
+                           openButtonRegister = <?php echo(json_encode($checkButtonRegister)); ?>">
+                            <?= $escaper->escapeHtml(__('Create an Account')) ?>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="block-new-customer bg-container border border-container mx-4 p-4 shadow-sm"
+                 x-show="openButtonLogin">
+                <h2 id="authenticate-new-customer" class="text-lg mb-2 font-medium leading-7 text-gray-900">
+                    <?= $escaper->escapeHtml(__('Social Login')) ?>
+                </h2>
+                <div class="block-content">
+                    <?php if ($block->hasButtons()) : ?>
+                            <div id="add_button_login_byclass" x-data="bssButtonSocial()" x-ref="registerSocialButton">
+                                <div class="mx-0 my-4 m-auto box-border clear-both m-auto max-w-screen-xl px-5 py-8 w-auto">
+                                    <div class="sociallogin-buttons" x-ref="loginSocialButton">
+                                        <ul class="sociallogin-clearfix">
+                                            <?php $i = 1;
+                                            foreach ($block->getPreparedButtons() as $button) : ?>
+                                                <li class="block h-8 mt-0 ml-0 mr-1 mb-2 p-0 relative leading-normal list-none sociallogin-button
+                                                    <?php echo $button['type']; ?>" <?php if ($i > $block->showLimit()) :
+                                                ?>style="display: none;"<?php
+                                                endif; ?> title="<?php echo __($button['login_text']); ?>">
+                                                    <a class="sociallogin-button-link sociallogin-button-click" id="sociallogin-button-click" rel="nofollow"
+                                                       href="javascript:void(0);" data-href="<?php echo $button['href']; ?>"
+                                                       data-width="<?php echo $button['popup_width']; ?>"
+                                                       data-height="<?php echo $button['popup_height']; ?>"
+                                                       x-ref="<?php echo $button['type']; ?>"
+                                                       @click="popupSocial($refs.<?php echo $button['type']; ?>)">
+                                                         <span class="sociallogin-button-auto">
+                                                            <span class="sociallogin-button-icon">
+                                                                <?php echo !empty($button['image']) ? '<img class="inline-block h-8 w-8" src="' . $button['image'] . '" />' : ''; ?>
+                                                            </span>
+                                                            <?php if ($button['login_text'] != '') : ?>
+                                                                <span class="sociallogin-button-text"><?php echo __($button['login_text']); ?></span>
+                                                            <?php endif ?>
+                                                        </span>
+                                                    </a>
+                                                </li>
+                                                <?php ($i > $block->showLimit()) ? $show_more = true : $show_more = false; ?>
+                                                <?php $i++;
+                                            endforeach; ?>
+                                        </ul>
+                                        <?php if ($show_more) : ?>
+                                            <div class="sociallogin-showmore flex cursor-pointer"
+                                                 @click ="renderShowmore($refs.loginSocialButton)"
+                                                 id="showmore-button">
+                                                <div class="showmore-button"></div>
+                                                <span class="showmore-button-text" >Show more</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+
+                                </div>
+                                <div style="clear: both;"></div>
+                            </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="block-new-customer bg-container border border-container mx-4 p-4 shadow-sm" x-show="openButtonRegister">
+                <h2 id="authenticate-new-customer" class="text-lg mb-2 font-medium leading-7 text-gray-900">
+                    <?= $escaper->escapeHtml(__('Social Register')) ?>
+                </h2>
+                <div class="block-content">
+                    <?php if ($block->hasButtons()) : ?>
+                            <div id="add_button_register_byclass" x-data="bssButtonSocial()" x-ref="registerSocialButton">
+                                <div class="mx-0 my-4 m-auto box-border clear-both m-auto max-w-screen-xl px-5 py-8 w-auto">
+                                    <div class="sociallogin-buttons">
+                                        <ul class="sociallogin-clearfix">
+                                            <?php $i = 1 ; foreach ($block->getPreparedButtons() as $button) : ?>
+                                                <li class="block h-8 mt-0 ml-0 mr-1 mb-2 p-0 relative leading-normal list-none sociallogin-button <?php echo $button['type']; ?>"  <?php if ($i > $block->showLimit()) :
+                                                    ?>  style="display: none;" <?php
+                                                endif; ?> title="<?php echo __($button['register_text']); ?>">
+                                                    <a class="sociallogin-button-link sociallogin-button-click" id="sociallogin-button-click" rel="nofollow"
+                                                       href="javascript:void(0);" data-href="<?php echo $button['href']; ?>"
+                                                       data-width="<?php echo $button['popup_width']; ?>"
+                                                       data-height="<?php echo $button['popup_height']; ?>"
+                                                       x-ref="<?php echo $button['type']; ?>"
+                                                       @click="popupSocial($refs.<?php echo $button['type']; ?>)">
+                                                        <span class="sociallogin-button-auto">
+                                                            <span class="sociallogin-button-icon">
+                                                                <?php echo !empty($button['image']) ? '<img class="inline-block h-8 w-8" src="' . $button['image'] . '" />' : ''; ?>
+                                                            </span>
+                                                            <?php if ($button['register_text'] != '') : ?>
+                                                                <span class="sociallogin-button-text"><?php echo __($button['register_text']); ?></span>
+                                                            <?php endif ?>
+                                                        </span>
+                                                    </a>
+                                                </li>
+                                                <?php ($i > $block->showLimit())? $show_more = true : $show_more = false; ?>
+                                                <?php $i++;
+                                            endforeach; ?>
+                                        </ul>
+                                        <?php if ($show_more) : ?>
+                                            <div class="sociallogin-showmore flex cursor-pointer"
+                                                 @click ="renderShowmore($refs.registerSocialButton)"
+                                                 id="showmore-button">
+                                                <div class="showmore-button"></div>
+                                                <span class="showmore-button-text">Show more</span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div style="clear: both;"></div>
+                            </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+<script>
+    <?php $classLogin = is_array($block->displayButtonLogin()) ? implode('","', $block->displayButtonLogin()) : ''?>
+    var classLogin = [<?='"'. $classLogin . '"'?>];
+    <?php $classRegister = is_array($block->displayButtonRegister()) ? implode('","', $block->displayButtonRegister()) : ''?>
+    var classRegister = [<?php echo '"'.$classRegister.'"' ?>];
+    classLogin = classLogin[0].trim().split(/\s+/);
+    classRegister = classRegister[0].trim().split(/\s+/);
+    if(classLogin && classLogin.length > 0 && classLogin[0]){
+        classLogin.forEach(element => {
+            var classLoginElement = document.querySelector(element);
+            var loginSocialButton = document.getElementById('add_button_login_byclass');
+            if (classLoginElement && loginSocialButton) {
+                const cloneLoginSocialButton = loginSocialButton.cloneNode(true);
+                classLoginElement.appendChild(cloneLoginSocialButton);
+                cloneLoginSocialButton.style.display='block';
+            }
+        });
+    }
+
+    if(classRegister && classRegister.length > 0 && classRegister[0]){
+        classRegister.forEach(element => {
+            var classRegisterElement = document.querySelector(element);
+            var registerSocialButton = document.getElementById('add_button_register_byclass');
+            if (classRegisterElement && registerSocialButton) {
+                const cloneRegisterSocialButton = registerSocialButton.cloneNode(true);
+                classRegisterElement.appendChild(cloneRegisterSocialButton);
+                cloneRegisterSocialButton.style.display='block';
+            }
+        });
+    }
+
+    function bssButtonSocial() {
+        return {
+            renderShowmore : function (element) {
+                var socialButton = element.querySelector('.sociallogin-clearfix').getElementsByTagName("li");
+                for (let i = 0; i <= socialButton.length - 1; i++) {
+                    socialButton[i].style.display = 'block';
+                }
+                element.querySelector('.sociallogin-showmore').style.display = 'none';
+            },
+            popupSocial: function (element) {
+                var href = element.getAttribute('data-href');
+                var width = element.getAttribute('data-width');
+                var height = element.getAttribute('data-height');
+                var popup_window = null;
+                if (!width) {
+                    width = 650;
+                }
+
+                if(!height) {
+                    height = 350;
+                }
+
+                var left = parseInt((window.innerWidth- width) / 2);
+                var top = parseInt((window.innerHeight - height) / 2);
+
+                var params = [
+                    'resizable=yes',
+                    'scrollbars=no',
+                    'toolbar=no',
+                    'menubar=no',
+                    'location=no',
+                    'directories=no',
+                    'status=yes',
+                    'width='+ width,
+                    'height='+ height,
+                    'left='+ left,
+                    'top='+ top
+                ];
+
+                if(popup_window) {
+                    popup_window.close();
+                }
+
+                if(href) {
+                    popup_window = window.open(href,'',params.join(','));
+                    popup_window.focus();
+
+                }else{
+                    alert('This Login Application was not configured correctly. Please contact our customer support.');
+                }
+                return false;
+            }
+        }
+    }
+
+</script>
+
+

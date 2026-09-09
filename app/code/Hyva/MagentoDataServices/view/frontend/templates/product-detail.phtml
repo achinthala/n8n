@@ -1,0 +1,125 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Magento\DataServices\Block\Context;
+use Magento\DataServices\ViewModel\ProductContextProvider;
+
+/**
+ * @var Context $block
+ * @var ViewModelRegistry $viewModels
+ * @var ProductContextProvider $viewModel
+ */
+
+$viewModel = $viewModels->require(ProductContextProvider::class);
+?>
+
+<script>
+    "use strict";
+
+    window.addEventListener('load', function () {
+
+        magentoStorefrontEvents.context.setPage({
+            pageType: "<?= /* @noEscape */ $block->getData('page_type'); ?>"
+        });
+
+        magentoStorefrontEvents.context.setContext("pageExtended", {
+            action: "<?= /* @noEscape */ $block->getData('step_name'); ?>"
+        });
+
+        magentoStorefrontEvents.context.setProduct(<?= /* @noEscape */ $block->getEventContext(); ?>)
+
+        // Local storage key constant
+        const USER_VIEW_HISTORY_TIME_DECAY_KEY = 'ds-view-history-time-decay';
+        const product = magentoStorefrontEvents.context.getProduct();
+
+        if (product && product.sku) {
+            const productPageViewContext = {
+                date: new Date().toISOString(),
+                sku: product.sku,
+            };
+            // if sku is not in viewHistorySkus
+            // write to view_history_decay
+            try {
+                let viewHistory = JSON.parse(
+                    localStorage.getItem(USER_VIEW_HISTORY_TIME_DECAY_KEY),
+                );
+
+                if (!viewHistory) {
+                    const updatedViewHistory = [productPageViewContext];
+                    localStorage.setItem(
+                        USER_VIEW_HISTORY_TIME_DECAY_KEY,
+                        JSON.stringify(updatedViewHistory),
+                    );
+                } else {
+                    const productIndex = viewHistory.findIndex(
+                        viewedProduct => viewedProduct.sku === product.sku,
+                    );
+                    if (productIndex === -1) {
+                        const updatedViewHistory = [...viewHistory, productPageViewContext];
+                        localStorage.setItem(
+                            USER_VIEW_HISTORY_TIME_DECAY_KEY,
+                            JSON.stringify(updatedViewHistory),
+                        );
+                        // has been viewed before
+                    } else if (productIndex >= 0) {
+                        // remove current value in viewHistory,
+                        // and add the new value
+                        viewHistory.splice(productIndex, 1, productPageViewContext);
+                        localStorage.setItem(
+                            USER_VIEW_HISTORY_TIME_DECAY_KEY,
+                            JSON.stringify(viewHistory),
+                        );
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        magentoStorefrontEvents.publish.productPageView();
+    });
+
+    window.addEventListener('productAddToCart', function () {
+        const product = magentoStorefrontEvents.context.getProduct();
+        let browserStorage = hyva.getBrowserStorage();
+        let dataServicesProductContext;
+
+        if (product.type !== "simple") {
+            // Parse the stored data only if the product type is not simple
+            dataServicesProductContext = JSON.parse(browserStorage.getItem('dataservices_product_context'));
+            magentoStorefrontEvents.context.setProduct(dataServicesProductContext);
+        }
+
+        // Publish addToCart event
+        magentoStorefrontEvents.publish.addToCart();
+    });
+
+    function dataServicesAddToCartTracking() {
+        return {
+            checkIfProductIsAddedToBasket: function (data) {
+                let browserStorage = hyva.getBrowserStorage();
+
+                if (browserStorage && data.cart) {
+                    let cartSummaryCount = data.cart.summary_count;
+                    let storageSummaryCount = browserStorage.getItem('cart_summary_count') || 0;
+
+                    if (cartSummaryCount > storageSummaryCount) {
+                        window.dispatchEvent(new Event("productAddToCart"));
+                    }
+
+                    browserStorage.setItem('cart_summary_count', data.cart.summary_count);
+                    browserStorage.setItem('dataservices_product_context', JSON.stringify(data.cart.dataservices_product_context));
+                }
+            }
+        }
+    }
+</script>
+
+<div x-data="dataServicesAddToCartTracking()"
+     @private-content-loaded.window="checkIfProductIsAddedToBasket($event.detail.data)"></div>

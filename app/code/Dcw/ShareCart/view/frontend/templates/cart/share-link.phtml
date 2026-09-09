@@ -1,0 +1,220 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ShareCart\ViewModel\ShareCart;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ShareCart $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel || !$viewModel->canShare()) {
+    return;
+}
+
+static $dcwShareCartRendered = false;
+if ($dcwShareCartRendered) {
+    return;
+}
+$dcwShareCartRendered = true;
+
+$prefillYourName = $viewModel->getPrefillYourName();
+?>
+<script>
+    (function () {
+        const registerDcwShareCartModal = () => {
+        Alpine.data('dcwShareCartModal', () => ({
+            showModal: false,
+            isSubmitting: false,
+            successMessage: '',
+            errorMessage: '',
+            formKey: '<?= $escaper->escapeJs($viewModel->getFormKey()) ?>',
+            submitUrl: '<?= $escaper->escapeJs($viewModel->getSubmitUrl()) ?>',
+            prefillYourName: '<?= $escaper->escapeJs($prefillYourName) ?>',
+            form: {
+                your_name: '<?= $escaper->escapeJs($prefillYourName) ?>',
+                recipient_name: '',
+                recipient_email: '',
+                recipient_phone: '',
+                sms_consent: true,
+                custom_message: ''
+            },
+            openModal() {
+                this.errorMessage = '';
+                this.isSubmitting = false;
+                this.form = {
+                    your_name: this.prefillYourName,
+                    recipient_name: '',
+                    recipient_email: '',
+                    recipient_phone: '',
+                    sms_consent: true,
+                    custom_message: ''
+                };
+                this.showModal = true;
+                document.body.classList.add('overflow-hidden');
+            },
+            closeModal() {
+                this.showModal = false;
+                document.body.classList.remove('overflow-hidden');
+            },
+            async submitShare() {
+                this.errorMessage = '';
+                this.isSubmitting = true;
+
+                const body = new URLSearchParams({
+                    form_key: this.formKey,
+                    your_name: this.form.your_name,
+                    recipient_name: this.form.recipient_name,
+                    recipient_email: this.form.recipient_email,
+                    recipient_phone: this.form.recipient_phone,
+                    sms_consent: this.form.sms_consent ? '1' : '',
+                    custom_message: this.form.custom_message
+                });
+
+                try {
+                    const response = await fetch(this.submitUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: body.toString(),
+                        credentials: 'same-origin'
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const email = data.recipient_email || this.form.recipient_email;
+                        const mailto = 'mailto:' + encodeURIComponent(email);
+                        const label = data.message || '';
+                        this.successMessage = label.replace(
+                            email,
+                            '<a class="underline" href="' + mailto + '">' + email + '</a>'
+                        );
+                        this.closeModal();
+                    } else {
+                        this.errorMessage = data.message || '<?= $escaper->escapeJs((string) __('Unable to share your cart.')) ?>';
+                    }
+                } catch (e) {
+                    this.errorMessage = '<?= $escaper->escapeJs((string) __('Unable to share your cart. Please try again later.')) ?>';
+                } finally {
+                    this.isSubmitting = false;
+                }
+            }
+        }));
+        };
+
+        if (window.Alpine) {
+            registerDcwShareCartModal();
+        } else {
+            document.addEventListener('alpine:init', registerDcwShareCartModal);
+        }
+    })();
+</script>
+<div class="dcw-share-cart mb-4" x-data="dcwShareCartModal" @keydown.escape.window="closeModal()">
+    <div class="flex justify-end w-full share-btn-container">
+        <button type="button"
+                class="btn btn-secondary"
+                @click="openModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25" fill="none">
+                <rect x="4" y="6" width="17" height="13" rx="2" ry="2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M4 7L12.5 13L21 7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            </svg>
+            <?= $escaper->escapeHtml(__('Share')) ?>
+        </button>
+    </div>
+    <template x-if="successMessage">
+        <div class="message success mt-3" x-html="successMessage"></div>
+    </template>
+
+    <template x-if="showModal">
+        <div class="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/50"
+             @click.self="closeModal()"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="share-cart-title">
+            <div class="bg-white shadow-xl w-full max-h-[90vh] overflow-y-auto p-4 dcw-share-cart-popup">
+                <h2 id="share-cart-title" class="text-xl font-semibold mb-4 relative">
+                    <?= $escaper->escapeHtml(__('Share Your Cart by Email')) ?>
+                    <span @click="closeModal()" class="cursor-pointer absolute top-0 right-0 text-4xl font-normal leading-default">&times;</span>
+                </h2>
+
+                <template x-if="errorMessage">
+                    <div class="message error mb-4" x-text="errorMessage"></div>
+                </template>
+
+                <form @submit.prevent="submitShare()" class="space-y-4">
+                    <input type="hidden" name="form_key" :value="formKey"/>
+
+                    <div>
+                        <h3 class="text-base font-semibold mb-2">
+                            <?= $escaper->escapeHtml(__('Your Information')) ?>
+                        </h3>
+                        <input id="share-your-name"
+                               type="text"
+                               name="your_name"
+                               class="form-input w-full"
+                               x-model="form.your_name"
+                               placeholder="<?= $escaper->escapeHtmlAttr(__('Your Name*')) ?>"
+                               required/>
+                    </div>
+
+                    <div>
+                        <h3 class="text-base font-semibold mb-2">
+                            <?= $escaper->escapeHtml(__('Recipient Information')) ?>
+                        </h3>
+                        <div class="space-y-4">
+                            <input id="share-recipient-name"
+                                   type="text"
+                                   name="recipient_name"
+                                   class="form-input w-full"
+                                   x-model="form.recipient_name"
+                                   placeholder="<?= $escaper->escapeHtmlAttr(__("Recipient's Name*")) ?>"
+                                   required/>
+                            <input id="share-recipient-email"
+                                   type="email"
+                                   name="recipient_email"
+                                   class="form-input w-full"
+                                   x-model="form.recipient_email"
+                                   placeholder="<?= $escaper->escapeHtmlAttr(__("Recipient's Email Address*")) ?>"
+                                   required/>
+                            <input id="share-recipient-phone"
+                                   type="tel"
+                                   name="recipient_phone"
+                                   class="form-input w-full"
+                                   x-model="form.recipient_phone"
+                                   placeholder="<?= $escaper->escapeHtmlAttr(__("Recipient's Phone Number*")) ?>"
+                                   required/>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 items-start">
+                        <input id="share-sms-consent" type="checkbox" class="mt-1" x-model="form.sms_consent"/>
+                        <label for="share-sms-consent" class="text-sm">
+                            <?= $escaper->escapeHtml(__('You agree to receive automated transactional messages. Terms and Privacy Policy apply. Text and data rates may apply.')) ?>
+                        </label>
+                    </div>
+                    <div>
+                        <textarea id="share-message"
+                                  class="form-input w-full"
+                                  rows="4"
+                                  x-model="form.custom_message"
+                                  placeholder="<?= $escaper->escapeHtmlAttr(__('Add Custom Message...')) ?>"></textarea>
+                    </div>
+
+                    <div class="flex gap-6 pt-2 btn-container">
+                        <button type="submit" class="btn btn-primary flex-1 send" :disabled="isSubmitting">
+                            <span x-show="!isSubmitting"><?= $escaper->escapeHtml(__('Send')) ?></span>
+                            <span x-show="isSubmitting"><?= $escaper->escapeHtml(__('Sending...')) ?></span>
+                        </button>
+                        <button type="button" class="btn btn-secondary flex-1 cancel" @click="closeModal()" :disabled="isSubmitting">
+                            <?= $escaper->escapeHtml(__('Cancel')) ?>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </template>
+</div>

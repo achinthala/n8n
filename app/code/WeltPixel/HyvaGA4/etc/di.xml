@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="WeltPixel\GA4\Block\Product">
+        <plugin name="hyva-weltpixel-ga4-product"
+                type="WeltPixel\HyvaGA4\Plugin\ProductImpressions" sortOrder="10"/>
+    </type>
+    <type name="WeltPixel\GA4\Block\Cart">
+        <plugin name="hyva-weltpixel-ga4-cart"
+                type="WeltPixel\HyvaGA4\Plugin\CartImpressions" sortOrder="10"/>
+    </type>
+</config>

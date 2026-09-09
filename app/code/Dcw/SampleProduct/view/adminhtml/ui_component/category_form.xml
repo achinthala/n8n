@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+	<fieldset name="general">
+		<field name="cat_thumbnail">
+			<argument name="data" xsi:type="array">
+				<item name="config" xsi:type="array">
+					<item name="required" xsi:type="boolean">false</item>
+					<item name="validation" xsi:type="array">
+						<item name="required-entry" xsi:type="boolean">false</item>
+					</item>
+					<item name="sortOrder" xsi:type="number">333</item>
+					<item name="dataType" xsi:type="string">string</item>
+					<item name="formElement" xsi:type="string">fileUploader</item>
+					<item name="label" xsi:type="string" translate="true">Thumbnail</item>
+					<item name="uploaderConfig" xsi:type="array">
+						<item name="url" xsi:type="url" path="catalog/category_image/upload"/>
+					</item>
+					<item name="elementTmpl" xsi:type="string">ui/form/element/uploader/uploader</item>
+					<item name="previewTmpl" xsi:type="string">Magento_Catalog/image-preview</item>
+				</item>
+			</argument>
+		</field>
+	</fieldset>
+	<fieldset name="content">
+        <field name="cat_shortdec" sortOrder="45">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="label" xsi:type="string" translate="true">Short Description</item>
+                    <item name="formElement" xsi:type="string">wysiwyg</item>
+                    <item name="wysiwygConfigData" xsi:type="array">
+                        <item name="add_variables" xsi:type="boolean">true</item>
+                        <item name="add_widgets" xsi:type="boolean">true</item>
+                        <item name="add_images" xsi:type="boolean">true</item>
+                        <item name="add_directives" xsi:type="boolean">true</item>
+                        <item name="use_container" xsi:type="boolean">true</item>
+                    </item>
+                </item>
+            </argument>
+        </field>
+    </fieldset>
+</form>

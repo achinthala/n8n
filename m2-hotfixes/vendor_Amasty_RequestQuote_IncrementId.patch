@@ -1,0 +1,14 @@
+diff --git a/vendor/amasty/module-request-quote/Model/Email/Sender.php b/vendor/amasty/module-request-quote/Model/Email/Sender.php
+index e5530369..98f98328 100644
+--- a/vendor/amasty/module-request-quote/Model/Email/Sender.php
++++ b/vendor/amasty/module-request-quote/Model/Email/Sender.php
+@@ -262,7 +262,8 @@ class Sender
+                 'expiredDate' => $this->getExpiredDate($quote),
+                 'remarks' => $this->retrieveCustomerNote($quote->getRemarks()),
+                 'adminRemarks' => $this->retrieveAdminNote($quote->getRemarks()),
+-                'adminEmail' => $adminEmail
++                'adminEmail' => $adminEmail,
++                'quoteIncrementId' => $quote->getData('increment_id')
+             ],
+             $notificationTemplateId
+         );

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp/etc/csp_whitelist.xsd">
+    <policies>
+        <policy id="font-src">
+            <values>
+                <!-- Narvar -->
+                <value id="narvar" type="host">*.narvar.com</value>
+                <!-- Narvar QA-->
+                <value id="narvarqa" type="host">*.narvar.qa</value>
+            </values>
+        </policy>
+        <policy id="img-src">
+            <values>
+                <!-- Narvar -->
+                <value id="narvar" type="host">*.narvar.com</value>
+                <!-- Narvar QA-->
+                <value id="narvarqa" type="host">*.narvar.qa</value>
+            </values>
+        </policy>
+        <policy id="media-src">
+            <values>
+                <!-- Narvar -->
+                <value id="narvar" type="host">*.narvar.com</value>
+                <!-- Narvar QA-->
+                <value id="narvarqa" type="host">*.narvar.qa</value>
+            </values>
+        </policy>
+    </policies>
+</csp_whitelist>

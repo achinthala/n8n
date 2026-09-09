@@ -1,0 +1,25 @@
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+ -->
+ <div if="isPaymentMethodsAvailable()"
+ class="items payment-methods">
+<div repeat="foreach: paymentGroupsList, item: '$group'"
+     class="payment-group">
+    <div if="regionHasElements($group().displayArea)"
+         translate="getGroupTitle($group)"
+         class="step-title"
+         data-role="title">
+    </div>
+    <div class="all-payments-container">
+        <!--<div class="all-payments-heading">Select a secure checkout method</div>-->
+        <each args="data: getRegion($group().displayArea), as: 'method'" render=""></each>
+    </div>
+</div>
+</div>
+<div ifnot="isPaymentMethodsAvailable()"
+ class="no-payments-block"
+ translate="'Payment Methods are loading'">
+</div>

@@ -1,0 +1,59 @@
+<!-- phpcs:ignoreFile because quote_attributes variable added dynamically -->
+<!--@subject {{trans "Email alert for submitted quote request"}} @-->
+<!--@vars
+{
+"var viewUrl":"Url for view quote",
+"var customerName":"Customer Name",
+"var quote.increment_id":"Quote Increment ID",
+"layout handle=\"amasty_quote_email_items\" quote_id=$quote.getEntityId() area=\"frontend\"":"Quote Items Grid",
+"var store.getFrontendName()":"Store Name",
+"var quote.created_date_formatted":"Quote Created Date",
+"var quote.submitted_date_formatted":"Quote Submitted Date",
+"var remarks|escape|nl2br":"Customer Remarks",
+"var quote":"Quote object",
+"var quote.getEntityId()":"Quote ID"
+}
+@-->
+{{template config_path="design/email/header_template"}}
+
+<table border="0" cellpadding="0" cellspacing="0" width="100%" align="center">
+    <tr class="email-intro">
+        <td>
+            <p class="greeting">{{trans "Hello %customer_name," customer_name=$customerName}}</p>
+            <p>
+                {{trans "Your cart has been saved to your account." store_name=$store.getFrontendName()}}
+                {{trans 'You can view all your saved carts and proceed to checkout by <a href="%view_url" style="color:#15c!important;text-decoration:underline!important;font-weight:500!important">logging into your account</a>.' view_url=$viewUrl |raw}}
+            </p>
+        </td>
+    </tr>
+    <tr class="email-summary">
+        <td>
+            <h1>{{trans 'Your Cart Id <span class="no-link">#%increment_id</span>' increment_id=$quote.increment_id |raw}}</h1>
+        </td>
+    </tr>
+    <tr class="email-information">
+        <td>
+            {{depend remarks}}
+            <table class="message-info">
+                <tr>
+                    <td>
+                        {{var remarks|escape|nl2br}}
+                    </td>
+                </tr>
+            </table>
+            {{/depend}}
+
+            {{depend quote_attributes}}
+            <div class="amquote-table-list">
+                {{var quote_attributes|raw}}
+            </div>
+            {{/depend}}
+
+            {{layout handle="amasty_quote_email_items" quote_id=$quote.getEntityId() area="frontend"}}
+        </td>
+    </tr>
+</table>
+<tr>
+    <td style="font-size: 0;line-height: 1px;height: 40px">&nbsp;</td>
+</tr>
+{{template config_path="design/email/footer_template"}}

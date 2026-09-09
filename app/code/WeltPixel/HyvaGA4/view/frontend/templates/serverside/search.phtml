@@ -1,0 +1,29 @@
+<?php
+/**
+ * @var $block \Magento\CatalogSearch\Block\Result
+ */
+/** @var \WeltPixel\GA4\Helper\ServerSideTracking $ga4Helper */
+$ga4Helper = $this->helper('WeltPixel\GA4\Helper\ServerSideTracking');
+/** @var \Magento\CatalogSearch\Helper\Data $searchDataHelper */
+$searchDataHelper = $this->helper('Magento\CatalogSearch\Helper\Data');
+?>
+<?php
+if ($ga4Helper->isServerSideTrakingEnabled() && $ga4Helper->shouldEventBeTracked(\WeltPixel\GA4\Model\Config\Source\ServerSide\TrackingEvents::EVENT_SEARCH)) :
+$product = $block->getProduct();
+?>
+<script>
+    window.addEventListener('load', function() {
+        fetch('<?php echo $this->getUrl("weltpixel_ga4/track/search/"); ?>', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'search_term=<?= $searchDataHelper->getEscapedQueryText() ?>'
+        })
+        .then(res => res.json())
+        .then(data => {
+        });
+    });
+</script>
+<?php endif; ?>

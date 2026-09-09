@@ -1,0 +1,188 @@
+<?php
+/**
+ * Copyright © Dotcom Weavers. All rights reserved.
+ *
+ * Example of how to integrate the RevenueRanking block with Hyva themes
+ * This shows how to use Alpine.js for dynamic product count updates
+ */
+
+/** @var \Dcw\RevenueRanking\Block\Product\RevenueRankingBlock $revenueBlock */
+$revenueBlock = $block->getLayout()->createBlock(\Dcw\RevenueRanking\Block\Product\RevenueRankingBlock::class);
+?>
+
+<!-- Example 1: Simple product count display with Alpine.js -->
+<div class="product-count-display" 
+     x-data="{
+         totalProducts: <?= $revenueBlock->getTotalProductCount() ?>,
+         filteredProducts: <?= $revenueBlock->getFilteredProductCount() ?>,
+         isLoading: false
+     }"
+     x-init="
+         // Listen for product count updates
+         document.addEventListener('revenueRanking:productCountUpdated', (event) => {
+             totalProducts = event.detail.total_products;
+             filteredProducts = event.detail.filtered_products;
+             isLoading = false;
+         });
+     ">
+    
+    <div class="product-count-info">
+        <span class="product-count-label">Products:</span>
+        <span class="product-count-total" x-text="totalProducts"></span>
+        <span x-show="filteredProducts !== totalProducts" x-transition>
+            (<span class="filtered-count" x-text="filteredProducts"></span> filtered)
+        </span>
+        <span x-show="isLoading" class="loading-spinner">⟳</span>
+    </div>
+</div>
+
+<!-- Example 2: Integration with product list header -->
+<div class="product-list-header" 
+     x-data="{
+         totalProducts: <?= $revenueBlock->getTotalProductCount() ?>,
+         filteredProducts: <?= $revenueBlock->getFilteredProductCount() ?>,
+         showFiltered: false
+     }"
+     x-init="
+         document.addEventListener('revenueRanking:productCountUpdated', (event) => {
+             totalProducts = event.detail.total_products;
+             filteredProducts = event.detail.filtered_products;
+             showFiltered = filteredProducts !== totalProducts;
+         });
+     ">
+    
+    <h2>
+        Products 
+        <span class="product-count-total" x-text="totalProducts"></span>
+        <span x-show="showFiltered" x-transition>
+            (showing <span class="product-count-filtered" x-text="filteredProducts"></span> of <span x-text="totalProducts"></span>)
+        </span>
+    </h2>
+</div>
+
+<!-- Example 3: Filter status with Alpine.js -->
+<div class="filter-status" 
+     x-data="{
+         hasFilters: false,
+         filteredCount: 0
+     }"
+     x-init="
+         document.addEventListener('revenueRanking:productCountUpdated', (event) => {
+             hasFilters = event.detail.filters_applied;
+             filteredCount = event.detail.filtered_products;
+         });
+     "
+     x-show="hasFilters" 
+     x-transition>
+    
+    <div class="filter-status-content">
+        <span class="filter-status-text">Filters applied</span>
+        <span class="product-count-filtered" x-text="filteredCount"></span> products match your criteria
+    </div>
+</div>
+
+<!-- Example 4: Custom Alpine.js component for product counts -->
+<script type="text/javascript">
+function productCountComponent() {
+    return {
+        totalProducts: <?= $revenueBlock->getTotalProductCount() ?>,
+        filteredProducts: <?= $revenueBlock->getFilteredProductCount() ?>,
+        isLoading: false,
+        error: null,
+        
+        init() {
+            // Listen for updates from the RevenueRanking block
+            document.addEventListener('revenueRanking:productCountUpdated', (event) => {
+                this.totalProducts = event.detail.total_products;
+                this.filteredProducts = event.detail.filtered_products;
+                this.isLoading = false;
+                this.error = null;
+            });
+            
+            // Listen for filter changes to show loading state
+            document.addEventListener('click', (e) => {
+                if (e.target.closest('.mst-nav__label-item a, .filter-option a')) {
+                    this.isLoading = true;
+                }
+            });
+        },
+        
+        get filteredInfo() {
+            return this.filteredProducts !== this.totalProducts;
+        },
+        
+        get filteredText() {
+            return `showing ${this.filteredProducts} of ${this.totalProducts}`;
+        }
+    }
+}
+</script>
+
+<!-- Example 5: Using the custom component -->
+<div class="custom-product-count" x-data="productCountComponent()" x-init="init()">
+    <div class="count-display">
+        <span class="total" x-text="totalProducts"></span>
+        <span x-show="filteredInfo" x-transition class="filtered" x-text="filteredText"></span>
+        <span x-show="isLoading" class="loading">⟳</span>
+    </div>
+    
+    <div x-show="error" x-transition class="error">
+        <span x-text="error"></span>
+    </div>
+</div>
+
+<style>
+/* Hyva-specific styles */
+.product-count-display {
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.product-count-total,
+.product-count-filtered {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.loading-spinner {
+    display: inline-block;
+    margin-left: 8px;
+    animation: spin 1s linear infinite;
+    color: #007bff;
+    font-size: 14px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.filter-status {
+    background: #e3f2fd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 10px 0;
+    font-size: 14px;
+}
+
+.product-list-header h2 {
+    transition: opacity 0.3s ease;
+}
+
+.custom-product-count .count-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-product-count .error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Alpine.js transitions */
+[x-cloak] {
+    display: none !important;
+}
+</style>

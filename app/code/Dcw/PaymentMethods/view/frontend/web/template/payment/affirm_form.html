@@ -1,0 +1,63 @@
+<!--
+/**
+ * Astound
+ * NOTICE OF LICENSE
+ * This source file is subject to the Open Software License (OSL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/osl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to codemaster@astoundcommerce.com so we can send you a copy immediately.
+ *
+ * @category  Affirm
+ * @package   Astound_Affirm
+ * @copyright Copyright (c) 2016 Astound, Inc. (http://www.astoundcommerce.com)
+ * @license   http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+-->
+<div class="payment-method" data-bind="attr: {id: getCode()+'-payment'}, css: {'_active': (getCode() == isChecked())}">
+    <div class="payment-heading affirm-heading" style="display:none;">Monthly Payments</div>
+    <div class="payment-method-title field choice">
+        <input type="radio"
+               name="payment[method]"
+               class="radio"
+               data-bind="attr: {'id': getCode()}, value: getCode(), checked: isChecked, click: selectPaymentMethod, visible: isRadioButtonVisible()">
+        <label class="label" data-bind="attr: {'for': getCode()}">
+                <span data-bind="text: 'Buy Now, Pay Later'"></span>
+                <span>
+                    <img data-bind="attr: {'src': require.toUrl('Dcw_PaymentMethods/images/affirm-logo.png'), 'alt': $t('Affirm')}" />
+                </span>
+        </label>
+    </div>
+
+    <div class="payment-method-content">
+        <!-- ko foreach: getRegion('messages') -->
+        <!-- ko template: getTemplate() --><!-- /ko -->
+        <!--/ko-->
+        <div class="affirm-item">
+            <p class="affirm-info-description" data-bind="text: getEdu()"></p>
+            <p class="affirm-info-description-load" id="affirm-inline-checkout" data-bind="html: getEduHTML()"></p>
+        </div>
+        <div class="payment-method-billing-address">
+            <!-- ko foreach: $parent.getRegion(getBillingAddressFormName()) -->
+            <!-- ko template: getTemplate() --><!-- /ko -->
+            <!--/ko-->
+        </div>
+        <div class="checkout-agreements-block">
+            <!-- ko foreach: $parent.getRegion('before-place-order') -->
+            <!-- ko template: getTemplate() --><!-- /ko -->
+            <!--/ko-->
+        </div>
+        <div class="affirm-button">
+            <button type="submit" class="action primary checkout"
+                    data-bind="
+                    click: continueInAffirm,
+                    enable: (getCode() == isChecked() && isPlaceOrderActionAllowed())
+                    attr: {title: getAffirmTitle()}
+                    ">
+                <span>Continue with</span><img width="60" alt="Split Payment - Multiple cards" data-bind="attr: { src: require.toUrl('Dcw_PaymentMethods/images/affirm.svg') } ">
+            </button>
+        </div>
+    </div>
+</div>

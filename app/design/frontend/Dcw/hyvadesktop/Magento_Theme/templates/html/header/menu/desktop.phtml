@@ -1,0 +1,287 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsSolid;
+use Hyva\Theme\ViewModel\Navigation;
+use Magento\Cms\Block\Block as CmsBlock;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\Escaper;
+use Magento\Catalog\Model\CategoryRepository;
+use Dcw\Custom\ViewModel\Data as CustomViewModel;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+// phpcs:disable Generic.Files.LineLength.TooLong
+
+/** @var Navigation $viewModelNavigation */
+$viewModelNavigation = $viewModels->require(Navigation::class);
+
+/** @var HeroiconsSolid $heroiconsSolid */
+$heroiconsSolid = $viewModels->require(HeroiconsSolid::class);
+/** @var CustomViewModel $customViewModel */
+$customViewModel = $viewModels->require(CustomViewModel::class);
+
+$uniqueId = '_' . uniqid();
+
+// Order is important here: 1. build the menu data, 2. then set the cache tags from the view model identities
+$menuItems = $viewModelNavigation->getNavigation(4);
+$block->setData('cache_tags', $viewModelNavigation->getIdentities());
+$imageHelper = $this->helper('\Magento\Catalog\Helper\Image');
+$placeholderimage = $imageHelper->getDefaultPlaceholderUrl('image');
+$removeLinkCats = $customViewModel->menuConfigvalues()->getRemoveLinkCategoryIds();
+$removeLinkCatarray = [];
+if ($removeLinkCats){
+    $removeLinkCatarray = explode('|', $removeLinkCats);
+}
+?>
+
+<div x-data="initMenuDesktop<?= $escaper->escapeHtml($uniqueId) ?>()"
+    class="z-20 order-2 sm:order-1 lg:order-2 navigation hidden xl:flex desktop__menu"
+>
+    <!-- desktop -->
+    <div @load.window="setActiveMenu($root)"
+        class="justify-between items-center mx-auto w-full max-w-7xl pl-2"
+    >
+        <nav
+                class="flex flex-wrap"
+        >
+            <?php foreach ($menuItems as $index => $itemLevel1): ?>
+                <?php $singleItems = []; ?>
+                <?php $link=$itemLevel1['url']; 
+                $remolinkparent=0;
+                if(isset($itemLevel1['path'])){
+                    $pathids=explode('/', $itemLevel1['path']);
+                    $catid=end($pathids);
+                }else{
+                    $catid=0; 
+                }
+                if (in_array($catid,$removeLinkCatarray) && !empty($itemLevel1['childData'])) : ?>
+                    <?php $link='';$remolinkparent=1; ?>
+                <?php endif; ?>
+                <div class="level-0 flex py-2 items-center border-transparent transition transition-colors duration-500 group megamenu_items" :class="{ 'block' : open}"
+                    @mouseover.stop="hoverTopPosition = $event.currentTarget.offsetTop + $event.currentTarget.getBoundingClientRect().height"
+                    @mouseenter="desktopMegaMenuShow = true" @mouseleave="desktopMegaMenuShow = false"
+                    x-data="{ desktopMegaMenuShow: false }"
+                >
+                    <!-- <a href="<?= $escaper->escapeUrl($link) ?>" -->
+                    <a 
+                    <?php if($link==''){?>    
+                        x-on:click.prevent="myFunction()"
+                    <?php }?>
+                    @focus="hoverTopPosition = $event.currentTarget.parentNode.offsetTop + $event.currentTarget.parentNode.getBoundingClientRect().height"
+                    title="<?= $escaper->escapeHtmlAttr($itemLevel1['name']) ?>"
+                    class="level-0 block p-2 text-base font-medium text-black whitespace-nowrap cursor-pointer megamenu_items_link">
+                        <span><?= $escaper->escapeHtml($itemLevel1['name']) ?></span>
+                        <?php if (!empty($itemLevel1['childData'])): ?>
+                            <span class="inline items-center releat">
+                                <?= $heroiconsSolid->chevronDownHtml('w-5 h-5 inline', 25, 25) ?>
+                            </span>
+                        <?php endif; ?>
+                    </a>
+                    <?php if (!empty($itemLevel1['childData'])): ?>
+                        <template x-if="desktopMegaMenuShow">
+                        <div class="absolute left-0 right-0 top-full z-10 -mt-3 w-3/4 mx-auto bg-white opacity-0 transition-opacity ease-out pointer-events-none group-hover:opacity-100 focus-within:opacity-100 group-hover:pointer-events-auto megamenu"
+                            style="display:none;"
+                            :style="`margin-top: 0; top: ${hoverTopPosition}px;`"
+                        >
+                            <div class="flex justify-between mt-0 mb-0 sub-megamenu">
+                                <?php
+                                $catIdLvl1    = ($pos = strrpos($itemLevel1['id'], '-')) !== false
+                                    ? substr($itemLevel1['id'], $pos + 1)
+                                    : 0;
+                                $cmsBlockHtml = $catIdLvl1
+                                    ? $this->getLayout()
+                                        ->createBlock(CmsBlock::class)
+                                        ->setBlockId('megamenu_block_left_cat' . $catIdLvl1)
+                                        ->toHtml()
+                                    : '';
+
+                                if (! empty($cmsBlockHtml)): ?>
+                                <div class="max-w-xs 2xl:block">
+                                    <?= /** @noEscape */ $cmsBlockHtml ?>
+                                </div>
+                                <?php endif; ?>
+                                <div class="mx-auto w-full">
+                                    <ul class="grid flex-1 w-full gap-y-0 gap-x-0 py-4 px-5 relative">
+                                        <?php $mcount = 0;
+                                        foreach ($itemLevel1['childData'] as $itemLevel2): ?>
+                                            <?php if (empty($itemLevel2['childData'])): ?>
+                                                <?php $singleItems[] = $itemLevel2 ?>
+                                                <?php continue; ?>
+                                            <?php endif; ?>
+                                        <?php $link=$itemLevel2['url']; 
+                                                if(isset($itemLevel2['path'])){
+                                                $pathids=explode('/', $itemLevel2['path']);
+                                                $catid=end($pathids);
+                                                } else {
+                                                $catid=0;
+                                                }
+                                        if (($remolinkparent && !empty($itemLevel2['childData'])) || 
+                                            (in_array($catid,$removeLinkCatarray) && !empty($itemLevel2['childData']))) : ?>
+                                                <?php $link=''; ?>
+                                            <?php endif; 
+                                            $mcount = $mcount+1;
+                                            ?>
+
+                                            <li :class="{ 'active': show }" class="level-1 level1 <?php if ($mcount == 1) { ?>display-first<?php } ?>" <?php if ($mcount == 1) { ?> x-data="{ show: true }" <?php } else { ?> x-data="{ show: false }" <?php } ?> 
+                                            <?php if (!empty($itemLevel1['childData'])){ ?>
+                                            x-on:click="show = true; removeDisplayFirst()" @click.away="show = false"
+                                            <?php } ?>
+                                            >
+                                                <a 
+                                                title="<?= $escaper->escapeHtmlAttr($itemLevel2['name']) ?>"
+                                                class="level-1 w-1/4 py-1/5 px-6 text-size13 block text-sm rounded text-darkblack relative"
+                                                
+                                                    >
+                                                    <?= $escaper->escapeHtml($itemLevel2['name']) ?>
+
+                                                    <?php if (!empty($itemLevel1['childData'])): ?>
+                                                        <span class="inline items-center rotate-180 absolute">
+                                                            <?= $heroiconsSolid->chevronDownHtml('w-5 h-5 inline', 25, 25) ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </a>
+                                                <?php 
+                                $catIdLvl2    = ($pos = strrpos($itemLevel2['id'], '-')) !== false
+                                    ? substr($itemLevel2['id'], $pos + 1)
+                                    : 0;
+                                if(!empty($itemLevel2['path'])){
+                                $category = $customViewModel->getCategoryById($catIdLvl2);
+                                $cmsBlockHtml = $category->getData('megamenu_block');	
+                                    
+                                $cmsBlockHtml = $catIdLvl2
+                                    ? $this->getLayout()
+                                        ->createBlock(CmsBlock::class)
+                                        ->setBlockId('megamenu_block_right_cat' . $catIdLvl2)
+                                        ->toHtml()
+                                    : '';
+
+                                if (! empty($cmsBlockHtml)): ?> 
+                                <div class="2xl:block w-1/4 mega-menu-rightBlock absolute top-0 right-0" x-show="show">
+                                    <?= /** @noEscape */ $cmsBlockHtml ?>
+                                </div>
+                                <?php endif; } ?>
+
+                                                <ul class="z-10 w-1/2 absolute top-0 level2 flex flex-wrap pt-3 megamenu-extrablock" x-show="show">
+                                                    <span class="block w-full text-size28 font-medium no-underline text-darkblack pb-2"><?= $escaper->escapeHtml($itemLevel2['name']) ?></span>
+
+                                                    <?php $count=0;foreach ($itemLevel2['childData'] as $itemLevel3):
+                                $catIdLvl3    = ($pos = strrpos($itemLevel3['id'], '-')) !== false
+                                    ? substr($itemLevel3['id'], $pos + 1)
+                                    : 0;
+                                $count=$count+1;
+                                if(!empty($itemLevel3['path'])){                     
+                                $category = $customViewModel->getCategoryById($catIdLvl3); 
+                                $catThumbnail = $category->getData('image');
+                                                    ?>
+                                                        <li class="level-2 w-4/12 pr-6 pb-6">
+                                                            <a href="<?= $escaper->escapeUrl($itemLevel3['url']) ?>"
+                                                            title="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>"
+                                                            class="level-2 block">
+                                                                <?php if(!empty($catThumbnail)){ ?>
+                                                                <img class="menucatimg rounded w-full mb-2" src="<?php echo $block->getUrl().$catThumbnail;?>" alt="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>" title="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>" />   
+                                                                <?php }else{ ?>
+                                                                <img class="menucatimg rounded w-full mb-2" src="<?php echo $placeholderimage;?>" alt="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>" title="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>" />
+                                                                <?php } ?>
+                                                                                                                        
+                                                            <span class="block text-sm font-medium no-underline text-darkblack pr-4"><?= $escaper->escapeHtml($itemLevel3['name']) ?></span></a>
+                                                        </li>
+                                                        <?php } else { ?>
+                                                            <li class="level-2 w-4/12 pr-6 pb-6">
+                                                            <a href="<?= $escaper->escapeUrl($itemLevel3['url']) ?>"
+                                                            title="<?= $escaper->escapeHtmlAttr($itemLevel3['name']) ?>"
+                                                            class="level-2 block"><span class="block text-sm font-medium no-underline text-darkblack pr-4"><?= $escaper->escapeHtml($itemLevel3['name']) ?></span></a>
+                                                        </li> <?php } ?>   
+                                                        <?php if($count>=6){break;}?>
+                                                    <?php endforeach; ?>
+
+                                                    <?php if(count($itemLevel2['childData'])>=1){?>
+                                            <a class="view-all mt-2 underline-imp text-size12 font-medium text-darkblack absolute" style="top:410px;" href="<?= $escaper->escapeUrl($itemLevel2['url']) ?>" ><?= $escaper->escapeHtml('View All') ?></a>
+                                            <?php }?> 
+
+                                                </ul>
+                                            </li>
+                                            
+                                            
+                                        <?php endforeach; ?>
+                                        
+                                        <?php if ($singleItems): ?>
+                                        <?php $finalmaincount = $mcount; ?>
+                                            <?php foreach ($singleItems as $item): $finalmaincount = $finalmaincount+1?>
+                                                <li class="level-1">
+                                                <a href="<?= $escaper->escapeUrl($item['url']) ?>"
+                                                title="<?= $escaper->escapeHtmlAttr($item['name']) ?>"
+                                                class="level-1 w-1/4 py-1/5 px-6 text-size13 block text-sm rounded text-darkblack relative">
+                                                    <?= $escaper->escapeHtml($item['name']) ?>
+                                                </a>
+                                                </li>
+                                            <?php if($finalmaincount>=12){break;}?>	
+                                            <?php endforeach; ?>
+                                        
+                                            <?php endif; ?>
+                                            
+                                        <?php //if(count($itemLevel1['childData'])>12){?>
+                                                    <!--<a class="view-all main-cats mt-2 underline px-6 text-size12 font-medium text-darkblack" href="<?php echo $this->getUrl().'all-categories.html'?>" ><?= $escaper->escapeHtml('View All') ?></a>-->
+                                        <?php //} ?> 
+                                    </ul>
+                                </div>
+                                
+                            </div>
+                        </div>
+                        </template>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+            <div class="menu_static_links">
+                <?php
+                    echo $this->getLayout()
+                    ->createBlock('Magento\Cms\Block\Block')
+                    ->setBlockId('header_menu')
+                    ->toHtml();
+                ?>
+            </div>
+        </nav>
+    </div>
+
+</div>
+<script>
+  'use strict';
+
+  const initMenuDesktop<?= $escaper->escapeHtml($uniqueId) ?> = () => {
+    return {
+      hoverTopPosition: '100%',
+      setActiveMenu(menuNode) {
+        Array.from(menuNode.querySelectorAll('a')).filter(link => {
+          return link.href === window.location.href.split('?')[0];
+        }).map(item => {
+          if (!item.classList.contains('level-0')) {
+            item.classList.add('underline');
+          }
+          item.closest('div.level-0') &&
+          item.closest('div.level-0').classList.add('border-secondary');
+        });
+      }
+    }
+  }
+</script>
+<script>
+    // Function to remove 'display-first' class from other list items
+    function removeDisplayFirst() {
+        var listItems = document.querySelectorAll('.level1');
+        listItems.forEach(function(item) {
+            if (item.id !== this.id) {
+                item.classList.remove('display-first');
+            }
+        });
+    }
+</script>

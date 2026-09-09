@@ -1,0 +1,59 @@
+<?php
+declare(strict_types=1);
+
+use Dcw\ShareCart\ViewModel\ShareCartRestore;
+use Magento\Framework\Escaper;
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var Escaper $escaper */
+/** @var ShareCartRestore $viewModel */
+$viewModel = $block->getData('view_model');
+
+if (!$viewModel) {
+    return;
+}
+
+$hashTokenParam = $viewModel->getHashTokenParam();
+?>
+<style>
+    #dcw-share-cart-restore-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        color: #1f2937;
+        font-size: 1.125rem;
+        line-height: 1.5;
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    html.dcw-share-cart-restoring #dcw-share-cart-restore-overlay {
+        display: flex;
+    }
+
+    html.dcw-share-cart-restoring {
+        overflow: hidden;
+    }
+</style>
+<script>
+    (function () {
+        var hash = window.location.hash.replace(/^#/, '');
+
+        if (!hash) {
+            return;
+        }
+
+        var params = new URLSearchParams(hash);
+        var token = (params.get('<?= $escaper->escapeJs($hashTokenParam) ?>') || '').trim();
+
+        if (!token) {
+            return;
+        }
+
+        document.documentElement.classList.add('dcw-share-cart-restoring');
+    })();
+</script>

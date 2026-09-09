@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<page layout="1column" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Dcw\Crosssell\Block\Crosssell" name="dcw.crosssell" template="Dcw_Crosssell::product/slider/product-slider-container.phtml" after="-" >
+                <arguments>
+                  <argument name="type" xsi:type="string">crosssell</argument>
+                  <argument translate="true" name="title" xsi:type="string">You might also like</argument>
+                  <!-- <argument name="sort_order" xsi:type="string">40</argument> -->
+				  <!-- <argument name="hide_rating_summary" xsi:type="boolean">true</argument> -->
+              </arguments>
+            </block>
+        </referenceContainer>
+           
+    </body>
+</page>

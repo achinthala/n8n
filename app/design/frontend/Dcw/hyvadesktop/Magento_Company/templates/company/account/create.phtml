@@ -1,0 +1,620 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+use Magento\Customer\Block\Widget\Gender;
+use Magento\Customer\Block\Widget\Name;
+use Magento\Company\Block\Company\Account\Create;
+use Magento\Directory\Helper\Data as DirectoryHelper;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/**
+ * Create account form template
+ *
+ * @var Create $block
+ * @var SecureHtmlRenderer $secureRenderer
+ */
+$helper = $this->helper(Dcw\CustomCompany\Helper\Data::class);
+$businessoption = $helper->businessoption();
+$flooringJobsoption = $helper->flooringJobsoption();
+$countrylist = $block->getCountriesList();
+$objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+$socialblock  = $objectManager->get('\Bss\SocialLogin\Block\SocialLogin');
+?>
+<?php
+/** @var DirectoryHelper $directoryDataHelper */
+
+$directoryDataHelper = $block->getData('directoryDataHelper');
+$countries = $directoryDataHelper->getCountriesWithOptionalZip(true);
+/** @var \Magento\Company\ViewModel\Address\RegionProvider $regionProvider */
+$regionProvider = $block->getRegionProvider();
+$regionandcountrycode = (array)json_decode($regionProvider->getRegionJson());
+$countrydata = [];
+foreach ($countrylist as $ccode => $cname) {
+    $regions=[];
+    if (isset($regionandcountrycode[$ccode])) {
+        foreach ($regionandcountrycode[$ccode] as $region) {
+            $regions[]=['rcode'=>$region->code,'id'=>$region->id,'name'=>$region->name];
+        }
+    }
+    $countrydata[$ccode]=['code'=>$ccode,'name'=>$cname,'regions'=>$regions];
+}
+?>
+<script>
+    function initCompanyAuthentication() {
+        return {
+            errors: 0,
+            submitRegisterForm : function () {
+                const $form = document.querySelector('#form-validate');
+                if (this.errors === 0) {
+                    this.dispatchRegisterRequest($form);
+                    $form.action = "<?= $block->escapeUrl($block->getPostActionUrl()) ?>";
+                }
+            },
+            validateCaptcha : function () {
+                return new Promise((resolve, reject) => {
+
+                    var executeGreCaptcha = () => {
+                        grecaptcha.ready(function () {
+                            grecaptcha.execute('<?= $socialblock->getSiteKey() ?>', {action: 'submit'}).then(function (token) {
+                                return resolve(token);
+                            });
+                        });
+                    }
+                    executeGreCaptcha();
+                });
+            },
+            dispatchRegisterRequest:async function (form) {
+                let token = await this.validateCaptcha();
+                if (token) {
+                    form.querySelector("#g-recaptcha-response").value = token;
+                    setTimeout(() => {
+                        form.submit();
+                    }, 100);
+                }
+            }
+        }
+    }
+</script>
+<script>
+const mapaddress = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyD_9c4cAZ9h0mGxk5MVVldES95PnklSb4Q&libraries=places&callback=initAutocomplete';
+const script = document.createElement('script');
+script.setAttribute('type', 'text/javascript');
+script.setAttribute('src', mapaddress);
+document.head.appendChild(script);
+
+function initAutocomplete() {
+    const options = {
+        componentRestrictions: { country: "us" },
+        fields: ["address_components", "geometry", "icon", "name"],
+        strictBounds: false,
+    };
+        
+    autocomplete = new google.maps.places.Autocomplete((document.getElementById('street0')), options);
+        
+    google.maps.event.addListener(autocomplete, 'place_changed', function () {
+        var place = autocomplete.getPlace();
+
+        if (!place.geometry) {
+            console.log("Autocomplete's returned place contains no geometry");
+            return;
+        }
+
+        var shippingAddress = {
+            street: place.name,
+            city: '',
+            region: '',
+            postcode: '',
+            countryId: '',
+            telephone: '',
+            saveInAddressBook: 0
+        };
+
+        for (var i = 0; i < place.address_components.length; i++) {
+            var addressType = place.address_components[i].types[0];
+
+            if (addressType === 'locality') {
+                shippingAddress.city = place.address_components[i].long_name;
+            } else if (addressType === 'administrative_area_level_1') {
+                shippingAddress.region = place.address_components[i].long_name;
+            } else if (addressType === 'postal_code') {
+                shippingAddress.postcode = place.address_components[i].long_name;
+            } else if (addressType === 'country') {
+                shippingAddress.countryId = place.address_components[i].short_name;
+            } else if (addressType === 'street_number') {
+                shippingAddress.street = shippingAddress.street;
+            } else if (addressType === 'route') {
+                shippingAddress.street = shippingAddress.street;
+            }
+        }
+
+        document.getElementById('street0').value = shippingAddress.street;
+        document.getElementById('city').value = shippingAddress.city;
+        document.getElementById('postcode').value = shippingAddress.postcode;
+        let a = document.getElementById("country_id");
+        for (let i = 0; i < a.length; i++) {
+            let option = a.options[i];
+            if (option.value == shippingAddress.countryId) {
+                a.options[i].setAttribute('selected','selected')
+            }
+        }
+
+        let b = document.getElementById("region_id");
+        for (let i = 0; i < b.length; i++) {
+            let option = b.options[i];
+            if (option.text == shippingAddress.region) {
+                b.options[i].setAttribute('selected','selected')
+            }
+        }
+    });    
+}		
+</script>
+
+<form class="form create account form-create-account"
+    x-data="initCompanyAuthentication()"
+    method="post"
+    enctype="multipart/form-data"
+    autocomplete="off"
+    id="form-validate"
+    action="javascript:void(0)"
+    @submit.prevent="if (CompanyEmail() && CustomerEmail() && Telphone()) submitRegisterForm();"
+    @submit.prevent="submitRegisterForm();"
+    >
+    <?= $block->getBlockHtml('formkey') ?>
+    <input id="g-recaptcha-response" name="g-recaptcha-response" type="hidden" value=""/>
+    <input type="hidden" name="company[create_status]" value="1" />
+    <fieldset class="fieldset info mb-12">
+        <legend class="legend-border">
+        </legend>
+        <br>
+        <div class="field company-name ">
+            <label class="label text-size16 font-normal text-darkblack" for="company_name">
+                <span class="pro-required"><?= $block->escapeHtml(__('Company Name')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[company_name]" id="company_name"
+                       value=""
+					   required
+                       title="<?= $block->escapeHtmlAttr(__('Company Name')) ?>"
+                       class="input-text" >
+				<span class="error">This is a required field.</span>
+            </div>
+        </div>
+        <div class="field legal-name">
+            <label class="label text-size16 font-normal text-darkblack" for="legal_name">
+                <span class="pro-required"><?= $block->escapeHtml(__('Legal Name')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[legal_name]" id="legal_name"
+                       value=""
+                       required
+                       title="<?= $block->escapeHtmlAttr(__('Legal Name')) ?>"
+                       class="input-text">
+				<span class="error">This is a required field.</span>
+            </div>
+        </div>
+        
+        <div class="field" x-data="{ showTextField: '', selectedOption: '' }">
+            <div class="field region-id required">
+                <label class="label text-size16 font-normal text-darkblack" for="business_focus">
+                    <span class="pro-required">Business Focus</span>
+                </label>
+                <div class="control _required">
+                    <select x-model="selectedOption" name="company[business_focus]"
+                    id="business_focus" data-validate="{required:true}" required class="select">
+                    <?php foreach ($businessoption as $business):?>
+                        <option value="<?=/** @noEscape */$business['value']?>">
+                            <?=/** @noEscape */$business['label']->__toString()?>
+                        </option>
+                    <?php endforeach;?>
+                    </select>
+                </div> 
+            </div>
+            <div class="field legal-name" x-show="selectedOption === '6'" >
+                <label class="label" for="legal_name">
+                    <span class="pro-required"><?= $block->escapeHtml(__('Business Focus Other')) ?></span>
+                </label>
+                <div class="control">
+                    <input type="text" name="company[business_focus_others]" class="input-text" x-model="showTextField">
+                </div>
+            </div>
+        </div>        
+        
+        <div class="field company_website">
+            <label class="label text-size16 font-normal text-darkblack" for="legal_name">
+                <span><?= $block->escapeHtml(__('Company Website')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[company_website]" id="company_website"
+                       value=""
+                       title="<?= $block->escapeHtmlAttr(__('Company Website')) ?>"
+                       class="input-text">
+            </div>
+        </div>
+
+        <div class="field region-id required">
+            <label class="label text-size16 font-normal text-darkblack" for="flooring_jobs_per_year">
+                <span class="pro-required">Flooring Jobs per Year</span>
+            </label>
+            <div class="control _required">
+                <select name="company[flooring_jobs_per_year]" 
+                id="flooring_jobs_per_year" data-validate="{required:true}" required class="select">
+                    <?php foreach ($flooringJobsoption as $flooringJobs): ?>
+                    <option value="<?= /** @noEscape */$flooringJobs['value']?>">
+                        <?= /** @noEscape */$flooringJobs['label']->__toString()?>
+                    </option>
+                    <?php endforeach;?> 
+                </select>
+            </div>
+        </div>
+          
+        <div class="field company-email _required">
+            <label class="label" for="company_email">
+                <span class="pro-required"><?= $block->escapeHtml(__('Company Email')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[company_email]" id="company_email"
+                       value=""
+                       required
+					   
+                       title="<?= $block->escapeHtmlAttr(__('Company Email')) ?>"
+                       class="input-text"
+                       data-role="email"
+                       data-async-is-valid="true"
+                       data-mage-init='{"Magento_Company/js/form/element/async-validation": {
+                            "name": "company_email",
+                            "validateUrl": "<?= $block->escapeUrl($block->getUrl('company/account/validate')) ?>"
+                       }}'
+                       data-validate="{required:true, 'validate-email': true, 'validate-async-company-email': true}">
+					   
+				<span class="error" id ="errs-company-email">This is a required field.</span>
+            </div>
+        </div>
+        <div class="field vat-tax-id">
+            <label class="label text-size16 font-normal text-darkblack" for="vat_tax_id">
+                <span><?= $block->escapeHtml(__('VAT/TAX ID')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[vat_tax_id]" id="vat_tax_id"
+                       value=""
+                       title="<?= $block->escapeHtmlAttr(__('VAT/TAX ID')) ?>"
+                       class="input-text">
+            </div>
+        </div> 
+        <div class="field reseller-id">
+            <label class="label text-size16 font-normal text-darkblack" for="reseller_id">
+                <span><?= $block->escapeHtml(__('Re-seller ID')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[reseller_id]" id="reseller_id"
+                       value=""
+                       title="<?= $block->escapeHtmlAttr(__('Re-seller ID')) ?>"
+                       class="input-text">
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="fieldset info">
+        <legend class="legend text-size24 font-medium text-darkblack pt-4">
+        <span><?= $block->escapeHtml(__('Primary Shipping Address')) ?></span>
+        </legend>
+        <br>
+        <div class="field street _required">
+            <label class="label text-size16 font-normal text-darkblack" for="street0">
+                <span class="pro-required"><?= $block->escapeHtml(__('Street Address')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[street][0]" id="street0"
+                       value=""
+                       required
+                       title="<?= $block->escapeHtmlAttr(__('Address Line 1')) ?>"
+                       class="input-text height80" data-validate="{required:true}">
+				<span class="error">This is a required field.</span>
+            </div>
+        </div>
+        <div class="field street">
+            <label class="label text-size16 font-normal text-darkblack" for="street0">
+                <span><?= $block->escapeHtml(__('Address Line 2 (Optional)')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[street][1]" id="street1"
+                       value=""
+                       title="<?= $block->escapeHtmlAttr(__('Address Line 2')) ?>"
+                       class="input-text height80">
+            </div>
+        </div>
+        <div class="field city _required">
+            <label class="label text-size16 font-normal text-darkblack" for="city">
+                <span class="pro-required"><?= $block->escapeHtml(__('City')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[city]" id="city"
+                       value=""
+                       required
+                       title="<?= $block->escapeHtmlAttr(__('City')) ?>"
+                       class="input-text" data-validate="{required:true}">
+				<span class="error">This is a required field.</span>
+            </div>
+        </div>
+        <div class="field" x-data="{ 
+            selectedOption: '',
+            countryoptions: <?= /** @noEscape */ $block->escapeHtml(json_encode($countrydata))?>,
+            stateoptions: [] 
+        }">
+            <div class="field country_id _required">
+                <label class="label text-size16 font-normal text-darkblack" for="country_id">
+                    <span><?= $block->escapeHtml(__('Country')) ?></span>
+                </label>
+                <div class="control _required" >
+                    <select data-validate="{required:true}" name="company[country_id]"
+                    class="select" required id="country_id" x-model="selectedOption"
+                    x-on:change="stateoptions = getOptions(selectedOption,countryoptions)">
+                        <!-- <option value=""><?= $block->escapeHtml(__('Please select an option.')) ?></option> -->
+                        <template x-for="country in countryoptions" :key="country.code">
+                            <option :value="country.code" x-text="country.name"></option>
+                        </template>
+                    </select>
+                    <span class="error">This is a required field.</span>
+                </div>
+            </div>
+            <div class="field region-id required">
+                <label class="label text-size16 font-normal text-darkblack" for="region_id">
+                    <span><?= $block->escapeHtml(__('State')) ?></span>
+                </label>
+                <div class="control _required" 
+                x-init="stateoptions = getOptions('US',countryoptions)">
+                    <?php $message = $block->escapeHtml(__('Please select a region, state or province.')) ?>
+                    <select name="company[region_id]" 
+                    id="region_id"  x-show="stateoptions.length > 0"  class="select">
+                        <option value=""><?= /* @noEscape */ $message ?></option>
+                        <template x-for="option in stateoptions">
+                            <option :value="option.id" x-text="option.name"></option>
+                        </template>
+                    </select>
+                <input type="text" x-show="stateoptions.length < 1" id="region" name="company[region]"
+                        value=""
+                        title="<?= $block->escapeHtmlAttr(__('State/Province')) ?>"
+                        class="input-text no-display" >
+                </div>
+            </div>
+        </div>
+        
+        <div class="field postcode required">
+            <label class="label text-size16 font-normal text-darkblack" for="postcode">
+                <span class="pro-required"><?= $block->escapeHtml(__('ZIP/Postal Code')) ?></span>
+            </label>
+            <div class="control">
+                <?php $postcodeClass = $block->escapeHtmlAttr($block->getAttributeValidationClass('postcode')) ?>
+                <input type="text" name="company[postcode]" id="postcode"
+                       value=""
+                       required
+                       title="<?= $block->escapeHtmlAttr(__('ZIP/Postal Code')) ?>"
+                       class="input-text validate-zip-international <?= /* @noEscape */ $postcodeClass ?>"
+                       data-validate="{'required':true, 'validate-zip-international':true}" />
+					   <span class="error">This is a required field.</span>
+            </div>
+        </div>
+         
+        <div class="field telephone _required">
+            <label class="label text-size16 font-normal text-darkblack" for="telephone">
+                <span class="pro-required"><?= $block->escapeHtml(__('Phone Number')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="company[telephone]" id="telephone"
+                       value=""
+                       required
+                       maxlength="10"
+                       title="<?= $block->escapeHtmlAttr(__('Phone Number')) ?>"
+                       class="input-text" data-validate="{required:true}">
+				<span class="error" id ="err-telephone">This is a required field.</span>
+            </div>
+            
+            <div class="phonecheck flex items-center">
+                <input type="checkbox" name="company[contact_by_phone]"
+                id="contact_by_phone" title="" value="1"  class="checkbox appearance-none">
+                <label for="is_subscribed" class="label m-0 text-size12 font-normal text-darkblack">
+                    <span>Is it ok us to contact you by phone about your orders, Quotes or other service details</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="field region-id required">
+            <label class="label text-size16 font-normal text-darkblack" for="loading_dock">
+                <span>Has a Loading Dock</span>
+            </label>
+            <div class="control _required">
+                <select name="company[loading_dock]" id="loading_dock" required data-validate="{required:true}" class="select">
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="fieldset create info">
+        <legend class="legend text-size24 font-medium text-darkblack">
+            <span><?= $block->escapeHtml(__('Your Profile')) ?></span>
+        </legend><br>
+        <div class="name-extra">
+            <div class="field field-reserved w-full field-name-firstname required">
+                <label class="label" for="firstname">
+                    <span class="pro-required">First Name</span>
+                </label>
+                <div class="control">
+                    <input type="text" id="firstname" name="customer[firstname]" value="" required title="First Name" class="form-input">
+                    <span class="error">This is a required field.</span>
+                </div>
+		    </div>
+            <div class="field field-reserved w-full field-name-lastname required">
+                <label class="label" for="lastname">
+                    <span class="pro-required">Last Name</span>
+                </label>
+                <div class="control">
+                    <input type="text" id="lastname" name="customer[lastname]" value="" required title="Last Name" class="form-input">
+                    <span class="error">This is a required field.</span>
+                </div>
+            </div>
+        </div>
+        <div class="field" x-data="{ showJobTextField: '', selectedJobOption: '' }">
+            <div class="field legal-name">
+                <label class="label text-size16 font-normal text-darkblack" for="job_title">
+                    <span class="pro-required"><?= $block->escapeHtml(__('Job Title')) ?></span>
+                </label>
+                <div class="control">
+                    <!--<input type="text" name="company[job_title]" id="job_title"
+                        value=""
+                        required
+                        title="<?= $block->escapeHtmlAttr(__('Job Title')) ?>"
+                        class="input-text">-->
+                    <select x-model="selectedJobOption" name="company[job_title]"
+                    id="business_focus" data-validate="{required:true}" required class="select">
+                        <option value=""><?= $block->escapeHtml(__('Please select an item')) ?> </option>
+                        <option value="<?= $block->escapeHtml(__('Company Administrator or Owner')) ?>"><?= $block->escapeHtml(__('Company Administrator or Owner')) ?> </option>
+                        <option value="<?= $block->escapeHtml(__('Procurement')) ?>"><?= $block->escapeHtml(__('Procurement')) ?> </option>
+                        <option value="<?= $block->escapeHtml(__('Installer')) ?>"><?= $block->escapeHtml(__('Installer')) ?> </option>
+                        <option value="<?= $block->escapeHtml(__('Designer')) ?>"><?= $block->escapeHtml(__('Designer')) ?> </option>
+                        <option value="<?= $block->escapeHtml(__('Other')) ?>"><?= $block->escapeHtml(__('Other')) ?> </option>
+                    </select> 
+                    <span class="error">This is a required field.</span>
+                </div>
+            </div>
+            <div class="field legal-name" x-show="selectedJobOption === 'Other'" >
+                <label class="label" for="legal_name">
+                    <span class="pro-required"><?= $block->escapeHtml(__('Job Title Other')) ?></span>
+                </label>
+                <div class="control">
+                    <input type="text" name="company[job_title_other]" class="input-text" x-model="showJobTextField">
+                </div>
+            </div>
+        </div>
+        <?php 
+        $blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+        $customerGroupsCollection = $blockObj->getCustomerGroups('customer_group_code', 'Pro Tier 0');
+        ?>
+        <input type="hidden" name="customer[create_group_id]" value="<?php echo  $customerGroupsCollection[0]['value'];?>" />
+		<input type="hidden" name="customer[assistance_allowed_checkbox]" value="1" />
+		<input type="hidden" name="customer[assistance_allowed]" value="2" />
+        
+        <div class="field required">
+            <label for="email_address" class="label text-size16 font-normal text-darkblack">
+            <span class="pro-required"><?= $block->escapeHtml(__('Email')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="customer[email]"
+                       id="email_address"
+                       value=""
+                       required
+                       title="<?= $block->escapeHtmlAttr(__('Email')) ?>"
+                       class="input-text" >
+					<span class="error" id ="errs-customer-email">This is a required field.</span>
+            </div>
+        </div>
+
+        <?php $userDefinedAttributes = $block->getLayout()->getBlock('customer_form_user_attributes'); ?>
+        <?php if ($userDefinedAttributes): ?>
+            <?php $userDefinedAttributes->setFieldNameFormat('customer[%1$s]'); ?>
+            <?= $userDefinedAttributes->toHtml() ?>
+        <?php endif; ?>
+
+        <?= $block->getChildHtml('form.additional.info') ?>
+    </fieldset>
+
+    <div class="actions-toolbar">
+        <div class="primary">
+            <button type="submit" class="action save primary" title="<?= $block->escapeHtmlAttr(__('Submit')) ?>">
+                <span><?= $block->escapeHtml(__('Submit')) ?></span>
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+function getOptions(selectedOption,countryoptions) {
+    return countryoptions[selectedOption].regions;
+}
+
+function getSelectedOptions() {
+    return 'IN';
+}
+</script>
+
+<script>
+function getAllElementsWithAttribute(attribute) {
+    var matchingElements = [];
+    var allElements = document.getElementsByTagName('*');
+    for (var i = 0, n = allElements.length; i < n; i++) {
+        if (allElements[i].getAttribute(attribute) !== null) {
+        // Element exists with attribute. Add to array.
+        matchingElements.push(allElements[i]);
+        }
+    }
+  return matchingElements;
+}
+
+function CompanyEmail() {
+	var patterns = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+	if(document.getElementById('company_email').value.match(patterns)){
+		document.getElementById('company_email').classList.remove("invalid");
+		document.getElementById('errs-company-email').innerHTML ="This is a required field.";
+		document.getElementById( 'errs-company-email' ).style.display = 'none';
+		return true;
+	} else {
+		document.getElementById("company_email").classList.add("invalid");
+		document.getElementById('errs-company-email').innerHTML ="Please enter a valid email address (Ex: johndoe@domain.com)";
+		document.getElementById( 'errs-company-email' ).style.display = 'block';
+		document.getElementById('company_website').scrollIntoView({behavior: 'smooth'});
+		return false;
+	}
+}
+function CustomerEmail() {	
+	var patterns = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+	if(document.getElementById('email_address').value.match(patterns))  {
+		
+		document.getElementById('email_address').classList.remove("invalid");
+		document.getElementById('errs-customer-email').innerHTML ="This is a required field.";
+		document.getElementById( 'errs-customer-email' ).style.display = 'none';
+		return true;
+	} else {
+		
+		document.getElementById("email_address").classList.add("invalid");
+		document.getElementById('errs-customer-email').innerHTML ="Please enter a valid email address (Ex: johndoe@domain.com)";
+		document.getElementById( 'errs-customer-email' ).style.display = 'block';
+		document.getElementById('telephone').scrollIntoView({behavior: 'smooth'});
+		return false;
+	}
+}
+function Telphone() {
+	if(document.getElementById('telephone').value.match('[0-9]{10}'))  {
+		document.getElementById('telephone').classList.remove("invalid");
+		document.getElementById('err-telephone').innerHTML ="This is a required field.";
+		document.getElementById( 'err-telephone' ).style.display = 'none';
+		return true;
+		
+	} else {
+		document.getElementById("telephone").classList.add("invalid");
+		document.getElementById('err-telephone').innerHTML ="Number should be 10 digits.";
+		document.getElementById( 'err-telephone' ).style.display = 'block';
+		document.getElementById('country_id').scrollIntoView({behavior: 'smooth'});
+		return false;
+	}
+}
+
+</script>
+<style>
+.error {
+  display: none;
+  color: #e02b27;
+  margin-top:7px;
+}
+.invalid+.error {
+  display: block;
+  
+}
+.invalid{ border-color:#ed8380 !important; }
+.pro-required:after {
+content: " *";
+color: red;
+}
+</style>

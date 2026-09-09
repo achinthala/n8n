@@ -1,0 +1,1158 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\ProductStockItem;
+use Magento\Catalog\Block\Product\View;
+use Magento\Catalog\Model\Product;
+use Magento\Framework\Escaper;
+use Dcw\FlooringCalculation\ViewModel\Data;
+
+// phpcs:disable Generic.WhiteSpace.ScopeIndent.Incorrect
+
+/** @var View $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var Product $product */
+$product = $block->getProduct();
+
+/** @var ProductStockItem $stockItemViewModel */
+$stockItemViewModel = $viewModels->require(ProductStockItem::class);
+$minSalesQty        = $stockItemViewModel->getMinSaleQty($product);
+$maxSalesQty        = $stockItemViewModel->getMaxSaleQty($product);
+
+$flooringCalculationViewModel = $viewModels->require(Data::class);
+
+$maxSalesQtyLength  = ($maxSalesQty ? strlen((string) $maxSalesQty) : 4)
+    + (/* add one if decimal for separator */
+    (int) $stockItemViewModel->isQtyDecimal($product));
+
+$step = $stockItemViewModel->getQtyIncrements($product)
+    ? $stockItemViewModel->getQtyIncrements($product)
+    : null;
+
+$roll_width_ft = ceil((float)$product->getRollWidth()/12);
+$min_rollcut_ft = ceil((float)$product->getIncstoresPimMinRollcut()/12);
+$exactlength = $product->getIncstoresPimExactLengthInches();
+$exactwidth = $product->getIncstoresPimExactWidthInches();
+$max_roll_length_ft = '';
+
+if ($product->getIncstoresPimMaxRollLegnth() > 0) {
+    $max_roll_length_ft = ceil((float)$product->getIncstoresPimMaxRollLegnth()/12);
+}
+
+$flooringCalculationBlock = $block->getLayout()->createBlock(\Dcw\FlooringCalculation\Block\Index::class);
+$flooringCalculationHelper = $flooringCalculationBlock->flooringCalculationHelper();
+
+$request = $flooringCalculationViewModel->getRequest();
+
+$quoteItemId = (int)$request->getParam('id');
+$editProductId = (int)$request->getParam('product_id');
+
+$recommendedTypeActive = $customTypeActive = false;
+$roomLength = $customLength = $lineItemUnitQuantity= $lineItemPrice = $customerRoomWidth = $customerRoomLength = "";
+$customerRoomLengthGroup = $quoteItemQty = "";
+
+if ($quoteItemId && $editProductId) {
+    $cart = $flooringCalculationViewModel->getCart();
+    $pricingHelper = $flooringCalculationViewModel->getPricingHelper();
+
+    // Get the quote from the cart
+    $quote = $cart->getQuote();
+    $quoteItem = $quote->getItemById($quoteItemId);
+
+    $getPdpLineItem = $quoteItem !== false ? $quoteItem->getData('pdp_line_item') : null;
+
+    if ($getPdpLineItem) {
+        $quoteItemQty = $quoteItem->getQty();
+        // Decode the JSON string into an associative array
+        $data = json_decode($getPdpLineItem, true);
+        $roomLength = $data['RoomLength'] ?? '';
+        $customLength = $data['CustomLength'] ?? '';
+        $lineItemUnitQuantity = $data['LineItemUnitQuantity'] ?? '';
+        $lineItemPrice = $data['LineItemPrice'] ?? '';
+
+        $customerRoomWidth = $data['CustomerRoomWidth'] ?? '';
+        $customerRoomLength = $data['CustomerRoomLength'] ?? '';
+        $customerRoomLengthGroup = $data['CustomerRoomLengthGroup'] ?? '';
+
+        $lineItemPrice = $pricingHelper->currency($lineItemPrice, true, false);
+
+        $rollType = $data['RollType'] ?? '';
+
+        if ($rollType == 'Recommended Roll Length') {
+            $recommendedTypeActive = true;
+        }
+
+        if ($rollType == 'Custom Roll Length') {
+            $customTypeActive = true;
+        }
+    }
+}
+?>
+<?php if ($block->shouldRenderQuantity()): ?>
+    <script>
+        var is_cart_configure_pdp_global = '<?= /* @noEscape */ $flooringCalculationHelper->isCartConfigurePdp()?>';
+        function initQtyField() {
+            /** START - Ram - 10th Aug 2024 */
+            document.querySelector(".affirm-banner-container").innerHTML = '';
+            /** END - Ram - 10th Aug 2024 */
+            function findPathParam(key) {
+                // get all path pairs after BASE_URL/front_name/action_path/action
+                const baseUrl = (BASE_URL.substr(0, 2) === '//' ? 'http:' : '') + BASE_URL;
+                const baseUrlParts = (new URL(baseUrl)).pathname.replace(/\/$/, '').split('/');
+                const pathParts = window.location.pathname.split('/').slice(baseUrlParts.length + 3);
+                for (let i = 0; i < pathParts.length; i += 2) {
+                    if (pathParts[i] === key && pathParts.length > i) {
+                        return pathParts[i + 1];
+                    }
+                }
+            }
+
+            return {
+                qty: <?= (float)($block->getProductDefaultQty() ?: 1) ?>,
+                itemId: (new URLSearchParams(window.location.search)).get('id') || findPathParam('id'),
+                productId: '<?= (int)$product->getId() ?>',
+                <?php // populate the qty when editing a product from the cart ?>
+                onGetCartData: function onGetCartData(data, $dispatch) {
+                    if (!this.itemId) {
+                        return;
+                    }
+                    const cart = data && data.data && data.data.cart;
+                    const quotecart = data && data.data && data.data.quotecart;
+                    const cartItems = cart && cart.items;
+                    const quotecartItems = quotecart && quotecart.items;
+                    if (!cartItems && !quotecartItems) {
+                        return;
+                    }
+                    const cartItem = cartItems ? cartItems.find((item) => {
+                        return String(item.item_id) === String(this.itemId)
+                            && String(item.product_id) === String(this.productId);
+                    }) : null;
+                    const quotecartItem = quotecartItems ? quotecartItems.find((item) => {
+                        return String(item.item_id) === String(this.itemId)
+                            && String(item.product_id) === String(this.productId);
+                    }) : null;
+                    const line = (cartItem && cartItem.qty != null) ? cartItem : quotecartItem;
+                    if (!line || line.qty == null) {
+                        return;
+                    }
+                    this.qty = line.qty;
+                    this.roll_quantity = line.qty;
+                    this.total_roll_quantity = line.qty;
+                        this.total_sqft = parseFloat(this.roll_quantity)*
+                        (parseFloat(this.roll_width)*parseFloat(this.roll_length));
+
+                        this.total_price = hyva.formatPrice(parseFloat(this.total_sqft)*parseFloat(this.final_price));
+                        this.total_regular_price = hyva.formatPrice(parseFloat(this.total_sqft)*parseFloat(this.regular_price));
+                        var custompice =  this.total_price.replace('$','');
+                        if (document.getElementById('pdp_hide_price')) {
+                            document.getElementById('pdp_hide_price').value = custompice;
+                        }
+                        $dispatch('update-qty-' + this.productId, this.qty);
+
+                        //Roll type edit functionality
+                        const changeEvent = new Event('input', {
+                            bubbles: true, // Allow the event to bubble up
+                            cancelable: false // Allow the event to be canceled
+                        });
+
+                        let recommendedTypeActive = "<?php echo $recommendedTypeActive;?>";
+
+                        const rollLengthTab = document.querySelector('.roll_length_tab');
+
+                        // Check if the element exists
+                        if (rollLengthTab) {
+                            // Remove the 'active' class
+                            rollLengthTab.classList.remove('active');
+                        }
+
+                        if (recommendedTypeActive) {
+                            const recommendedRollLength = document.querySelector('.recommended_roll_length');
+                            // Check if the element exists
+                            if (recommendedRollLength) {
+                                recommendedRollLength.click();
+                            }
+
+                            document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+
+                            setTimeout(() => {
+                                let roomWidth = document.getElementById("room_width");
+                                if (roomWidth) {
+                                    roomWidth.value = "<?php echo $customerRoomWidth;?>";
+
+                                    if (document.getElementById('customer-room-width')) {
+                                        document.getElementById('customer-room-width').value = "<?php echo $customerRoomWidth;?>";
+                                    }
+                                }
+
+                                let roomLength = document.getElementById("room_length");
+                                if (roomLength) {
+                                    roomLength.value = "<?php echo $customerRoomLength;?>";
+                                    if (document.getElementById('customer-room-length')) {
+                                        document.getElementById('customer-room-length').value = "<?php echo $customerRoomLength;?>";
+                                    }
+                                }
+
+                                roomLength.dispatchEvent(changeEvent);
+                                roomWidth.dispatchEvent(changeEvent);
+
+                                roomLength.focus();
+                                roomWidth.focus();
+                                roomLength.focus();
+
+                                var customerRoomLengthGroup = "<?php echo $customerRoomLengthGroup;?>";
+
+                                if (document.getElementById("recommended-option"+customerRoomLengthGroup)) {
+                                    document.getElementById("recommended-option"+customerRoomLengthGroup).click();
+                                }
+
+                                document.getElementById("product-addtocart-button-fake").removeAttribute("disabled");
+                            }, 3000);
+
+                        }
+
+                        let customTypeActive = "<?php echo $customTypeActive;?>";
+
+                        if (customTypeActive) {
+                            const recommendedRollLength = document.querySelector('.custom_roll_length');
+                            // Check if the element exists
+                            if (recommendedRollLength) {
+                                let rollLength = document.getElementById("roll_length");
+
+                                if (rollLength) {
+                                    rollLength.value = "<?php echo $roomLength;?>";
+                                    let pdpPrice = document.getElementById("pdp-price");
+                                    pdpPrice.innerText = "<?php echo $lineItemPrice;?>";
+                                }
+
+                                rollLength.dispatchEvent(changeEvent);
+                                rollLength.focus();
+
+                                const parent = document.querySelector("#custom-content");
+                                if (parent) {
+                                    const qtyInput = parent.querySelector('input[name="qty"]'); // Find the input inside the parent
+                                    if (qtyInput) {
+                                        qtyInput.focus();
+                                    }
+                                }
+                            }
+                        }
+                }
+            };
+        }
+
+        function flooringCalcDetails() {
+            return {
+                room_width:'',
+                room_length:'',
+                recommended_roll_quantity1:'0',
+                recommended_roll_length1:'<?= /* @noEscape */ $min_rollcut_ft?>',
+                recommended_roll_quantity2: '0',
+                recommended_roll_length2:'<?= /* @noEscape */ $min_rollcut_ft?>',
+                roll_length_group:1,
+                roll_quantity: 0,
+                final_price: initFootPrice<?= /* @noEscape */ (int)$product->getId() ?>().getFinalPrice(),
+                regular_price: initFootPrice<?= /* @noEscape */ (int)$product->getId() ?>().getRegularPrice(),
+                total_price:hyva.formatPrice(parseFloat(0).toFixed(2)),
+                total_regular_price:hyva.formatPrice(parseFloat(0).toFixed(2)),
+                total_sqft:0,
+                total_roll_quantity:0,
+                total_qty: 1,
+                roll_width:'',
+                min_rollcut:'',
+                roll_length:'',
+                roll_lengths:'<?= /* @noEscape */ $exactlength?>',
+                max_roll_length:'',
+                roll_length_new: '',
+                isProcessing: false,
+                quoteItemQty: '<?= $quoteItemQty?>',
+                quoteItemRoomLength: '<?= $roomLength?>',
+                quoteItemPageLoaded: true,
+                showPriceSummary: false,
+                <?php if (!empty($flooringCalculationHelper->isCartConfigurePdp())) {?>
+                    rollTab:'custom_roll_length',
+                <?php } else {?>
+                    rollTab:'recommended_roll_length',
+                <?php } ?>
+                err_message: '',
+                is_cart_configure_pdp:'<?= /* @noEscape */ $flooringCalculationHelper->isCartConfigurePdp()?>',
+                init: function() {
+                    this.quoteItemPageLoaded = false;
+                    var isPageLoaded = document.getElementById('is_page_loaded');
+                    if (isPageLoaded) {
+                        isPageLoaded.value = 0;
+                    }
+                },
+                windowOnLoad: function() {
+                    this.quoteItemPageLoaded = true;
+
+                    var isPageLoaded = document.getElementById('is_page_loaded');
+                    if (isPageLoaded) {
+                        isPageLoaded.value = 1;
+                    }
+                },
+                isPageLoaded: function() {
+                    var isPageLoaded = document.getElementById('is_page_loaded');
+                    if (isPageLoaded) {
+                        return isPageLoaded.value;
+                    }
+
+                    return false;
+                },
+                roomWidthKeyup: function () {
+                    var regexp = /^\d*\.?\d*$/;     ///^\d+(\.\d{1,2})?$/;
+                    var isValidated = regexp.test(this.room_width);
+
+                    if (isValidated && this.room_width != '') {
+                        this.room_width = this.roundValue(this.room_width);
+                        this.recommended_roll_quantity1 = Math.ceil(parseFloat(this.room_width) /
+                                                                    parseFloat(this.roll_width));
+
+                        this.recommended_roll_length2 =
+                        (parseFloat(this.room_width) > parseFloat(this.min_rollcut))?
+                        this.room_width:this.min_rollcut;
+
+                        this.recommended_roll_length2 = Math.ceil(parseFloat(this.recommended_roll_length2));
+
+                        this.updateRollQtyLength();
+                    } else {
+                        this.room_width = '';
+                        this.recommended_roll_quantity1 = 0;
+                        this.recommended_roll_length2 = this.min_rollcut;
+                        this.updateRollQtyLength();
+                    }
+                },
+                roomLengthKeyup: function () {
+                    var regexp = /^\d*\.?\d*$/;
+                    var isValidated = regexp.test(this.room_length);
+
+                    if (isValidated && this.room_length != '') {
+                        this.room_length = this.roundValue(this.room_length)
+                        this.recommended_roll_quantity2 =
+                        Math.ceil(parseFloat(this.room_length) / parseFloat(this.roll_width));
+
+                        this.recommended_roll_length1 =
+                        (parseFloat(this.room_length) > parseFloat(this.min_rollcut))?
+                        this.room_length:this.min_rollcut;
+
+                        this.recommended_roll_length1 = Math.ceil(parseFloat(this.recommended_roll_length1));
+
+                        this.updateRollQtyLength();
+                    } else {
+                        this.room_length = '';
+                        this.recommended_roll_quantity2 = 0;
+                        this.recommended_roll_length1 = this.min_rollcut;
+                        this.updateRollQtyLength();
+                    }
+                },
+                qtyFieldClick:  function () {
+                    if (isNaN(this.roll_quantity) || parseFloat(this.roll_quantity) < 1 || this.roll_quantity == null) {
+                        this.roll_quantity = 0;
+                    }
+                },
+                qtyUpdate:  function () {
+                    if (isNaN(this.roll_quantity) || parseFloat(this.roll_quantity) < 1 || this.roll_quantity == null) {
+                        this.roll_quantity = 0;
+                    }
+                    this.calcTotalSqftPrice();
+                },
+                qtyFieldBlur:  function () {
+                    if (isNaN(this.roll_quantity) || parseFloat(this.roll_quantity) < 1 || this.roll_quantity == null) {
+                        this.roll_quantity = 0;
+                    }
+                },
+                /**
+                 * Validate if the value contains only numbers.
+                 * @param rollLength
+                 * @returns {boolean}
+                 */
+                isValidCustomRollLength: function(rollLength) {
+                    var regexp = /^\d+(\.\d*)?$/;
+                    return regexp.test(rollLength);
+                },
+                /**
+                 * Validate if the value is grater than the maximum
+                 * @param rollLength
+                 * @param maxRollLength
+                 * @returns {boolean}
+                 */
+                validateRollLengthVsMaxRollLength: function(rollLength, maxRollLength) {
+                    return rollLength > maxRollLength;
+                },
+                roundValue: function(value) {
+                    return value % 1 >= 0.5 ? Math.ceil(value) : Math.floor(value);
+                },
+                rollLengthUpdate:  function () {
+                    this.roll_length = this.roundValue(this.roll_length);
+                    var rollLength = this.roll_length;
+                    var rollLengthMin = this.min_rollcut;
+                    var rollLengthMax = this.max_roll_length;
+                    var error = false;
+
+                    document.getElementById("qty-error-msg-linearfoot").innerHTML = "";
+                    document.getElementById("product-addtocart-button-fake").removeAttribute("disabled");
+
+                    if (rollLength != '') {
+                        var isRollLengthValid = this.isValidCustomRollLength(rollLength);
+                        var isRollLengthGraterThanMax = this.validateRollLengthVsMaxRollLength(rollLength, rollLengthMax);
+
+                        if (!isRollLengthValid) {
+                            document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                            document.getElementById("qty-error-msg-linearfoot").innerHTML = "Only numbers are valid."
+                            document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+                            error = true;
+                        }
+
+                        if (isRollLengthGraterThanMax) {
+                            document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                            document.getElementById("qty-error-msg-linearfoot").innerHTML = "You can't order more than " + rollLengthMax + " linear feet.";
+                            document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+                            error = true;
+                        }
+
+                        if (rollLength < rollLengthMin) {
+                            document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                            document.getElementById("qty-error-msg-linearfoot").innerHTML = "You can't order less than " + rollLengthMin + " linear feet.";
+                            document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+                            error = true;
+                        }
+
+                        if (!error) {
+                            this.calcTotalSqftPrice();
+                        }
+                    }
+                },
+                rollLengthUpdateNew:  function () {
+                    this.roll_length_new = this.roundValue(this.roll_length_new);
+                    var rollLength = this.roll_length_new;
+                    var rollLengthMin = this.min_rollcut;
+                    var rollLengthMax = this.max_roll_length;
+                    var error = false;
+
+                    document.getElementById("qty-error-msg-linearfoot").innerHTML = "";
+                    document.getElementById("product-addtocart-button-fake").removeAttribute("disabled");
+
+                    var isRollLengthValid = this.isValidCustomRollLength(rollLength);
+                    var isRollLengthGraterThanMax = this.validateRollLengthVsMaxRollLength(rollLength, rollLengthMax);
+
+                    if (!isRollLengthValid) {
+                        document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                        document.getElementById("qty-error-msg-linearfoot").innerHTML = "Only numbers are valid."
+                        document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+                        error = true;
+                    }
+
+                    if (isRollLengthGraterThanMax) {
+                        document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                        document.getElementById("qty-error-msg-linearfoot").innerHTML = "You can't order more than " + rollLengthMax + " linear feet.";
+                        document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+                        error = true;
+                    }
+
+                    if (rollLength < rollLengthMin) {
+                        document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                        document.getElementById("qty-error-msg-linearfoot").innerHTML = "You can't order less than " + rollLengthMin + " linear feet.";
+                        document.getElementById("product-addtocart-button-fake").setAttribute("disabled", "disabled");
+                        error = true;
+                    }
+
+                    if (!error) {
+                        this.calcTotalSqftPrice();
+                    }
+                },
+                updateTotalQtySqftPriceOnPageLoad:  function () {
+                    <?php if (empty($flooringCalculationHelper->isCartConfigurePdp())) {?>
+                        <?php  if(!isset($_REQUEST['color'])) { ?>
+                        var CONTROL_INTERVAL = setInterval(function(){
+                            if(document.querySelector('.product-option-value-input')){
+                                document.querySelectorAll('.product-option-values').forEach(function(option_box) {
+                                    option_box.querySelector('.product-option-value-input').click();
+                                });
+                                clearInterval(CONTROL_INTERVAL);
+                            }
+                        }, 100);
+                        <?php }?>
+                    <?php }?>
+                },
+                updateRollQtyLength:   function () {
+                    if (document.getElementById('customer-room-length-group')) {
+                        document.getElementById('customer-room-length-group').value = this.roll_length_group;
+                    }
+
+                    if (this.roll_length_group == 1) {
+                        this.roll_quantity = this.recommended_roll_quantity1;
+                        this.roll_length = this.recommended_roll_length1;
+                    } else {
+                        this.roll_quantity = this.recommended_roll_quantity2;
+                        this.roll_length = this.recommended_roll_length2;
+                    }
+
+                    if (this.roll_quantity < 1 || this.roll_quantity == '') {
+                        this.roll_quantity = 0
+                    }
+                    if (this.roll_length <= this.min_rollcut || this.roll_length == '') {
+                        this.roll_length = this.min_rollcut;
+                    }
+
+                    this.calcTotalSqftPrice();
+                },
+                calcTotalSqftPrice:   function () {
+                    if (this.rollTab == 'custom_roll_length' ||
+                        (this.rollTab == 'recommended_roll_length' &&
+                            (this.room_width > 0 && this.roll_length_group == 1) ||
+                            (this.room_length > 0 && this.roll_length_group == 2))) {
+
+
+                        if (this.rollTab == 'custom_roll_length' && document.getElementById('roll_length')) {
+                            this.roll_length = this.roundValue(document.getElementById('roll_length').value);
+                        }
+
+                        if (this.roll_length == "") {
+                            this.roll_length = this.min_rollcut;
+                        }
+
+                        this.quoteItemPageLoaded = this.isPageLoaded();
+
+                        if (this.quoteItemRoomLength > 0 && this.quoteItemPageLoaded != 1) {
+                            this.roll_length = this.quoteItemRoomLength;
+                        }
+
+                        if (this.quoteItemQty > 0 && this.quoteItemPageLoaded != 1) {
+                            this.roll_quantity = this.quoteItemQty;
+                        }
+
+                        this.total_sqft = parseFloat(this.roll_quantity)*
+                        (parseFloat(this.roll_width)*parseFloat(this.roll_length));
+
+                        this.total_roll_quantity = this.roll_quantity;
+                        this.total_price = hyva.formatPrice(parseFloat(this.total_sqft)*parseFloat(this.final_price));
+                        this.total_regular_price = hyva.formatPrice(parseFloat(this.total_sqft)*parseFloat(this.regular_price));
+                    } else {
+                        this.total_sqft = 0;
+                        this.total_roll_quantity = 0;
+                        this.total_price = hyva.formatPrice(parseFloat(0));
+                        this.total_regular_price = hyva.formatPrice(parseFloat(0));
+                    }
+
+                    //if(this.room_width >0){
+                        if (document.getElementById('room-width')) {
+                            document.getElementById('room-width').value = this.roll_width;
+                        }
+
+                        var roomWidth = document.getElementById('room_width');
+                        if (roomWidth) {
+                            document.getElementById('customer-room-width').value = roomWidth.value;
+                        }
+
+                        var roomLength = document.getElementById('room_length');
+                        if (roomLength) {
+                            document.getElementById('customer-room-length').value = roomLength.value;
+                        }
+
+                    //}
+
+                    //if(this.room_length >0){
+                        if (document.getElementById('room-length')) {
+                            document.getElementById('room-length').value = this.roll_length;
+                        }
+                    //}
+
+                    if(this.rollTab!=""){
+                        if(this.rollTab == 'recommended_roll_length'){
+                            document.getElementById('role-type').value = 'Recommended Roll Length';
+                        } else {
+                            document.getElementById('role-type').value = 'Custom Roll Length';
+                        }
+                    }
+                    if(this.final_price > 0){
+                        document.getElementById('price-per-sqft').value = "$"+this.final_price+" /sqft";
+                    }
+
+                    var rollsizes = this.total_roll_quantity+" roll(s) "+this.roll_width+"′ × "+this.roll_length+" ′ ea.";
+                    document.getElementById('roll-size').value = rollsizes;
+
+                    var custompice =  this.total_price.replace('$','');
+                    if(document.getElementById('pdp_hide_price')){
+                        document.getElementById('pdp_hide_price').value = custompice;
+                    }
+                    if(document.querySelector('input[name="custom_length"]')){
+                        var custom_length = this.roundValue(document.getElementById('roll_length').value);
+                        if(custom_length <= this.min_rollcut){
+                            custom_length = this.min_rollcut;
+                        }
+                        document.querySelector('input[name="custom_length"]').value = custom_length;
+                        //START - Ram - 10th Aug 2024
+                        var affirmReqUrl = document.getElementById("affirmReqUrl").value;
+                        var affirmReqKey = document.getElementById("affirmReqKey").value;
+                        var pdpPriceFormat = this.total_price;
+                        var affirmReqAmount = Number(pdpPriceFormat.replace(/[^0-9\.-]+/g, "")) * 100;
+                        var affirmLocale = document.getElementById("affirm_locale").value;
+                        var affirmLogoColor = document.getElementById("affirm_logo_color").value;
+
+                        fetch(affirmReqUrl+'/'+affirmReqKey+'?amount='+affirmReqAmount+'&field=ala&locale='+affirmLocale+'&logo_color='+affirmLogoColor+'&logo_type=logo&promo_external_id=promo_set_RubberFlooring&show_cta=true')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            var htmlAla = data.promo.html_ala;
+                            htmlAla = htmlAla.replace("<a class='affirm-modal-trigger'>", "<a class='affirm-site-modal' x-init='affirmClick()' x-on:click='affirmClick()' aria-label='See if you qualify - Affirm Financing (opens in modal)' style='cursor: pointer;'>");
+                            htmlAla = '<span class="affirm-as-low-as" data-promo-id="promo_set_RubberFlooring" data-affirm-color="blue" data-bind="attr: { \'data-amount\': affirmAmount }" data-amount="'+affirmReqAmount+'">'+htmlAla+'</span>';
+                            if(htmlAla=='')
+                            {
+                                document.querySelector(".affirm-banner-container").innerHTML = '';
+                            }
+                            else
+                            {
+                                document.querySelector(".affirm-banner-container").innerHTML = htmlAla;
+                            }
+                        });
+                        //END - Ram - 10th Aug 2024
+                    }
+                },
+                addToCartClickVerify:   function () {
+					const colorBoxes = document.querySelectorAll(
+						'.normal_color_swatch_option .selectOptionColor'
+					);
+					var colorNotAvailable = 0;
+					const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+					colorBoxes.forEach((colorBox) => {
+						if (colorBox.querySelector('.select_none label.checked')) {
+							colorNotAvailable = 1;
+							colorerrorDiv.textContent = 'Please select a valid available color.';
+                            colorerrorDiv.style.display = 'block';
+							const colorSection = document.querySelector('.normal_color_swatch_option');
+
+							if (colorSection) {
+								colorSection.scrollIntoView({
+									behavior: 'smooth',
+									block: 'center'
+								});
+							}
+						}
+					});
+					if (colorNotAvailable){
+						return false;
+					} else {
+						colorerrorDiv.textContent = '';
+                        colorerrorDiv.style.display = 'none';
+					}
+					const qtyVal = document.querySelector('#custom-content input[name="qty"]').value;
+					const errorDiv = document.getElementById('qty-error-msg-linearfoot');
+
+                    var rollAvailableQuantity = document.getElementById('roll_available_quantity');
+                    
+
+                    var rollType = document.getElementById('role-type') ? document.getElementById('role-type').value : '';
+                    
+                    if (rollType == 'Recommended Roll Length') {
+                        var roomWidth = document.getElementById('room_width') ? document.getElementById('room_width').value : '';
+                        var roomLength = document.getElementById('room_length') ? document.getElementById('room_length').value : '';
+
+                        if (roomWidth <= 0 || roomLength <= 0) {
+                            errorDiv.textContent = 'Please enter a valid room width and length.';
+                            errorDiv.style.display = 'block';
+                            return false;
+                        }
+
+                        var totalAvailableQuantityCheck = parseFloat(roomLength) * qtyVal;
+                        if(rollAvailableQuantity.value > 0 && totalAvailableQuantityCheck > rollAvailableQuantity.value) {
+                            errorDiv.textContent = "You can't order more than "+rollAvailableQuantity.value+" linear feet.";
+                            errorDiv.style.display = 'block';
+                            return false;
+                        }
+                    }
+
+                    if (rollType == 'Custom Roll Length') {
+                        var rollLength = document.getElementById('roll_length') ? document.getElementById('roll_length').value : '';
+                        if (rollLength <= 0) {
+                            errorDiv.textContent = 'Please enter a valid roll length.';
+                            errorDiv.style.display = 'block';
+                            return false;
+                        }
+
+                        var totalAvailableQuantityCheck = parseFloat(rollLength) * qtyVal;
+                        if(rollAvailableQuantity.value > 0 && totalAvailableQuantityCheck > rollAvailableQuantity.value) {
+                            errorDiv.textContent = "You can't order more than "+rollAvailableQuantity.value+" linear feet.";
+                            errorDiv.style.display = 'block';
+                            return false;
+                        }
+                    }
+
+					if (qtyVal <= 0) {
+						errorDiv.textContent = 'Please enter a quantity greater than zero.';
+                        errorDiv.style.display = 'block';
+					} else {
+						errorDiv.textContent = '';
+                        errorDiv.style.display = 'none';
+                        if (this.isProcessing) return false;
+                        this.isProcessing = true;
+                        setTimeout(() => {
+                            this.isProcessing = false;
+                        }, 500);
+
+                        this.err_message = "";
+                        var can_add_to_cart = 1;
+                        if (this.rollTab == 'recommended_roll_length' && (this.room_width<=0 || this.room_length<=0)) {
+                            can_add_to_cart = 0;
+                        }
+                        if (this.max_roll_length!="") {
+                            if (this.roll_length > this.max_roll_length) {
+                                    can_add_to_cart = 0;
+                                    document.getElementById("qty-error-msg-linearfoot").innerHTML = "You can't order more than "+this.max_roll_length+" linear feet.";
+                                    document.getElementById("qty-error-msg-linearfoot").style.display = 'block';
+                                } else {
+                                    document.getElementById("qty-error-msg-linearfoot").innerHTML = "";
+                                    document.getElementById("qty-error-msg-linearfoot").style.display = 'none';
+                                }
+                        }
+                        if (can_add_to_cart == 1) {
+                            var cscustompice =  this.total_price.replace('$','');
+                            cscustompice = parseFloat(cscustompice.replace(/,/g, ''));
+                            cscustompice = cscustompice / this.roll_quantity;
+                            document.getElementById('pdp-p-data').value = cscustompice;
+                            document.getElementById('product-addtocart-button').click();
+
+                            const cartlink = document.getElementById('menu-cart-icon');
+
+                            var old_minicart_total_cart_amount = 0;
+                            if (document.querySelector('.minicart-item-count .minicart-total-cart-amount') && parseInt(document.querySelector('.minicart-item-count .minicart-total-cart-amount').innerHTML) > 0) {
+                                old_minicart_total_cart_amount = parseInt(document.querySelector('.minicart-item-count .minicart-total-cart-amount').innerHTML);
+                            }
+
+                            var minicart_total_cart_amount_cnt_chk = 1;
+
+                            getCustomerData(['customer'], function(data) {
+                                if (document.querySelector('.related-product-dialog-wrapper')) {
+                                    var CONTROL_INTERVAL_POPUP = setInterval(function(){
+                                        var new_minicart_total_cart_amount = 0;
+                                        if (document.querySelector('.minicart-item-count .minicart-total-cart-amount')) {
+                                            new_minicart_total_cart_amount = parseInt(document.querySelector('.minicart-item-count .minicart-total-cart-amount').innerHTML);
+                                        }
+
+                                        if(old_minicart_total_cart_amount != new_minicart_total_cart_amount || minicart_total_cart_amount_cnt_chk >=10){
+
+                                            clearInterval(CONTROL_INTERVAL_POPUP);
+                                            if(old_minicart_total_cart_amount != new_minicart_total_cart_amount){
+                                                window.dispatchEvent(
+                                                    new CustomEvent('hyva-modal-show', {detail: {dialog: 'related-product-slider-dialog'}})
+                                                );
+                                            }
+                                        }
+                                        minicart_total_cart_amount_cnt_chk = parseInt(minicart_total_cart_amount_cnt_chk) + 1;
+                                    }, 1000);
+                                }
+
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                                var messagesType = data.messages.messages[0].type;
+                                var messagesText = data.messages.messages[0].text;
+                                dispatchMessages([
+                                    {
+                                        type: messagesType,
+                                        text: messagesText
+                                    }
+                                ]);
+                            });
+                        }
+				    }
+                },
+                addToCartClickforNone:   function () {
+					const colorBoxes = document.querySelectorAll(
+							'.normal_color_swatch_option .selectOptionColor'
+						);
+						var colorNotAvailable = 0;
+						const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+						colorBoxes.forEach((colorBox) => {
+							if (colorBox.querySelector('.select_none label.checked')) {
+								colorNotAvailable = 1;
+								colorerrorDiv.textContent = 'Please select a valid available color.';
+								colorerrorDiv.style.display = 'block';
+								const colorSection = document.querySelector('.normal_color_swatch_option');
+
+								if (colorSection) {
+									colorSection.scrollIntoView({
+										behavior: 'smooth',
+										block: 'center'
+									});
+								}
+							}
+						});
+						if (colorNotAvailable){
+							return false;
+						} else {
+							colorerrorDiv.textContent = '';
+							colorerrorDiv.style.display = 'none';
+						}
+                    const qtyVal = document.getElementById('qtyNone').value;
+                    const errorDiv = document.getElementById('qty-error-msg-none');
+                    if (qtyVal <= 0) {
+                        errorDiv.textContent = 'Please enter a quantity greater than zero.';
+                        errorDiv.style.display = 'block';
+                    }else{
+                        errorDiv.textContent = '';
+                        errorDiv.style.display = 'none';
+                        var selected_option_child_id = document.querySelector('input[name="selected_option_child_id"]').value;
+                        var shiptotext = document.getElementById("s-ships").innerHTML;
+                        var custompice =  document.getElementById("finalPriceNone").innerHTML;
+                        custompice = custompice.replace('$','').replace(/,/g, '');
+
+                        window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+
+                        if (document.getElementById("overage_percent")) {
+                            overagePercentCheck = document.getElementById("overage_percent").checked;
+                        }
+
+                        const params = new URLSearchParams({
+                            product_floor_type: "None",
+                            main_product_id: "<?= /* @noEscape */ $product->getId() ?>",
+                            selected_option_child_id,
+                            qty: qtyVal,
+                            ship_to_text: shiptotext,
+                            custom_price: custompice,
+                            is_updating: <?php echo $block->getRequest()->getActionName() == 'configure' ? 1 : 0; ?>,
+                            item: <?= (int)$block->getRequest()->getParam('id') ?>
+                        });
+
+                        fetch(BASE_URL+'flooring/index/cartpost?form_key=' + hyva.getFormKey(), {
+                            method: "POST",
+                            headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                            body: params
+                        })
+                        .then(response => {
+                            getCustomerData(['customer'], function(data) {
+                                var messagesType = data.messages.messages[0].type;
+                                var messagesText = data.messages.messages[0].text;
+
+                                if(messagesType === "success"){
+                                    dispatchMessages([
+                                        {
+                                            type: messagesType,
+                                            text: messagesText
+                                        }
+                                    ]);
+
+                                    const relatedProductDialog = document.querySelector('.related-product-dialog-wrapper');
+                                    const cartLink = document.getElementById('menu-cart-icon');
+
+                                    if (relatedProductDialog) {
+                                        setTimeout(() => {
+                                            window.dispatchEvent(
+                                                new CustomEvent('hyva-modal-show', { detail: { dialog: 'related-product-slider-dialog' } })
+                                            );
+                                        }, 2000);
+                                    } else if (cartLink) {
+                                        cartLink.click();
+                                    }
+
+                                } else {
+                                    dispatchMessages([
+                                        {
+                                            type: messagesType,
+                                            text: messagesText
+                                        }
+                                    ]);
+                                }
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+
+                            });
+                            window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                        })
+                        .then(data => {
+                            // window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                            // window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                        });
+                    }
+                },
+                addToCartClickforPreCutRoll:   function () {
+					const colorBoxes = document.querySelectorAll(
+							'.normal_color_swatch_option .selectOptionColor'
+						);
+						var colorNotAvailable = 0;
+						const colorerrorDiv = document.getElementById('normal-color-swatch-option-error-msg');
+
+						colorBoxes.forEach((colorBox) => {
+							if (colorBox.querySelector('.select_none label.checked')) {
+								colorNotAvailable = 1;
+								colorerrorDiv.textContent = 'Please select a valid available color.';
+								colorerrorDiv.style.display = 'block';
+								const colorSection = document.querySelector('.normal_color_swatch_option');
+
+								if (colorSection) {
+									colorSection.scrollIntoView({
+										behavior: 'smooth',
+										block: 'center'
+									});
+								}
+							}
+						});
+						if (colorNotAvailable){
+							return false;
+						} else {
+							colorerrorDiv.textContent = '';
+							colorerrorDiv.style.display = 'none';
+						}
+                    const qtyVal = document.getElementById('qtyPreCutRoll').value;
+                    const errorDiv = document.getElementById('qty-error-msg-pre-cut-roll');
+                    if (qtyVal <= 0) {
+                        errorDiv.textContent = 'Please enter a quantity greater than zero.';
+                        errorDiv.style.display = 'block';
+                    } else {
+                        errorDiv.textContent = '';
+                        errorDiv.style.display = 'none';
+                        var selected_option_child_id = document.querySelector('input[name="selected_option_child_id"]').value;
+                        var shiptotext = document.getElementById("s-ships").innerHTML;
+                        var custompice =  document.getElementById("finalPreCutRollPrice").innerHTML;
+                        custompice = custompice.replace('$','').replace(/,/g, '');
+
+                        window.dispatchEvent(new CustomEvent('amcart-loading-start'));
+
+                        const params = new URLSearchParams({
+                            product_floor_type: "Pre Cut Roll",
+                            main_product_id: "<?= /* @noEscape */ $product->getId() ?>",
+                            selected_option_child_id,
+                            qty: qtyVal,
+                            ship_to_text: shiptotext,
+                            custom_price: custompice,
+                            is_updating: <?php echo $block->getRequest()->getActionName() == 'configure' ? 1 : 0; ?>,
+                            item: <?= (int)$block->getRequest()->getParam('id') ?>
+                        });
+
+                        fetch(BASE_URL+'flooring/index/cartpost?form_key=' + hyva.getFormKey(), {
+                            method: "POST",
+                            headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+                            body: params
+                        })
+                        .then(response => {
+                            getCustomerData(['customer'], function(data) {
+                                var messagesType = data.messages.messages[0].type;
+                                var messagesText = data.messages.messages[0].text;
+
+                                if(messagesType === "success"){
+                                    dispatchMessages([
+                                        {
+                                            type: messagesType,
+                                            text: messagesText
+                                        }
+                                    ]);
+
+                                    const relatedProductDialog = document.querySelector('.related-product-dialog-wrapper');
+                                    const cartLink = document.getElementById('menu-cart-icon');
+
+                                    if (relatedProductDialog) {
+                                        setTimeout(() => {
+                                            window.dispatchEvent(
+                                                new CustomEvent('hyva-modal-show', { detail: { dialog: 'related-product-slider-dialog' } })
+                                            );
+                                        }, 2000);
+                                    } else if (cartLink) {
+                                        cartLink.click();
+                                    }
+
+                                } else {
+                                    dispatchMessages([
+                                        {
+                                            type: messagesType,
+                                            text: messagesText
+                                        }
+                                    ]);
+                                }
+                                window.dispatchEvent(new CustomEvent('amcart-loading-stop'));
+                            });
+                            window.dispatchEvent(new CustomEvent('reload-customer-section-data'));
+                        })
+                        .then(data => {
+                        });
+                    }
+                }
+            }
+        }
+
+        document.querySelector('#product_addtocart_form').addEventListener("click", function(){
+            is_cart_configure_pdp_global = 0;
+        });
+
+    </script>
+
+	<div class="err_message" id="qty-error-msg-linearfoot" style="color: red; display: none;"></div>
+    <input type="hidden" id="roll_available_quantity" value="">
+
+    <div class="roll_length_tab_wrapper bg-white w-full"
+    x-show="(roll_width > 0 && roll_width !='') && (min_rollcut > 0 && min_rollcut !='')">
+        <!-- The tabs navigation -->
+        <div class="roll_length_tab_heading flex items-center">
+          <a class="w-1/2 recommended_roll_length roll_length_tab" :class="{ 'active': rollTab === 'recommended_roll_length' }" id ="recom-tabs"
+            @click.prevent="rollTab = 'recommended_roll_length'; updateRollQtyLength();" href="#">
+            Recommended Roll Length
+          </a>
+          <a class="w-1/2 custom_roll_length roll_length_tab" :class="{ 'active': rollTab === 'custom_roll_length' }"
+            @click.prevent="rollTab = 'custom_roll_length'; updateRollQtyLength();" id ="custom-tabs" href="#">Custom Roll Length</a>
+        </div>
+        <div  class="roll_length_tab_content tab1" id ="recom-contents" x-show="rollTab === 'recommended_roll_length'">
+            <div class="room-size-input flex items-center text-center justify-center w-full">
+                <div class="field room_width">
+                    <label class="label text-size14 font-medium text-black" for="room_width">
+                        <span class="text-size14 font-medium text-black">Room Width (ft)</span>
+                    </label>
+                    <input name="room_width" id="room_width" value="" type="text" placeholder="0"
+                    x-model="room_width" @input="roomWidthKeyup" @blur="roomWidthKeyup"
+                    autocomplete="off" class="form-text  text-size14 font-normal text-black" />
+                </div>
+                <span class="cross-mark text-size14 font-normal text-black">×</span>
+                <div class="field room_length">
+                    <label class="label text-size14 font-medium text-black" for="room_length">
+                        <span class="text-size14 font-medium text-black">Room Length (ft)</span>
+                    </label>
+                    <input name="room_length" id="room_length" value="" type="text" placeholder="0"
+                    x-model="room_length" @input="roomLengthKeyup" @blur="roomLengthKeyup"
+                    autocomplete="off" class="form-text text-size14 font-normal text-black" />
+                </div>
+            </div>
+            <div class="roll-cut-info text-size14 font-normal text-center text-lightgray1">
+                Rolls are cut to <span x-text="min_rollcut" id="prod_min_rollcut"></span> ft minimum</div>
+            <div class="recommended-options-container flex items-center text-center justify-between"
+                x-show="room_width > 0 && room_length > 0">
+                <div class="recommended-options-container-in">
+                    <input id="recommended-option1" type="radio" name="roll_length_group"
+                    x-on:change="updateRollQtyLength()" x-model="roll_length_group" value="1" class="hidden" />
+                    <label class="recommended-option1" for="recommended-option1">
+                        <span class="text-size14 font-semibold text-black">Option 1</span>
+                        <div class="option1-info text-size14 font-normal text-black">
+                            <span x-text="recommended_roll_quantity1"></span> roll
+                            <span x-text="roll_width"></span>′ ×
+                            <span x-text="recommended_roll_length1"></span>′ ea.
+                        </div>
+                        <img id="option1" alt="Option 1" title="Option 1" src="<?= /* @noEscape */ $block
+                        ->getViewFileUrl('Dcw_FlooringCalculation::images/option1_arrow.png'); ?>"/>
+                    </label>
+                </div>
+                <div class="recommended-options-container-in">
+                    <input id="recommended-option2" type="radio" name="roll_length_group"
+                    x-on:change="updateRollQtyLength()" x-model="roll_length_group" value="2" class="hidden" />
+                    <label class="recommended-option2" for="recommended-option2">
+                        <span class="text-size14 font-semibold text-black">Option 2</span>
+                        <div class="option2-info text-size14 font-normal text-black">
+                            <span x-text="recommended_roll_quantity2"></span> roll
+                            <span x-text="roll_width"></span>′ ×
+                            <span x-text="recommended_roll_length2"></span>′ ea.
+                        </div>
+                        <img id="option2" alt="Option 2" title="Option 2" src="<?= /* @noEscape */ $block
+                        ->getViewFileUrl('Dcw_FlooringCalculation::images/option2_arrow.png'); ?>"/>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="roll_length_tab_content tab2" id ="custom-content" x-show="rollTab === 'custom_roll_length'">
+            <div class="cutom_roll">
+                <div class="field roll_width w-full flex items-center">
+                    <label class="label text-size14 font-medium text-black" for="roll_width">
+                        <span>Roll Width:</span>
+                    </label>
+                    <input name="roll_width" id="roll_width"
+                    class="form-text text-size14 font-medium text-black"
+                    value="" type="text" x-model="roll_width" readonly>
+                    <span class="text-size14 font-medium text-black">Feet</span>
+                </div>
+                <div class="field roll_length w-full flex items-center">
+                    <label class="label text-size14 font-medium text-black" for="roll_length">
+                        <span>Roll Length:</span>
+                    </label>
+
+                    <input name="roll_length" id="roll_length" value=""
+                    class="form-text text-size14 font-medium text-black"
+                    type="text"   <?php if (!empty($flooringCalculationHelper->isCartConfigurePdp())) {?> @input="rollLengthUpdateNew" @blur="rollLengthUpdateNew"  x-model="roll_length_new" <?php }else { ?> @input="rollLengthUpdate" x-model="roll_length" <?php } ?>/>
+                    <span class="text-size14 font-medium text-black">
+                        Feet (min
+                        <span class="form-text text-size14 font-medium text-black" x-text="min_rollcut"></span>)
+                    </span>
+                </div>
+            </div>
+            <div x-data="initQtyField()" class="roll_qty">
+                <?php if ($product->isSaleable()): ?>
+                    <div class="w-full flex items-center">
+                        <label for="qty[<?= (int)$product->getId() ?>]"
+                            class="label text-size14 font-medium text-black"
+                        >
+                            <?= $escaper->escapeHtml(__('Quantity')) ?>
+                        </label>
+                        <input name="qty"
+                            @private-content-loaded.window="onGetCartData($event.detail, $dispatch)"
+                            id="qty[<?= (int)$product->getId() ?>]" 
+                            form="product_addtocart_form"
+                            <?php if ($stockItemViewModel->isQtyDecimal($product)): ?>
+                            type="text"
+                            pattern="[0-9](\.[0-9])?{0,<?= /** @noEscape */ $maxSalesQtyLength ?>}'"
+                            inputmode="decimal"
+                            <?php else: ?>
+                            type="text"
+                            pattern="[0-9]{0,<?= /** @noEscape */ $maxSalesQtyLength ?>}"
+                            inputmode="numeric"
+                            <?php if ($minSalesQty): ?>min="<?= /** @noEscape */ $minSalesQty ?>"<?php endif; ?>
+                            <?php if ($maxSalesQty): ?>max="<?= /** @noEscape */ $maxSalesQty ?>"<?php endif; ?>
+                            <?php if ($step): ?>step="<?= /** @noEscape */ $step ?>"<?php endif; ?>
+                            <?php endif; ?>
+                            :value="qty"
+                            class="form-input text-size14 font-medium text-black invalid:ring-2 invalid:ring-red-500"
+                            x-model.number="roll_quantity"
+                            x-on:click="qtyFieldClick"
+                            @input="qtyUpdate"
+                            @blur="qtyFieldBlur"
+                            @change="$dispatch('update-qty-<?= (int)$product->getId() ?>', qty)"
+                        />
+                        <span class="text-size14 font-medium text-black">Roll(s)</span>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="price-summary-container no_bg flex justify-between bg-white rounded-md relative items-baseline"
+        x-show="showPriceSummary == 1 && (roll_width > 0 && roll_width !='') && (min_rollcut > 0 && min_rollcut !='')">
+        <div class="left">
+            <div class="total-roll-quantity-length total-case">
+                <span x-text="total_roll_quantity" class="inter text-size28 font-medium text-black mr-1"></span>
+                <span class="inter text-size16 font-normal text-black">roll(s)</span>
+                <span x-text="roll_width" class="inter text-size16 font-normal text-black">
+                </span><span class="inter text-size16 font-normal text-black">′ × </span>
+                <span x-text="roll_length" class="inter text-size16 font-normal text-black">
+                </span><span class="inter text-size16 font-normal text-black">′ ea.</span>
+            </div>
+        </div>
+        <div class="right your_price flex">
+            <div class="inter text-size16 font-medium text-black price_left">Your price</div>
+            <div class="total-price-info ml-6">
+                <div class="total-regular-price inter line-through text-size14 font-normal text-custom-blue"
+                     x-show="total_price!=total_regular_price" x-text="total_regular_price"></div>
+                <div class="total-price inter text-size21 font-bold text-custom-blue" x-text="total_price" id ="pdp-price"></div>
+            </div>
+        </div>
+    </div>
+
+<?php endif; ?>
+
+<style type="text/css">
+    .catalog-product-view .product-info-main .price-summary-container.no_bg:before{
+        display: none;
+    }
+</style>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let obj = flooringCalcDetails();
+
+    window.onload = function() {
+        obj.windowOnLoad();
+    };
+});
+</script>

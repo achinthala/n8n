@@ -1,0 +1,15 @@
+diff --git a/vendor/plumrocket/module-geo-ip-lookup/Model/MmdbReader.php b/vendor/plumrocket/module-geo-ip-lookup/Model/MmdbReader.php
+index 1234567..abcdefg 100644
+--- a/vendor/plumrocket/module-geo-ip-lookup/Model/MmdbReader.php
++++ b/vendor/plumrocket/module-geo-ip-lookup/Model/MmdbReader.php
+@@ -88,7 +88,8 @@ class MmdbReader
+         if (!$this->isDatabaseExists) {
+             return [];
+         }
+ 
+-        return $this->mapFields($this->readerApi->get($ipAddress));
++        $result = $this->mapFields($this->readerApi->get($ipAddress));
++        return $result ?? [];
+     }
+ 
+     /**

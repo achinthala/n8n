@@ -1,0 +1,91 @@
+<?php
+
+/**
+ * Copyright © Bazaarvoice, Inc. All rights reserved.
+ * See LICENSE.md for license details.
+ */
+?>
+
+<?php /** @var Magento\Framework\View\Element\Template $block */ ?>
+<?php /** @var Bazaarvoice\Connector\ViewModel\Header $viewModel */ ?>
+<?php $viewModel = $block->getViewModel(); ?>
+
+<?php if ($viewModel->isBvEnabled()): ?>
+    <?php $bvApiUrl = $viewModel->getConfigProvider()->getBvApiHostUrl(); ?>
+    <!--suppress HtmlUnknownTarget -->
+    <!-- <?= $viewModel->getExtensionInjectionMessage(); ?> -->
+    <script>
+            // Remove Bazaarvoice microdata attributes immediately as they're added
+            // This prevents Google from reading incomplete structured data
+            (function() {
+                const removeMicrodata = function(element) {
+                    if (element.hasAttribute('itemscope')) {
+                        element.removeAttribute('itemscope');
+                    }
+                    if (element.hasAttribute('itemtype')) {
+                        element.removeAttribute('itemtype');
+                    }
+                    if (element.hasAttribute('itemprop')) {
+                        element.removeAttribute('itemprop');
+                    }
+                };
+
+                // Use MutationObserver to catch attributes as they're added
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes') {
+                            const target = mutation.target;
+                            // Only process elements within Bazaarvoice rating containers
+                            if (target.closest && target.closest('[data-bv-show="inline_rating"]')) {
+                                removeMicrodata(target);
+                            }
+                        } else if (mutation.type === 'childList') {
+                            // Check newly added nodes
+                            mutation.addedNodes.forEach(function(node) {
+                                if (node.nodeType === 1) { // Element node
+                                    if (node.closest && node.closest('[data-bv-show="inline_rating"]')) {
+                                        removeMicrodata(node);
+                                        // Also check all descendants
+                                        node.querySelectorAll('[itemscope]').forEach(removeMicrodata);
+                                    }
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Start observing when DOM is ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Observe all elements with data-bv-show="inline_rating"
+                        document.querySelectorAll('[data-bv-show="inline_rating"]').forEach(function(container) {
+                            observer.observe(container, {
+                                attributes: true,
+                                attributeFilter: ['itemscope', 'itemtype', 'itemprop'],
+                                childList: true,
+                                subtree: true
+                            });
+                        });
+                    });
+                } else {
+                    // DOM already loaded
+                    document.querySelectorAll('[data-bv-show="inline_rating"]').forEach(function(container) {
+                        observer.observe(container, {
+                            attributes: true,
+                            attributeFilter: ['itemscope', 'itemtype', 'itemprop'],
+                            childList: true,
+                            subtree: true
+                        });
+                    });
+                }
+            })();
+
+            window.addEventListener('init-external-scripts', () => {
+                const bvScript = document.createElement('script');
+                bvScript.src = '<?php echo $bvApiUrl; ?>';
+                bvScript.type = 'text/javascript';
+                bvScript.async = true;
+                document.head.append(bvScript);
+            }, {once: true, passive: true});
+    </script>
+<?php endif; ?>

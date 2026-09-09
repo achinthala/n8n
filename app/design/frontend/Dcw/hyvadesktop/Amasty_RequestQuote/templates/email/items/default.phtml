@@ -1,0 +1,53 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/** @var $block \Magento\Checkout\Block\Cart\Item\Renderer */
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var $item \Magento\Quote\Model\Quote\Item */
+$item = $block->getItem();
+$quote = $item->getQuote();
+$sampleProductBlock = $block->getLayout()->createBlock(\Dcw\SampleProduct\Block\SampleData::class);
+?>
+<tr>
+    <td class="item-info<?php if ($block->getOptionList()): ?> has-extra<?php endif; ?>" valign="top" style="font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: left;padding-top: 10px !important;padding-bottom: 38px !important;">
+        <p style=" font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;margin: 0 0 14px 0 !important;" class="product-name"><?= $escaper->escapeHtml($sampleProductBlock->getCartItemName($item)) ?></p>        
+        <?php if ($options = $block->getOptionList()): ?>
+            <dl class="item-options" style="margin: 0 !important;display: inline-block !important;width: 100% !important;">
+                <?php foreach ($options as $option):
+                    if ($option['label']=="Configurable Product Id" || 
+                    $option['label']== "Configurable Product Url" || 
+                    $option['label']=="Configurable Product Image" || 
+                    $option['label'] == "Product Name") {
+                        continue;
+                    }
+                    ?>
+                    <?php $_formatedOptionValue = $block->getFormatedOptionValue($option) ?>
+                    <div style="margin: 0 0 4px 0 !important;display: inline-block !important;width: 100% !important;clear: both !important;">
+                    <?php if($option['label']!=""){?>
+                        <dt style="float: left !important;padding: 0 2px 0 0 !important; font-weight: 400 !important;font-size: 13px !important;line-height: 20px !important;color: #000000 !important;"><strong style="font-weight: 400 !important;"><em style="font-style: normal !important;"><?= $escaper->escapeHtml($option['label']) ?></em>:</strong></dt>
+                        <?php } ?>
+                        <dd style="float: left !important;box-sizing: border-box !important;margin: 0 !important; font-weight: 400 !important;font-size: 13px !important;line-height: 20px !important;color: #000000 !important;">
+                            <?php if (isset($_formatedOptionValue['full_view'])): ?>
+                                <?= /* @noEscape */ $_formatedOptionValue['full_view'] ?>
+                            <?php else: ?>
+                                <?= /* @noEscape */ $_formatedOptionValue['value'] ?>
+                            <?php endif; ?>
+                        </dd>
+                    </div>
+                <?php endforeach; ?>
+            </dl>
+        <?php endif;?>
+        <?php $addInfoBlock = $block->getProductAdditionalInformationBlock(); ?>
+        <?php if ($addInfoBlock): ?>
+            <?= $addInfoBlock->setItem($item)->toHtml() ?>
+        <?php endif; ?>
+        <?= $escaper->escapeHtml($item->getDescription()) ?>
+    </td>
+    <td class="item-qty"  valign="top" style=" font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: center;padding-top: 10px !important;padding-bottom: 38px !important;"><?= /* @noEscape */  $item->getQty() * 1 ?></td>
+    <td class="item-price"  valign="top" style=" font-weight: 600;font-size: 14px;line-height: 20px;color: #000000;text-align: right;padding-top: 10px !important;padding-bottom: 38px !important;">
+        <?= /* @noEscape */  $block->getUnitPriceHtml($item) ?>
+    </td>
+</tr>

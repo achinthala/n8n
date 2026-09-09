@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Incstores. All rights reserved.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Amasty\RequestQuote\Block\Adminhtml\Quote\View">
+        <plugin name="incstores_quote_extensions_add_login_button"
+                type="Incstores\QuoteExtensions\Plugin\LoginAsCustomer\AddLoginAsCustomerButton"
+                sortOrder="10"/>
+    </type>
+
+    <!-- Bypass Remote Assist check on button behavior -->
+    <type name="Magento\LoginAsCustomerAdminUi\Ui\Customer\Component\Button\DataProvider">
+        <plugin name="incstores_quote_extensions_bypass_assist_button"
+                type="Incstores\QuoteExtensions\Plugin\LoginAsCustomer\BypassRemoteAssistButtonPlugin"
+                sortOrder="100"/>
+    </type>
+
+    <!-- Bypass Remote Assist validation check -->
+    <type name="Magento\LoginAsCustomerAssistance\Model\Processor\IsLoginAsCustomerAllowedResolver">
+        <plugin name="incstores_quote_extensions_bypass_assist_validation"
+                type="Incstores\QuoteExtensions\Plugin\LoginAsCustomer\BypassRemoteAssistValidationPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- Add Weight column to quote items -->
+    <type name="Amasty\RequestQuote\Block\Adminhtml\Quote\View\Items\Renderer\DefaultRenderer">
+        <plugin name="incstores_quote_extensions_add_weight_column"
+                type="Incstores\QuoteExtensions\Plugin\Quote\AddWeightColumn"
+                sortOrder="10"/>
+    </type>
+
+</config>

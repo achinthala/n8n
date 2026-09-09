@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="additional.product.info">
+            <block class="Magento\Checkout\Block\Cart\Item\Renderer" name="custom.extra.cart.item.info" template="Dcw_ShoppingCart::cart/item/extra_info.phtml" />
+        </referenceBlock>
+        
+        <block class="Magento\Checkout\Block\Cart\Additional\Info" name="additional.product.info" template="Magento_Checkout::cart/additional/info.phtml"/>
+    </body>
+</page>

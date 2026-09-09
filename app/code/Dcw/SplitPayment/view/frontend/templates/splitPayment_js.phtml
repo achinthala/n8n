@@ -1,0 +1,687 @@
+<?php
+$customerFormBlock = $block->getLayout()->createBlock(\ParadoxLabs\TokenBase\Block\Customer\Form::class);
+$code = $block->escapeHtmlAttr($customerFormBlock->getCode());
+$shippingAddess = $block->getCurrentQuote()->getShippingAddress();
+$currencySymbol = $block->getCurrencySymbol();
+?>
+<script>
+window.addEventListener('DOMContentLoaded', function () {
+    // Add base target="_top" dynamically
+    const baseElement = document.createElement('base');
+    baseElement.target = '_parent';
+    document.head.insertBefore(baseElement, document.head.firstChild);
+});
+</script>
+<script>
+require([
+    "jquery",
+    'Magento_Payment/js/model/credit-card-validation/credit-card-number-validator'
+], function($, cardNumberValidator) {
+    var grand_total = parseFloat('<?= /* @noEscape */ $block->getCurrentQuote()->getGrandTotal(); ?>');
+    $(function(){
+
+        $('select[name="billing[country_id]"]').addClass('input-text required-entry');
+
+        var total_stored_cc_payment = 0;
+        var remain_grand_total = 0;
+
+        remainingBalanceDisplay(grand_total);
+
+        $('.credit-debit-card-frms').on('click','.billing_shipping_same',function(){
+            if($(this).is(':checked')){
+                $(this).parents('.cc-each-frm-wrapper').find('.billing-address-container').html($('.dummy-cc-form>.cc-each-frm-wrapper .billing-address-container').children().clone());
+                //$(this).parents('.cc-each-frm-wrapper').find('select[name^="billing"]').css('pointer-events', 'none');
+                //$(this).parents('.cc-each-frm-wrapper').find('input[name^="billing"]').prop('readonly',true);
+            }else{
+                //$(this).parents('.cc-each-frm-wrapper').find('select[name^="billing"]').css('pointer-events', '');
+                //$(this).parents('.cc-each-frm-wrapper').find('input[name^="billing"]').prop('readonly',false);
+            }
+
+        });
+
+
+        $('.add-gc-btn').click(function(){
+            $('.e-gift-card-frms').addClass('active');
+            $('.e-gift-card-frms').show();
+
+            //$('.credit-debit-card-frms').removeClass('active');
+            //$('.credit-debit-card-frms').hide();
+
+            $('.add-gc-btn').addClass('active');
+            //$('.add-cc-btn').removeClass('active');
+            $('.e-gift-card-frms').append($('.dummy-gc-form>.gc-each-frm-wrapper').clone());
+            $('html, body').animate({scrollTop: $('.e-gift-card-frms .gc-each-frm-wrapper:last-child').offset().top-20}, 1000);
+        });
+
+        let ccPaymentIndex = 0;
+
+        $('.add-cc-btn').click(function () {
+            if ($('.credit-debit-card-frms .cc-each-frm-wrapper').length > 1) {
+                $(this).prop("disabled", true);
+            } else {
+                ccPaymentIndex = $('.credit-debit-card-frms .cc-each-frm-wrapper').length + 1
+
+                if ($('.add-cc-btn').hasClass('active')) {
+                    $('.credit-debit-card-frms').append($('.dummy-cc-form>.cc-each-frm-wrapper').clone());
+                } else {
+                    if ($('.credit-debit-card-frms .cc-each-frm-wrapper').length === 0) {
+                        $('.credit-debit-card-frms').append($('.dummy-cc-form>.cc-each-frm-wrapper').clone());
+                    }
+
+                    $('.credit-debit-card-frms').addClass('active');
+                    $('.credit-debit-card-frms').show();
+
+                    $('.add-cc-btn').addClass('active');
+                }
+
+                // Get the last appended wrapper
+                const ccEachFrmWrapper = $('.credit-debit-card-frms .cc-each-frm-wrapper:last-child');
+
+                const ccPaymentElement = ccEachFrmWrapper.find('input[name="cc_payment"]');
+
+                // Add an additional class with an incremented counter
+                ccPaymentElement.addClass('cc_payment' + ccPaymentIndex).siblings('.cc_payment_display').addClass('cc_payment_display' + ccPaymentIndex);
+
+                $('html, body').animate({scrollTop: $('.credit-debit-card-frms .cc-each-frm-wrapper:last-child').offset().top - 20}, 1000);
+
+                if ($('.credit-debit-card-frms .cc-each-frm-wrapper').length == 2) {
+                    $(this).prop("disabled", true);
+                }
+
+                $('.credit-debit-card-frms .cc_payment_display1').trigger('blur');
+            }
+        });
+
+        // A reusable function to update the payment amounts dynamically between two inputs
+        const updatePaymentAmount = (inputClassA, inputClassB, inputDisplayClass) => {
+            // Select the elements for the two input classes (A and B)
+            let inputElementA = $(inputClassA);
+            let inputElementB = $(inputClassB);
+
+            // Ensure both elements exist in the DOM before proceeding
+            if (inputElementA.length && inputElementB.length) {
+                // Get the value of input A (e.g., .cc_payment1) and convert it to a float
+                let inputValueA = parseFloat($(inputClassA).val());
+
+                // Calculate the value of input B as the difference from the grand total
+
+                if (isNaN(inputValueA) || inputValueA == "") {
+                    inputValueA = 0;
+                }
+
+                let inputValueB = grand_total - inputValueA;
+
+                // Set the value of input B
+                // Update the related display sibling element with the formatted currency value
+                // Trigger `keyup` in case other scripts rely on this event
+                inputElementB.val(inputValueB)
+                    .siblings(inputDisplayClass).val('<?= $currencySymbol ?>' + inputValueB).keyup();
+            }
+        };
+
+        // Attach a blur event listener for .cc_payment_display1 within .credit-debit-card-frms
+        $('.credit-debit-card-frms').on('blur', '.cc_payment_display1', () => {
+            // Update the opposite payment input field when the .cc_payment_display1 field loses focus
+            // This updates .cc_payment2 and its display (sibling element .cc_payment_display2)
+            updatePaymentAmount('.cc_payment1', '.cc_payment2', '.cc_payment_display2');
+        });
+
+        // Attach a blur event listener for .cc_payment_display2 within .credit-debit-card-frms
+        $('.credit-debit-card-frms').on('blur', '.cc_payment_display2', () => {
+            // Update the opposite payment input field when the .cc_payment_display2 field loses focus
+            // This updates .cc_payment1 and its display (sibling element .cc_payment_display1)
+            updatePaymentAmount('.cc_payment2', '.cc_payment1', '.cc_payment_display1');
+        });
+
+        /*========================= GC card remove  START ====================== */
+        $('.e-gift-card-frms').on('click','.remove-gc-btn', function(e) {
+            $('#checkout-loader').show();
+            var gc_obj = $(this).parents('.gc-each-frm-wrapper');
+            gc_obj.remove();
+            if($('.e-gift-card-frms .gc-each-frm-wrapper').length == 0){
+                $('.e-gift-card-frms').removeClass('active');
+                $('.e-gift-card-frms').hide();
+            }
+
+            remainingBalanceDisplay(grand_total);
+
+            $('#checkout-loader').hide();
+        });
+        /*========================= GC card remove  END ====================== */
+
+        /*========================= GC Card ending change when CC card number changing START ====================== */
+        $('.e-gift-card-frms').on('keyup keypress change', 'input[name="payment[cc_number]"]', function(e) {
+            var cc_number = $(this).val();
+            if(cc_number != ''){
+                $(this).parents('.gc-each-frm-wrapper').find('.cart_ending_heading span').html(cc_number.substr(-4));
+                $(this).parents('.gc-each-frm-wrapper').find('input[name="payment[cc_last4]"]').val(cc_number.substr(-4));
+            }else{
+                $(this).parents('.gc-each-frm-wrapper').find('.cart_ending_heading span').html('XXXX');
+                $(this).parents('.gc-each-frm-wrapper').find('input[name="payment[cc_last4]"]').val('');
+            }
+
+            cc_number = cc_number.replace(/[^\d]/g,'');
+            var result = cardNumberValidator(cc_number);
+
+            if ((result.isPotentiallyValid || result.isValid) && result.card !== null) {
+                $(this).parents('.gc-each-frm-wrapper').find('input[name="payment[cc_type]"]').val(result.card.type);
+            }
+        });
+
+        /*========================= GC Card ending change when CC card number changing END ====================== */
+
+        /*========================= GC Apply button enable when all fields fill-up  START ====================== */
+        $('.e-gift-card-frms').on('keyup keypress change', 'input[name="payment[cc_number]"], select[name="payment[cc_exp_month]"], select[name="payment[cc_exp_year]"], input[name="payment[cc_cid]"]', function(e) {
+            var err = 0;
+            var gc_obj = $(this).parents('.gc-each-frm-wrapper');
+            gc_obj.find('.gc-frm-left .input-text.required-entry').each(function(){
+                if(!$.trim($(this).val()).length){
+                    err = 1;
+                }
+                if($(this).hasClass('card-number') && ($.trim($(this).val()).length && $.trim($(this).val()).length < 16)){
+                    err = 1;
+                }
+            });
+            if (err == 1) {
+                gc_obj.find('.apply-gc-balance-btn').prop('disabled', true);
+            }else{
+                gc_obj.find('.apply-gc-balance-btn').prop('disabled', false);
+            }
+        });
+        /*========================= GC Apply button enable when all fields fill-up  END ====================== */
+
+        /*========================= get balance via Blackhawk API after click Apply button  START ====================== */
+
+        $('.e-gift-card-frms').on('click', '.apply-gc-balance-btn', function(e) {
+            //jQuery('body').trigger('processStart');
+            var err_same_gift_cards = 0;
+            var gc_obj = $(this).parents('.gc-each-frm-wrapper');
+            gc_obj.find('.gc_msg_sec').html('');
+
+            gc_obj.find('.gc-balance-amt').html('<?= $currencySymbol;?>'+'0.00');
+            gc_obj.find('.gc-payment-amt').html('<?= $currencySymbol;?>'+'0.00');
+            gc_obj.find('input[name="cc_payment"]').val(0);
+
+            gc_obj.find('input[name="payment[cc_number]"]').val(gc_obj.find('input[name="payment[cc_number]"]').val().replace(/\s/g, "")); //remove space
+            gc_obj.find('input[name="payment[cc_cid]"]').val(gc_obj.find('input[name="payment[cc_cid]"]').val().replace(/\s/g, "")); //remove space
+
+            $('.e-gift-card-frms .gc-each-frm-wrapper').each(function(gc_frm_obj_index){
+                var gc_frm_obj = $(this);
+                var gc_frm_obj_cc_cid = gc_frm_obj.find('input[name="payment[cc_cid]"]').val();
+
+            if (gc_obj.find('input[name="payment[cc_number]"]').val() == gc_frm_obj.find('input[name="payment[cc_number]"]').val() &&
+            $('.e-gift-card-frms .gc-each-frm-wrapper').index(gc_obj) != gc_frm_obj_index) {
+                err_same_gift_cards = 1;
+            }
+            });
+
+            if (err_same_gift_cards != 1 ) {
+                $.ajax({
+                    data:'gc_card_number='+gc_obj.find('input[name="payment[cc_number]"]').val()+'&gc_exp_date='+gc_obj.find('select[name="payment[cc_exp_month]"]').val()+gc_obj.find('select[name="payment[cc_exp_year]"]').val()+'&gc_cvv2='+gc_obj.find('input[name="payment[cc_cid]"]').val(),
+                    type:'post',
+                    url:'<?= /* @noEscape */ $block->getUrl('splitpayment/CheckGiftCardBalance')?>',
+                    //async:false,
+                    dataType:    'json',
+                    showLoader: true,
+                    success:function(response){
+                        if(response.success == 1){
+                            //grand_total = parseFloat(response.grand_total);
+                            var balance = parseFloat(response.balance);
+                            var total_cc_payment = 0;
+                            $('.e-gift-card-frms .gc-each-frm-wrapper').each(function(){
+                                total_cc_payment = parseFloat(total_cc_payment) + parseFloat($(this).find('input[name="cc_payment"]').val());
+                                total_cc_payment = total_cc_payment.toFixed(2);
+                            });
+
+                            $('.credit-debit-card-frms .cc-each-frm-wrapper').each(function(){
+                                total_cc_payment = parseFloat(total_cc_payment) + parseFloat($(this).find('input[name="cc_payment"]').val());
+                                total_cc_payment = total_cc_payment.toFixed(2);
+                            });
+
+                            var remain_grand_total = parseFloat(grand_total) - parseFloat(total_cc_payment);
+                            remain_grand_total = remain_grand_total.toFixed(2);
+                            gc_obj.find('.gc-balance-amt').html('<?= $currencySymbol;?>'+balance.toFixed(2));
+                            if(balance >= remain_grand_total){
+                                if(remain_grand_total > 0){
+                                    gc_obj.find('.gc-payment-amt').html('<?= $currencySymbol;?>'+remain_grand_total);
+                                    gc_obj.find('input[name="cc_payment"]').val(remain_grand_total);
+
+                                }else{
+                                    gc_obj.find('.gc-payment-amt').html('<?= $currencySymbol;?>'+0.00);
+                                    gc_obj.find('input[name="cc_payment"]').val(0);
+                                }
+                            }else{
+                                gc_obj.find('.gc-payment-amt').html('<?= $currencySymbol;?>'+balance.toFixed(2));
+                                gc_obj.find('input[name="cc_payment"]').val(balance);
+                            }
+
+                            if ( gc_obj.find('input[name="cc_payment"]').val() > 0 ) {
+                                gc_obj.find('.input-text').css('pointer-events', 'none');
+                                gc_obj.find('.input-text').prop('readonly',true);
+                            }
+                            remainingBalanceDisplay(grand_total);
+                        }else{
+                            gc_obj.find('.gc_msg_sec').html('<span class="msg_err">'+response.message+'</span>');
+                        }
+                        //jQuery('body').trigger('processStop');
+                    },
+                    error:function (XMLHttpRequest, textStatus, errorThrown) {
+                        if (textStatus == 'timeout'){}
+                        else if (textStatus == 'error'){}
+                        else if (textStatus == 'parsererror'){}
+                    }
+                });
+            } else {
+                gc_obj.find('.gc_msg_sec').html('<span class="msg_err">Duplicate eGift cards found</span>');
+            }
+        });
+        /*========================= get balance via Blackhawk API after click Apply button  END ====================== */
+
+        /*========================= same billing shipping checkbox uncheck when billing address change START ====================== */
+        $('.credit-debit-card-frms').on('keyup keypress change', 'input[name^="billing"], select[name^="billing"] ', function(e) {
+            $(this).parents('.cc-each-frm-wrapper').find('.billing_shipping_same').prop('checked',false);
+        });
+
+        /*========================= same billing shipping checkbox uncheck when billing address change END ====================== */
+
+        /*========================= CC Card ending change when CC card number changing START ====================== */
+        $('.credit-debit-card-frms').on('keyup keypress change', 'input[name="payment[cc_number]"]', function(e) {
+            var cc_number = $(this).val();
+            if(cc_number != ''){
+                $(this).parents('.cc-each-frm-wrapper').find('.cart_ending_heading span').html(cc_number.substr(-4));
+                $(this).parents('.cc-each-frm-wrapper').find('input[name="payment[cc_last4]"]').val(cc_number.substr(-4));
+            }else{
+                $(this).parents('.cc-each-frm-wrapper').find('.cart_ending_heading span').html('XXXX');
+                $(this).parents('.cc-each-frm-wrapper').find('input[name="payment[cc_last4]"]').val('');
+            }
+
+            cc_number = cc_number.replace(/[^\d]/g,'');
+            var result = cardNumberValidator(cc_number);
+
+            if ((result.isPotentiallyValid || result.isValid) && result.card !== null) {
+                $(this).parents('.cc-each-frm-wrapper').find('input[name="payment[cc_type]"]').val(result.card.type);
+            }
+        });
+        /*========================= CC Card ending change when CC card number changing END ====================== */
+
+        /*========================= CC billing address state change based on country START ====================== */
+
+        $('.credit-debit-card-frms').on('change','select[name="billing[country_id]"]', function(e) {
+            var countryIdObj = $(this);
+            $('#checkout-loader').show();
+            jQuery.ajax({
+                data:'country_id='+countryIdObj.val(),
+                type:'post',
+                url: BASE_URL+'splitpayment/country/statefetch',
+                dataType:	'json',
+                success:function(response){
+
+                    countryIdObj.parents('.cc-each-frm-wrapper').find('select[name="billing[region_id]"]').html('');
+                    countryIdObj.parents('.cc-each-frm-wrapper').find('input[name="billing[region]"]').val('');
+                    if(response.value=='')
+                    {
+                        countryIdObj.parents('.cc-each-frm-wrapper').find('.region').show();
+                        countryIdObj.parents('.cc-each-frm-wrapper').find('.region_id').hide();
+                    }
+                    else
+                    {
+                        countryIdObj.parents('.cc-each-frm-wrapper').find('select[name="billing[region_id]"]').html(response.value);
+                        countryIdObj.parents('.cc-each-frm-wrapper').find('.region_id').show();
+                        countryIdObj.parents('.cc-each-frm-wrapper').find('.region').hide();
+                    }
+                    $('#checkout-loader').hide();
+                },
+                error:function (XMLHttpRequest, textStatus, errorThrown) {
+                }
+            });
+        });
+        /*========================= CC billing address state change based on country END ====================== */
+
+        /*========================= After enter payment amt in any payment field adjust all payment fields START ====================== */
+
+        $('.credit-debit-card-frms').on('keyup keypress change','input[name="cc_payment_display"]', function(e) {
+            $(this).siblings('input[name="cc_payment"]').val($(this).val().replace ( /[^\d.]/g, '' ));
+
+            var remain_grand_total = parseFloat(grand_total);
+            $('.e-gift-card-frms .gc-each-frm-wrapper').each(function(){
+                remain_grand_total = parseFloat(remain_grand_total) - parseFloat($(this).find('input[name="cc_payment"]').val());
+            });
+            $('.credit-debit-card-frms .cc-each-frm-wrapper').each(function(){
+                var cc_payment_val = parseFloat($(this).find('input[name="cc_payment"]').val());
+
+                if (isNaN(cc_payment_val) || cc_payment_val == "") {
+                    cc_payment_val = 0;
+                }
+
+                console.log('cc_payment 1='+remain_grand_total+' | '+cc_payment_val);
+                if(remain_grand_total > cc_payment_val ) {
+                    remain_grand_total = parseFloat(remain_grand_total) - parseFloat($(this).find('input[name="cc_payment"]').val());
+                } else if (remain_grand_total < cc_payment_val) {
+                    $(this).find('input[name="cc_payment"]').val(remain_grand_total.toFixed(2));
+                    $(this).find('input[name="cc_payment_display"]').val('$'+remain_grand_total.toFixed(2));
+                    remain_grand_total = 0;
+                } else if (remain_grand_total == 0) {
+                    $(this).find('input[name="cc_payment"]').val(0);
+                    $(this).find('input[name="cc_payment_display"]').val('$'+remain_grand_total.toFixed(2));
+                }
+
+            });
+            remainingBalanceDisplay(grand_total);
+            if($('.credit-debit-card-frms .cc-each-frm-wrapper').length == 2){
+                $(".add-cc-btn").prop("disabled", true);
+            }
+        });
+        /*========================= After enter payment amt in any payment field adjust all payment fields END ====================== */
+
+        /*========================= 0.00 will clear when user click on Payment Amount field START ====================== */
+        $('.credit-debit-card-frms').on('click','input[name="cc_payment_display"]', function(e) {
+            if ($(this).siblings('input[name="cc_payment"]').val() == 0) {
+                $(this).val('');
+            }
+        });
+        /*========================= 0.00 will clear when user click on Payment Amount field END ====================== */
+
+        /*========================= Payment Amount field will change in price format on outside click START ====================== */
+        $('.credit-debit-card-frms').on('blur','input[name="cc_payment_display"]', function(e) {
+
+            if ($(this).siblings('input[name="cc_payment"]').val() == '') {
+                $(this).siblings('input[name="cc_payment"]').val(0);
+            }
+            $(this).val('$'+parseFloat($(this).siblings('input[name="cc_payment"]').val()).toFixed(2));
+        });
+        /*========================= Payment Amount field will change in price format on outside click END ====================== */
+
+        /*========================= CC card remove  START ====================== */
+        $('.credit-debit-card-frms').on('click','.remove-cc-btn', function(e) {
+            var cc_obj = $(this).parents('.cc-each-frm-wrapper');
+            cc_obj.find('.cc_msg_sec').html('');
+            $('#checkout-loader').show();
+            cc_obj.remove();
+            $('#checkout-loader').hide();
+            if($('.credit-debit-card-frms .cc-each-frm-wrapper').length < 2){
+                $(this).prop("disabled", false);
+            }
+
+            if ($('.credit-debit-card-frms .cc-each-frm-wrapper').length == 1) {
+                let elementPayment = document.querySelector(".cc_payment2");
+                if (elementPayment) {
+                    elementPayment.classList.replace("cc_payment2", "cc_payment1");
+                }
+
+                let elementPaymentDisplay = document.querySelector(".cc_payment_display2");
+                if (elementPaymentDisplay) {
+                    elementPaymentDisplay.classList.replace("cc_payment_display2", "cc_payment_display1");
+                }
+            }
+
+            remainingBalanceDisplay(grand_total);
+
+        });
+        /*========================= CC card remove  END ====================== */
+
+        /*========================= placed order button click  START ====================== */
+        $('.sbmt-pymnt-btn').click(function(e) {
+            $('.split_payment_global_message').html('');
+            var total_cc_payment = 0;
+            var err = 0;
+
+            $('.e-gift-card-frms .gc-each-frm-wrapper').each(function(){
+                total_cc_payment = parseFloat(total_cc_payment) + parseFloat($(this).find('input[name="cc_payment"]').val());
+                total_cc_payment = total_cc_payment.toFixed(2);
+            });
+
+            $('.credit-debit-card-frms .cc-each-frm-wrapper').each(function(){
+                var cc_frm_obj = $(this);
+                cc_frm_obj.find('input[name="payment[cc_number]"]').val(cc_frm_obj.find('input[name="payment[cc_number]"]').val().replace(/\s/g, "")); //remove space
+                cc_frm_obj.find('input[name="payment[cc_cid]"]').val(cc_frm_obj.find('input[name="payment[cc_cid]"]').val().replace(/\s/g, "")); //remove space
+
+                if(cc_frm_obj.find('input[name="id"]').val() == '' ){ //--------- validation checking of not saved card  START ---------------
+                    cc_frm_obj.find('span.error').remove();
+                    cc_frm_obj.find('.input-text.required-entry:visible').each(function(){
+                        if($(this).val() == ''){
+                            err = 1;
+                            $(this).after('<span class="error">This field is required.</span>');
+                            console.log($(this).attr('name')+' | err  ='+err);
+                        }
+
+                    });
+
+                    var authData = {};
+                    authData.clientKey = "<?= $block->escapeHtmlAttr($customerFormBlock->getMethod()->getConfigData('client_key'));?>";
+                    authData.apiLoginID = "<?= $block->escapeHtmlAttr($customerFormBlock->getMethod()->getConfigData('login'));?>";
+
+                    var cardData = {};
+                        cardData.cardNumber = cc_frm_obj.find('input[name="payment[cc_number]"]').val();
+                        cardData.month = cc_frm_obj.find('select[name="payment[cc_exp_month]"]').val();
+                        cardData.year = cc_frm_obj.find('select[name="payment[cc_exp_year]"]').val();
+                        cardData.cardCode = cc_frm_obj.find('input[name="payment[cc_cid]"]').val();
+
+                    var secureData = {};
+                        secureData.authData = authData;
+                        secureData.cardData = cardData;
+
+                    Accept.dispatchData(secureData, responseHandler);
+
+                    function responseHandler(response) {
+                        if (response.messages.resultCode === "Error") {
+                            var i = 0;
+                            while (i < response.messages.message.length) {
+                                if((response.messages.message[i].code == 'E_WC_05' || response.messages.message[i].code == 'E_WC_20') && cc_frm_obj.find('input[name="payment[cc_number]"]').val() != ''){
+                                    cc_frm_obj.find('input[name="payment[cc_number]"]').after('<span class="error">'+response.messages.message[i].text+'</span>');
+                                    err = 1;
+                                }
+                                if(response.messages.message[i].code == 'E_WC_06' && cc_frm_obj.find('select[name="payment[cc_exp_month]"]').val() != ''){
+                                    cc_frm_obj.find('select[name="payment[cc_exp_month]"]').after('<span class="error">'+response.messages.message[i].text+'</span>');
+                                    err = 1;
+                                }
+                                if((response.messages.message[i].code == 'E_WC_07' && cc_frm_obj.find('select[name="payment[cc_exp_year]"]').val() != '') || response.messages.message[i].code == 'E_WC_08'){
+                                    cc_frm_obj.find('select[name="payment[cc_exp_year]"]').after('<span class="error">'+response.messages.message[i].text+'</span>');
+                                    err = 1;
+                                }
+
+                                if(response.messages.message[i].code == 'E_WC_15'  && cc_frm_obj.find('input[name="payment[cc_cid]"]').val() != ''){
+                                    cc_frm_obj.find('input[name="payment[cc_cid]"]').after('<span class="error">'+response.messages.message[i].text+'</span>');
+                                    err = 1;
+                                }
+
+                                console.log(
+                                    response.messages.message[i].code + ": " +
+                                    response.messages.message[i].text
+                                );
+
+                                i = i + 1;
+                            }
+                        }
+                    }
+                } //--------- validation checking of not saved card   STOP ----------------
+
+                total_cc_payment = parseFloat(total_cc_payment) + parseFloat($(this).find('input[name="cc_payment"]').val());
+                total_cc_payment = total_cc_payment.toFixed(2);
+            });
+
+            if(err != 1){
+                console.log('grand_total:'+grand_total + ' == total_cc_payment:' + total_cc_payment);
+                if(grand_total == total_cc_payment) {
+                    $('#checkout-loader').show();
+
+                    var cc_payment_frm_arr = {};
+                    var i = 0;
+
+                    $('.e-gift-card-frms .gc-each-frm-wrapper').each(function(){
+                        var gc_frm_obj = $(this);
+                        var gc_frm_serialize_arr = gc_frm_obj.find(':input').serializeObject();
+
+                        cc_payment_frm_arr[i] = gc_frm_serialize_arr;
+                        i++;
+                    });
+
+                    $('.credit-debit-card-frms .cc-each-frm-wrapper').each(function(){
+
+                        var cc_frm_obj = $(this);
+                        var cc_frm_serialize_arr = cc_frm_obj.find(':input').serializeObject();
+
+                        cc_payment_frm_arr[i] = cc_frm_serialize_arr;
+                        i++;
+
+                    });
+                    console.log(JSON.stringify(cc_payment_frm_arr));
+
+                    $.ajax({
+                        //data:'cc_payment_post='+JSON.stringify(cc_payment_frm_arr),
+                        data:cc_payment_frm_arr,
+                        type:'post',
+                        url:'<?= /* @noEscape */ $block->getUrl('splitpayment/index/placeorder')?>',
+                        //async:false,
+                        dataType:    'json',
+                        success:function(response){
+                            if(response.success == 1){
+                                // If the parent window then redirect to success page
+                                if (window.top) {
+                                window.top.location.href = '<?= /* @noEscape */ $block->getUrl('checkout/onepage/success')?>'
+                            } else {
+                                window.location.href = '<?= /* @noEscape */ $block->getUrl('checkout/onepage/success')?>'
+                            }
+                            }else{
+                                $('.split_payment_global_message').html('<span class="msg_err">'+response.msg+'</span>');
+                                $('html, body').animate({scrollTop: $('.split_payment_global_message').offset().top-20}, 1000);
+                                $('#checkout-loader').hide();
+                            }
+                        },
+                        error:function (XMLHttpRequest, textStatus, errorThrown) {
+                            $('#checkout-loader').hide();
+                        }
+                    });
+                } else {
+                    $('.split_payment_global_message').html('<span class="msg_err">Total amount should be same as Grand Total </span>');
+                    $('html, body').animate({scrollTop: $('.split_payment_global_message').offset().top-20}, 1000);
+                }
+            } else {
+                $('html, body').animate({scrollTop: $('.form-split-payment div.control span.error:eq(0)').parents('div.field').offset().top-20}, 1000);
+            }
+        });
+
+        /*========================= placed order button click  END ====================== */
+
+        /*========================= right side shipping method edit button click  START ====================== */
+        $('.shipping-method-edit-btn, .ship-to-edit-btn').click(function(){
+            window.location.href = '<?= /* @noEscape */ $block->getUrl('checkout')?>#shipping';
+        });
+        /*========================= right side shipping method edit button click  END ====================== */
+
+        /*========================= items-in-cart expand collapse  START ====================== */
+        $('.opc-block-summary>.items-in-cart>.title').click(function(){
+        if($('.opc-block-summary>.items-in-cart>.minicart-items').is(":visible")){
+            $('.opc-block-summary>.items-in-cart').removeClass('active');
+            $('.opc-block-summary>.items-in-cart>.minicart-items').hide()
+        }else{
+            $('.opc-block-summary>.items-in-cart').addClass('active');
+            $('.opc-block-summary>.items-in-cart>.minicart-items').show()
+        }
+        });
+        /*========================= items-in-cart expand collapse  END ====================== */
+    });
+
+    function remainingBalanceDisplay(grand_total) {
+        var total_cc_payment = 0;
+        $('.e-gift-card-frms .gc-each-frm-wrapper').each(function(){
+            var giftCardPrice = $(this).find('input[name="cc_payment"]').val();
+
+            if (isNaN(giftCardPrice) || giftCardPrice == "") {
+                giftCardPrice = 0;
+            }
+
+            total_cc_payment = parseFloat(total_cc_payment) + parseFloat(giftCardPrice);
+            total_cc_payment = total_cc_payment.toFixed(2);
+        });
+
+        $('.credit-debit-card-frms .cc-each-frm-wrapper').each(function(){
+            var ccPaymentPrice = $(this).find('input[name="cc_payment"]').val();
+
+            if (isNaN(ccPaymentPrice) || ccPaymentPrice == "") {
+                ccPaymentPrice = 0;
+            }
+
+            total_cc_payment = parseFloat(total_cc_payment) + parseFloat(ccPaymentPrice);
+            total_cc_payment = total_cc_payment.toFixed(2);
+        });
+
+        var remain_grand_total = parseFloat(grand_total) - parseFloat(total_cc_payment);
+        remain_grand_total = remain_grand_total.toFixed(2);
+        //console.log('total===='+remain_grand_total + ' = '+ parseFloat(grand_total) + ' - ' + parseFloat(total_cc_payment));
+        if (remain_grand_total < 0) {
+            remain_grand_total = 0;
+        }
+        $('.remaining-balance .remaining-balance-amount .price').html('<?= $currencySymbol;?>'+remain_grand_total);
+        if(remain_grand_total > 0){
+            $('.add-gc-btn').prop('disabled', false);
+            $('.add-cc-btn').prop('disabled', false);
+            //$('.add-cc-btn').addClass('active');
+        }else{
+            $('.add-gc-btn').prop('disabled', true);
+            $('.add-cc-btn').prop('disabled', true);
+        }
+    }
+
+    $.fn.serializeObject = function(){
+        var self = this,
+            json = {},
+            push_counters = {},
+            patterns = {
+                "validate": /^[a-zA-Z][a-zA-Z0-9_]*(?:\[(?:\d*|[a-zA-Z0-9_]+)\])*$/,
+                "key":      /[a-zA-Z0-9_]+|(?=\[\])/g,
+                "push":     /^$/,
+                "fixed":    /^\d+$/,
+                "named":    /^[a-zA-Z0-9_]+$/
+            };
+
+        this.build = function(base, key, value){
+            base[key] = value;
+            return base;
+        };
+
+        this.push_counter = function(key){
+            if(push_counters[key] === undefined){
+                push_counters[key] = 0;
+            }
+            return push_counters[key]++;
+        };
+
+        $.each($(this).serializeArray(), function(){
+            // Skip invalid keys
+            if(!patterns.validate.test(this.name)){
+                return;
+            }
+
+            var k,
+                keys = this.name.match(patterns.key),
+                merge = this.value,
+                reverse_key = this.name;
+
+            while((k = keys.pop()) !== undefined){
+
+                // Adjust reverse_key
+                reverse_key = reverse_key.replace(new RegExp("\\[" + k + "\\]$"), '');
+
+                // Push
+                if(k.match(patterns.push)){
+                    merge = self.build([], self.push_counter(reverse_key), merge);
+                }
+
+                // Fixed
+                else if(k.match(patterns.fixed)){
+                    merge = self.build([], k, merge);
+                }
+
+                // Named
+                else if(k.match(patterns.named)){
+                    merge = self.build({}, k, merge);
+                }
+            }
+
+            json = $.extend(true, json, merge);
+        });
+
+        return json;
+    };
+});
+</script>

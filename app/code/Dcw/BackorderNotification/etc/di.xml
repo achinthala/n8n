@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    
+    <!-- Add custom attribute to order API extension attributes -->
+    <!-- <type name="Magento\Sales\Api\OrderRepositoryInterface">
+        <plugin name="dcw_add_backorder_notification_to_order_api" 
+                type="Dcw\BackorderNotification\Plugin\Sales\Order\AddBackorderNotificationToApi" 
+                sortOrder="100"/>
+    </type> -->
+    
+</config>

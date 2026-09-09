@@ -1,0 +1,8 @@
+<!--@subject {{trans "Your purchase order request"}} @-->
+{{template config_path="design/email/header_template"}}
+
+<p>{{trans "Thank you for your order."}}</p>
+<p>{{trans "We received your purchase order request and will review it. You will be contacted if we need more information."}}</p>
+<p><strong>{{trans "Order number:"}}</strong> {{var order.getIncrementId()}}</p>
+
+{{template config_path="design/email/footer_template"}}

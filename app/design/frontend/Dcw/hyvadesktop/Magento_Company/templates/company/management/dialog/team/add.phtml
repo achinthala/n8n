@@ -1,0 +1,152 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+?>
+<?php /** @var $block Magento\Framework\View\Element\Template */ ?>
+<form class="form form-add-team" method="post" id="add-team-form"  @submit.prevent="submitFormTeam"
+      action="<?= $block->escapeUrl($block->getUrl('*/team/manage')) ?>"
+      data-mage-init='{"validation":{}}'>
+    <input type="hidden" name="target_id" id="target_id" />
+    <input type="hidden" name="team_id" id="team_id" />
+    <?= $block->getBlockHtml('formkey') ?> 
+    <fieldset class="fieldset info">
+        <div class="field team-title required">
+            <label class="label" for="team-title">
+                <span><?= $block->escapeHtml(__('Team Title')) ?></span>
+            </label>
+            <div class="control">
+                <input type="text" name="name" id="team-title" value=""
+                       title="<?= $block->escapeHtmlAttr(__('Team Title')) ?>"
+                       class="input-text" data-validate="{required:true}">
+            </div>
+        </div>
+        <div class="field description">
+            <label class="label" for="description">
+                <span><?= $block->escapeHtml(__('Description')) ?></span>
+            </label>
+            <div class="control">
+                <textarea name="description" id="description" rows="4"
+                title="<?= $block->escapeHtmlAttr(__('Description')) ?>" class="textarea">
+                </textarea>
+            </div>
+        </div>
+    </fieldset>
+    <button class="btn btn-primary">
+            <?= $escaper->escapeHtml(__('Submit')) ?>
+        </button>
+</form>
+
+<script>
+  function submitFormTeam() {
+      const postUrl = BASE_URL + 'company/team/manage/';
+      
+      const formKey = hyva.getFormKey();
+                  let target_id = document.getElementById('target_id').value;
+                 let team_id = document.getElementById('team_id').value;
+                  let teamtitle = document.getElementById('team-title').value;
+                  let description = document.getElementById('description').value;
+                 
+                  
+    const form = document.getElementById('add-user-form');
+    const formData = new FormData(form);
+      
+    
+    
+    fetch(postUrl, {
+                    "headers": {
+                        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    },
+                    "body": "form_key=" + formKey + "&target_id=" +target_id+ 
+                    "&team_id=" + team_id+ "&name=" + teamtitle+ "&description=" + description,
+                   // "body": formData,
+                    "method": "POST",
+                    "mode": "cors",
+                    "credentials": "include"
+                }).then(response => {
+                    if (! response.ok){
+    document.getElementById('messageshow').innerHTML ='Your request failed.';    
+    }else{
+    return response.json();} 
+                }).then(result => {console.log(result);
+                document.getElementById('closeteamaddpop').click();
+                    document.getElementById('messageshow').innerHTML =result.message;
+        setTimeout(() => location.reload(), 1000);
+                    
+                });
+    
+    
+    
+  }
+
+  
+</script>
+
+
+<script>
+
+
+
+function addTeamItmeBlank(){
+
+                    let customer_id = document.getElementById('customer_id').value='';
+                  let target_id = document.getElementById('target_id').value= '';
+                 let team_id = document.getElementById('team_id').value= '';
+                  let teamtitle = document.getElementById('team-title').value= '';
+                  let description = document.getElementById('description').value= '';
+                 
+  
+}
+
+
+
+  function fetchTeamFromContent(teamid) {console.log('asasass');
+  
+  
+  
+  
+                let customer_id = document.getElementById('customer_id').value='';
+                  let target_id = document.getElementById('target_id').value= '';
+                 let team_id = document.getElementById('team_id').value= '';
+                  let teamtitle = document.getElementById('team-title').value= '';
+                  let description = document.getElementById('description').value= '';
+  
+  
+  
+    const formKey = hyva.getFormKey();
+                const postUrl = BASE_URL + 'company/team/get/?team_id='+teamid+'&_='+formKey;
+    fetch(postUrl, {
+                method: "GET",
+                headers: { 'Content-Type': 'application/json' },
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    
+                    
+ document.getElementById('target_id').value= '';
+document.getElementById('team_id').value= data.data.team_id;
+ document.getElementById('team-title').value= data.data.name;
+document.getElementById('description').value= data.data.description;
+  
+                    
+                    console.log(data);
+                    
+
+                }
+            }).catch(error => {
+        console.error(error);
+      });
+      
+      
+      
+      
+      
+      
+      
+  }
+</script>

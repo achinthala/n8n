@@ -1,0 +1,1488 @@
+<?php
+declare(strict_types=1);
+
+/** @var $block \Hyva\MirasvitLayeredNavigation\Block\Common */
+
+$additionalConfig = $block->getJsonConfig()['*']['Mirasvit_LayeredNavigation/js/ajax'];
+?>
+
+<script>
+    function getMstNavConfig() {
+        return {
+            clearUrl: '<?= $additionalConfig['cleanUrl'] ?>',
+
+            isAjax: function () {
+                return <?= (int)$block->isAjaxEnabled() ?>;
+            },
+
+            isInstantMode: function () {
+                return <?= (int)$block->isInstantMode() ?>;
+            },
+
+            isConfirmationMode: function () {
+                var isConfirmationMode = <?= (int)$block->isConfirmationMode() ?>;
+                var isConfirmOnMobile  = <?= (int)$block->isConfirmOnMobile() ?>;
+                var modeSwitchBreakpoint = <?= (int)$block->getModeSwitchBreakpoint() ?>;
+
+                return isConfirmationMode
+                    || (isConfirmOnMobile && window.innerWidth <= modeSwitchBreakpoint);
+            },
+
+            isConfirmOnMobile: function () {
+                return <?= (int)$block->isConfirmOnMobile() ?>;
+            },
+
+            getModeSwitchBreakpoint: function () {
+                return <?= (int)$block->getModeSwitchBreakpoint() ?>;
+            },
+
+            isSeoFilterEnabled: function () {
+                return <?= (int)$block->isSeoFilterEnabled() ?>;
+            },
+
+            isHighlightEnabled: function () {
+                return <?= (int)$block->isHighlightEnabled() ?>;
+            },
+
+            getFriendlyClearUrl: function () {
+                return '<?=$block->getFriendlyClearUrl()?>';
+            },
+
+            getAjaxCallEvent: function () {
+                return 'mst-nav__ajax-call';
+            },
+
+            getAjaxProductListWrapperId: function () {
+                return '#m-navigation-product-list-wrapper';
+            },
+
+            isSearchFilterFulltext: function () {
+                return <?= (int)$block->isUseFulltext() ?>;
+            },
+
+            isSearchFilterOptions: function () {
+                return <?= (int)$block->isFilterOptions() ?>;
+            },
+
+            isFilterClearBlockInOneRow: function () {
+                return <?= (int)$additionalConfig['isFilterClearBlockInOneRow'] ?>
+            },
+
+            getClearUrl: function () {
+                return this.clearUrl;
+            },
+
+            getOverlayUrl: function () {
+                return '<?= $additionalConfig['overlayUrl'] ?>'
+            },
+
+            isHorizontalByDefault: function () {
+                return false;
+            },
+            
+            // trustpilot compatibility
+            loadTrustpilotWidget: function () {
+                if(window.Trustpilot) {
+                    let trustboxes = document.querySelectorAll(this.getAjaxProductListWrapperId() + ' .trustpilot-widget');
+                    if(trustboxes.length !== 0) {
+                        trustboxes.forEach((trustbox) => {
+                            window.Trustpilot.loadFromElement(trustbox);
+                        });
+                    }
+                }
+            },
+
+            // yotpo compatibility
+            loadYotpoWidget: function () {
+                if(window.yotpo){
+                    window.yotpo.initWidgets();
+                }
+            },
+           
+            load3rdPartyReviewWidgets: function () {
+                this.loadTrustpilotWidget();
+                this.loadYotpoWidget();
+            }
+
+        }
+    }
+
+    const mstNavCache = (() => {
+        return {
+            cache: [],
+
+            getCacheId: function (key) {
+                return JSON.stringify(key);
+            },
+
+            getData: function (key) {
+                let cacheId = this.getCacheId(key);
+                return this.cache[cacheId];
+            },
+
+            setData: function (key, data) {
+                let cacheId = this.getCacheId(key);
+                this.cache[cacheId] = data;
+            }
+        }
+    })();
+</script>
+
+<script>
+    function handleFiltersNavPositions() {
+        var filtersConfig = <?= json_encode($block->getFiltersNavPositions()) ?>;
+
+        document.querySelectorAll('.sidebar template').forEach(function (filterOptionsTemplate) {
+            var filterItem = filterOptionsTemplate.content.querySelector('[data-mst-nav-filter]');
+
+            if (!filterItem || filterItem == undefined) {
+                return;
+            }
+
+            var attributeCode = filterItem.getAttribute('data-mst-nav-filter').replace(/A\d{6}A/, '');
+
+            if (filtersConfig.hasOwnProperty(attributeCode)) {
+                filterOptionsTemplate.closest('.filter-option').setAttribute('data-nav-position', filtersConfig[attributeCode]);
+            }
+        }.bind(this))
+    }
+
+    document.addEventListener('DOMContentLoaded', handleFiltersNavPositions);
+</script>
+
+<script>
+    function getContentUpdater() {
+        return {
+            config: getMstNavConfig(),
+
+            leftnavUpdate: function (leftnav) {
+                const navigation = document.querySelector('.sidebar.sidebar-main .block.filter, .sidebar.sidebar-main .block.filter, .sidebar.sidebar-main .block-content');
+
+                if (leftnav) {
+                    const el = navigation.parentElement;
+
+                    el.outerHTML = this.renderJSFromContent(leftnav);
+                    /* remove duplicated scripts */
+                    document.querySelectorAll('.sidebar.sidebar-main script')
+                        .forEach(function (scriptEl) {
+                            if (scriptEl.innerHTML.indexOf('expandFilters') >= 0) {
+                                scriptEl.remove();
+                            }
+                        });
+
+                    expandFilters();
+                }
+            },
+
+            productsUpdate: function (products) {
+                if (products) {
+                    this.triggerUpdate(this.config.getAjaxProductListWrapperId(), products);
+
+                    // re-init ajax toolbar
+                    let toolbars = document.querySelector(this.config.getAjaxProductListWrapperId())
+                        .querySelectorAll('.toolbar.toolbar-products');
+
+                    toolbars.forEach(function (toolbar) {
+                        let xData = toolbar.getAttribute('x-data');
+                        xData = '{...' + xData + ', ...initAjaxToolbar()}';
+
+                        toolbar.setAttribute('x-data', xData);
+                    });
+
+                    // re-init ajax pager
+                    let pagerItems = document.querySelector(this.config.getAjaxProductListWrapperId())
+                        .querySelectorAll('.toolbar.toolbar-products .pages-items a');
+
+                    pagerItems.forEach(function (item) {
+                        item.addEventListener('click', function (e) {
+                            e.preventDefault();
+
+                            initApplier().apply(item.href);
+                        });
+                    });
+
+                    // third-party review widgets compatibility
+                    this.config.load3rdPartyReviewWidgets();
+                   
+                    
+                    // update form_key cookie after products update
+                    const formKeyElem = document.querySelector('form.product_addtocart_form input[name="form_key"]');
+
+                    if (formKeyElem && formKeyElem.value) {
+                        hyva.setCookie('form_key', formKeyElem.value);
+                    }
+                }
+            },
+
+            pageTitleUpdate: function (pageTitle) {
+                /*this.triggerUpdate('.page-title', pageTitle, '.page-title-wrapper');*/
+            },
+
+            breadcrumbsUpdate: function (breadcrumbs) {
+                this.triggerUpdate('.wrapper-breadcrums, .breadcrumbs', breadcrumbs);
+            },
+
+            updateCategoryViewData: function (categoryViewData) {
+                if (categoryViewData === '') {
+                    return
+                }
+
+                if (document.querySelectorAll(".category-view").length === 0) {
+                    const el = document.createElement("div");
+                    el.classList.add('category-view');
+
+                    document.querySelector('.page.messages').parentNode.insertBefore(el, document.querySelector('.page.messages'));
+                } else {
+                    document.querySelector(".category-view").outerHtml = categoryViewData;
+                }
+            },
+
+            updateQuickNavigation: function (quickNavigation) {
+                this.triggerUpdate(".mst-quick-nav__filterList", quickNavigation);
+            },
+
+            horizontalNavigationUpdate: function (horizontalNav, isHorizontalByDefault) {
+                const horizontalNavigation = '.mst-nav__horizontal-bar';
+
+                if (horizontalNav) {
+                    if (isHorizontalByDefault == 1) {
+                        $("#layered-filter-block").remove();
+                    }
+
+                    if (!document.querySelectorAll(horizontalNavigation).length) {
+                        let horNavEl = document.createElement('DIV');
+                        horNavEl.classList.add('mst-nav__horizontal-bar');
+
+                        if (document.querySelectorAll('[data-element="quick-navigation"]').length) {
+                            document.querySelector('[data-element="quick-navigation"]').after(horNavEl);
+                        } else {
+                            document.querySelector('.column.main').prepend(horNavEl);
+                        }
+                    }
+
+                    this.triggerUpdate(horizontalNavigation, horizontalNav);
+                }
+            },
+
+            updateUrlPath: function (targetUrl) {
+                targetUrl.replace('&amp;', '&');
+                targetUrl.replace('%2C', ',');
+
+                window.mNavigationAjaxscrollCompatibility = 'true';
+                window.location = targetUrl;
+            },
+
+            updateInstantlyMode: function (data, isHorizontalByDefault) {
+                document.querySelector('#mst-ajax-nav-script-container').innerText = '';
+
+                if (data['ajaxscroll'] == 'true') {
+                    this.updateUrlPath(data.url);
+                }
+
+                this.leftnavUpdate(data['leftnav']);
+                this.horizontalNavigationUpdate(data['horizontalBar'], isHorizontalByDefault);
+                this.productsUpdate(data['products']);
+                this.pageTitleUpdate(data['pageTitle']);
+                this.breadcrumbsUpdate(data['breadcrumbs']);
+                this.updateCategoryViewData(data['categoryViewData']);
+                this.updateQuickNavigation(data['quickNavigation']);
+            },
+
+            triggerUpdate: function (selector, content, closest = false) {
+                if (!document.querySelectorAll(selector).length) {
+                    return;
+                }
+
+                let insertTarget = document.querySelector(selector);
+
+                if (closest) {
+                    insertTarget = insertTarget.closest(closest);
+                }
+
+                insertTarget.outerHTML = this.renderJSFromContent(content);
+            },
+
+            renderJSFromContent: function (content) {
+                const scriptBeginTag = '<script';
+                const scriptEndTag = '</scr' + 'ipt>';
+
+                let startIndex = 0;
+                let scripts = [];
+
+                while (content.indexOf(scriptBeginTag, startIndex) >= 0) {
+                    const scriptStartPos = content.indexOf(scriptBeginTag, startIndex);
+                    const scriptEndPos = content.indexOf(scriptEndTag, startIndex) + 9;
+
+                    scripts.push(content.slice(scriptStartPos, scriptEndPos));
+
+                    startIndex = scriptEndPos;
+                }
+
+                if (!scripts.length) {
+                    return content;
+                }
+
+                scripts.forEach(function (script) {
+                    content.replace(script, '');
+
+                    let scriptContent = '';
+
+                    if (script.indexOf('magento-init') < 0) {
+                        scriptContent = script.replace(/<script([^>]*)>/m, '')
+                            .replace(scriptEndTag, '');
+                    }
+
+                    let scriptElement = document.createElement('script');
+                    scriptElement.innerHTML = scriptContent;
+
+                    document.querySelector('#mst-ajax-nav-script-container').appendChild(scriptElement);
+                });
+
+                return content;
+            }
+        }
+    }
+</script>
+
+<div id="mst-ajax-nav-script-container"></div>
+
+<?php if ($block->isAjaxEnabled()): ?>
+    <!-- Mst Layered Navigation Ajax -->
+    <script>
+        (() => {
+            return {
+                config: getMstNavConfig(),
+
+                initAjaxMode: function () {
+                    document.addEventListener(this.config.getAjaxCallEvent(), function (event) {
+                        if (this.config.isConfirmationMode()) {
+                            initApplyButton().hide();
+                        }
+
+                        let cachedData = mstNavCache.getData(event.detail.url);
+                        if (cachedData) {
+                            this.updatePageInstantlyMode(event.detail.url, cachedData);
+                        } else {
+                            this.requestUpdate(event.detail.url, event.detail.force);
+                        }
+                        this.addBrowserHistory(event.detail.url);
+                        handleFiltersNavPositions();
+                    }.bind(this));
+
+                    if (typeof window.history.replaceState === 'function') {
+                        /** Browser back button */
+                        window.onpopstate = function (e) {
+                            if (e.state && e.state.url !== undefined) {
+                                window.location.href = e.state.url;
+                            } else if (window.location.href.indexOf('#') < 0) {
+                                window.location.reload();
+                            }
+                        }.bind(this);
+                    }
+                },
+
+                updatePageInstantlyMode: function (url, result) {
+                    getContentUpdater().updateInstantlyMode(result, this.config.isHorizontalByDefault());
+
+                    if (!window.mstScrollPaging) {
+                        window.mstScrollPaging = initPaging();
+                    }
+
+                    if (typeof window.mstScrollPaging.initAjaxScroll == 'function') {
+                        window.mstScrollPaging.initAjaxScroll()
+                    }
+
+                    initCheckedOptionsCounter().apply();
+                },
+
+                addBrowserHistory: function (url) {
+                    url = this.deleteForceModeQueryParam(url);
+                    window.history.pushState({url: url}, '', url);
+
+                    return true;
+                },
+
+                deleteForceModeQueryParam: function (url) {
+                    url = url.replace("?mstNavForceMode=instantly", "");
+                    url = url.replace("?mstNavForceMode=instantly&", "?");
+                    url = url.replace("&mstNavForceMode=instantly&", "&");
+                    url = url.replace("&mstNavForceMode=instantly", "");
+
+                    url = url.replace("?mstNavForceMode=by_button_click", "");
+                    url = url.replace("?mstNavForceMode=by_button_click&", "?");
+                    url = url.replace("&mstNavForceMode=by_button_click&", "&");
+                    url = url.replace("&mstNavForceMode=by_button_click", "");
+
+                    return url;
+                },
+
+                requestUpdate: function (url, force) {
+                    const $overlay = document.getElementById("mst-nav__overlay");
+
+                    $overlay.classList.remove('hidden');
+                    let data = {isAjax: true};
+                    if (force) {
+                        data.mstNavForceMode = 'instantly';
+                    }
+
+                    let queryParams = new URLSearchParams();
+
+                    for (const key in data) {
+                        queryParams.set(key, data[key]);
+                    }
+
+                    const separator = url.indexOf('?') > 0 ? '&' : '?';
+
+                    fetch(url + separator + queryParams.toString())
+                        .then(response => {
+                            if (!response.ok) console.warn('GET request failed');
+                            return response.json()
+                        })
+                        .then(function (result) {
+                            try {
+                                mstNavCache.setData(url, result);
+                                this.updatePageInstantlyMode(url, result);
+                            } catch (e) {
+                                if (window.mNavigationAjaxscrollCompatibility !== 'true') {
+                                    console.log(e);
+
+                                   window.location = url;
+                                }
+                            }
+                        }.bind(this))
+                        .catch(function (error) {
+                            window.location = url;
+                        }.bind(this))
+                        .finally(function () {
+                            $overlay.classList.add('hidden');
+                            handleFiltersNavPositions();
+                        }.bind(this));
+                }
+            }
+        })().initAjaxMode();
+    </script>
+
+
+
+    <script>
+        /*document.addEventListener('DOMContentLoaded',*/
+
+        function initAjaxToolbar() {
+            return {
+                config: getMstNavConfig(),
+
+                /**
+                 * @param {String} paramName
+                 * @param {*} paramValue
+                 * @param {*} defaultValue
+                 */
+                changeUrl: function (paramName, paramValue, defaultValue) {
+                    return this.config.isAjax()
+                        ? this._changeAjaxUrl(paramName, paramValue, defaultValue)
+                        : this._changeStdUrl(paramName, paramValue, defaultValue);
+
+                },
+
+                /**
+                 * Change URL when AJAX enabled.
+                 *
+                 * @param {String} paramName
+                 * @param {*} paramValue
+                 * @param {*} defaultValue
+                 */
+                _changeAjaxUrl: function (paramName, paramValue, defaultValue) {
+                    var link;
+
+                    // ignore duplicate requests
+                    if (this._isToolbarLock()) {
+                        return false;
+                    }
+
+                    this.config.clearUrl = this._getToolbarCleanUrl(
+                        paramName,
+                        paramValue,
+                        defaultValue,
+                        this.options
+                    );
+
+                    initApplier().apply(this.config.getClearUrl());
+                },
+
+                /**
+                 * Change URL without AJAX.
+                 *
+                 * @param {String} paramName
+                 * @param {*} paramValue
+                 * @param {*} defaultValue
+                 */
+                _changeStdUrl: function (paramName, paramValue, defaultValue) {
+                    var decode    = window.decodeURIComponent,
+                        urlPaths  = this.options.url.split('?'),
+                        baseUrl   = urlPaths[0],
+                        paramData = this.getUrlParams(),
+                        currentPage = this.getCurrentPage(),
+                        parameters, i, newPage;
+
+                    if (currentPage > 1 && paramName === this.options.limit) {
+                        newPage = Math.floor(this.getCurrentLimit() * (currentPage - 1) / paramValue) + 1;
+
+                        if (newPage > 1) {
+                            paramData[this.options.page] = newPage;
+                        } else {
+                            delete paramData[this.options.page];
+                        }
+                    }
+
+                    paramData[paramName] = paramValue;
+
+                    if (paramValue == defaultValue) { //eslint-disable-line eqeqeq
+                        delete paramData[paramName];
+                    }
+
+                    let queryParams = new URLSearchParams();
+
+                    for (const key in paramData) {
+                        queryParams.set(key, paramData[key]);
+                    }
+
+                    paramData = queryParams.toString();
+
+                    //fix incorrect symbols in url
+                    paramData = paramData.replace(/%2C/g, ",");
+
+                    location.href = baseUrl + (paramData.length ? '?' + paramData : '');
+                },
+
+                _getToolbarCleanUrl: function (paramName, paramValue, defaultValue, options) {
+                    var decode    = window.decodeURIComponent,
+                        urlPaths  = options.url.split('?'),
+                        baseUrl   = urlPaths[0],
+                        paramData = this.getUrlParams(),
+                        currentPage = this.getCurrentPage(),
+                        parameters, i, newPage;
+
+                    if (currentPage > 1 && paramName === options.limit) {
+                        newPage = Math.floor(this.getCurrentLimit() * (currentPage - 1) / paramValue) + 1;
+
+                        if (newPage > 1) {
+                            paramData[options.page] = newPage;
+                        } else {
+                            delete paramData[options.page];
+                        }
+                    }
+                   // console.log(paramData);
+                     if (paramValue == 'pricehigh' &&  paramName == 'product_list_order') {
+                        paramData['product_list_order'] = 'price';
+                        paramData['product_list_dir'] = 'desc';
+                     } else if(paramValue == 'pricelow' &&  paramName == 'product_list_order') {
+                        paramData['product_list_order'] = 'price';
+                        paramData['product_list_dir'] = 'asc';
+                     } else if(paramValue == 'revenue_ranking') {
+                        paramData['product_list_order'] = 'revenue_ranking';
+                        paramData['product_list_dir'] = 'desc';
+                     } else {
+                    paramData[paramName] = paramValue;
+                        if (paramData['product_list_dir']) {
+                            //delete paramData['product_list_dir'];
+                        }
+                     }
+                    
+
+                    if (paramValue == defaultValue) { //eslint-disable-line eqeqeq
+                        delete paramData[paramName];
+                    }
+
+                    let queryParams = new URLSearchParams();
+
+                    for (const key in paramData) {
+                        queryParams.set(key, paramData[key]);
+                    }
+
+                    paramData = queryParams.toString();
+
+                    //fix incorrect symbols in url
+                    paramData = paramData.replace(/%2C/g, ",");
+
+                    return baseUrl + (paramData.length ? '?' + paramData : '');
+                },
+
+                /**
+                 * Page contains 2 toolbars: before and after product listing, hence, multiple instances of this widget exists.
+                 * We use this hack in order to stop multiple requests from being called.
+                 *
+                 * @return {Boolean}
+                 */
+                _isToolbarLock: function () {
+                    // if (window.blockToolbar) {
+                    //     return true;
+                    // }
+                    //
+                    // window.blockToolbar = true;
+                    // setTimeout(function () {
+                    //     window.blockToolbar = false;
+                    // }, 300);
+
+                    return false;
+                }
+            }
+        }
+    </script>
+<?php endif; ?>
+
+<script>
+    function initPaging() {
+        return {
+            nextBtn:          null,
+            prevBtn:          null,
+            isActive:         false,
+            excludeHeight:    null,
+            dataPageAttr:     'scroll-page',
+            currLimit:        null,
+            modeSwitched:     false,
+            maxLoadedPageNum: 0,
+            minLoadedPageNum: 1000,
+            progressBar:      null,
+            loadedPages:      1,
+
+            modes: {
+                infinite:        '_initInfiniteMode',
+                button:          '_initButtonMode',
+                infinite_button: '_initInfiniteButtonMode',
+                button_infinite: '_initButtonInfiniteMode'
+            },
+
+            mode:         'button',
+            pageLimit:    0,
+            moreBtnClass: 'mst-scroll__button', // "load more" buttons class
+            postCatalogHeightSelectors: [
+                '.main .products ~ .block-static-block',
+                '.page-footer',
+                '.page-bottom'
+            ],
+            // elements that should be hidden
+            hide:                       [
+                '.pages',
+                '.toolbar-amount'
+            ],
+            // initial info
+            factor:       0.95, // factor for loading next page when scrolling down in infinite mode
+            pageParam:    'p',
+            pageNum:      1,
+            initPageNum:  1,
+            prevPageNum:  null,
+            nextPageNum:  null,
+            lastPageNum:  null,
+            loadPrevText: 'Load Previous Page',
+            loadNextText: 'Load More',
+            progressBarEnabled: 0,
+            progressBarText:    'Loaded %loaded% of %total% items',
+            itemsTotal:         100000,
+            itemsLimit:         12,
+
+            productListSelector: '.products.product-grid, .products.products-grid, .products.product-list, .products.products-list',
+
+            config: getMstNavConfig(),
+            
+            updateData: function(data) {
+                for (let key in data) {
+                    this[key] = data[key];
+                }
+
+                return this;
+            },
+
+            $el: function () {
+                return document.querySelector(this.productListSelector);
+            },
+
+            initAjaxScroll: function () {
+                // scroll is active only when catalog has more than 1 page
+                this.isActive = this.nextPageNum || this.prevPageNum || false;
+
+                // set initial page number to product list
+                this.$el().setAttribute('data-' + this.dataPageAttr, this.pageNum);
+
+                // hide default DOM elements such as pagination
+                this._hideElements();
+
+                // init scroll widget in chosen mode
+                this[this.modes[this.mode]]();
+
+                this._bind();
+
+                this.progressBar = this._createProgressBar();
+
+                this._updateLabels(this);
+            },
+
+            _destroy: function () {
+                this.isActive = false;
+                // this = null;
+            },
+
+            /**
+             * Bind scroll event and load products when window is scrolled down.
+             */
+            _initInfiniteMode: function () {
+                this._initScroll();
+
+                // init button for previous page
+                if (this.prevPageNum) {
+                    this.prevBtn = this._createButton(this.loadPrevText, this.prevPageNum, 'insertBefore');
+                    this.progressBar = this._createProgressBar();
+                }
+            },
+
+            _initScroll: function () {
+                var onPause = false;
+
+                window.addEventListener('scroll', function () {
+                    var scrollTop = window.scrollY;
+
+                    if (scrollTop >= this._calculateHeightDiff() && !onPause && this.nextPageNum) {
+                        this.currLimit--;
+
+                        // stop processing infinite scroll when page limit reached
+                        if (this.mode === 'infinite_button' && this.currLimit < 0) {
+                            return;
+                        }
+                        onPause = true; // suspend ajax scrolling
+
+                        getLoader().show(this._getLastProductList());
+
+                        this._request(window.location.href, {p: this.nextPageNum})
+                            .then(function (response) {
+                                getLoader().hide();
+                                this._updateCatalog(response);
+
+                                return response;
+                            }.bind(this))
+                            .then(function (response) { // update next page num
+                                if (response.config) {
+                                    this.nextPageNum = response.config.nextPageNum;
+                                    onPause = false; // resume ajax scrolling
+                                }
+                            }.bind(this));
+                    }
+                }.bind(this));
+            },
+
+            /**
+             * Calculate difference between the whole document height and its visible part + height of excluded blocks.
+             *
+             * @return {Number}
+             */
+            _calculateHeightDiff: function () {
+                var diff = this._getLastProductList().getBoundingClientRect().height
+                    + (this._getLastProductList().getBoundingClientRect().top)
+                    - window.innerHeight;
+
+                diff -= this._getExcludeHeight();
+
+                return diff;
+            },
+
+            /**
+             * Initialize widget in button mode.
+             */
+            _initButtonMode: function () {
+                this._initButtons();
+            },
+
+            _initInfiniteButtonMode: function() {
+                this.currLimit = this.currLimit === null ? this.pageLimit : this.currLimit;
+
+                this._initInfiniteMode();
+            },
+
+            _initButtonInfiniteMode: function() {
+                this.currLimit = this.currLimit === null ? this.pageLimit : this.currLimit;
+
+                this._initButtonMode();
+            },
+
+            /**
+             * Create buttons.
+             */
+            _initButtons: function () {
+                if (this.nextPageNum) {
+                    this.nextBtn = this._createButton(this.loadNextText, this.nextPageNum, 'insertAfter');
+                }
+
+                if (this.prevPageNum) {
+                    this.prevBtn = this._createButton(this.loadPrevText, this.prevPageNum, 'insertBefore');
+                }
+            },
+
+            /**
+             * Create html button and attach it to widget's element.
+             *
+             * @param {String} label
+             * @param {Number} pageNum - number of page used for button
+             * @param {String} method - method used to insert the button over widget's element
+             *
+             * @return {HTMLElement}
+             */
+            _createButton: function (label, pageNum, method) {
+                const element = method === 'insertAfter'
+                    ? this._getLastProductList()
+                    : this._getFirstProductList();
+                const btnClass = method === 'insertAfter' ? "_next" : "_prev";
+
+                const btn = document.createElement('button');
+                btn.classList.add('btn');
+                btn.classList.add('btn-primary');
+                btn.classList.add('m-auto');
+                btn.classList.add(this.moreBtnClass);
+                btn.classList.add(btnClass);
+                btn.dataset.page = pageNum;
+                btn.innerText = label;
+
+                if (method === 'insertAfter') {
+                    if (element.nextSibling) {
+                        element.parentNode.insertBefore(btn, element.nextSibling)
+                    } else {
+                        element.parentNode.appendChild(btn);
+                    }
+
+                } else {
+                    element.parentNode.insertBefore(btn, element);
+                }
+
+                return btn;
+            },
+
+            _createProgressBar: function () {
+                if (!this.progressBarEnabled) {
+                    return null;
+                }
+
+                if (this.progressBar) {
+                    return this.progressBar;
+                }
+
+                let progressBar = document.createElement('div');
+                progressBar.classList.add('mst-scroll__progress');
+                progressBar.innerHTML = '<span class="mst-scroll__progress-label"></span>' +
+                    '<div class="mst-scroll__progress-bar bg-gray-200"><div class="bg-primary"></div></div>';
+
+                let target = null;
+
+                if (this.nextBtn) {
+                    target = document.querySelector('button.' + this.moreBtnClass + '._next');
+                } else {
+                    target = this._getLastProductList().nextSibling;
+                }
+
+                this._getLastProductList().parentNode.insertBefore(progressBar, target);
+
+                if (this.prevBtn) {
+                    target = document.querySelector('button.' + this.moreBtnClass + '._prev');
+                } else {
+                    target = this._getFirstProductList();
+                }
+
+                this._getFirstProductList().parentNode.insertBefore(progressBar.cloneNode(true), target);
+
+                return progressBar;
+            },
+
+            /**
+             * Hide DOM elements listed in this.hide array.
+             */
+            _hideElements: function () {
+                this.hide.map(function (selector) {
+                    // hide only if "load" buttons exist
+                    if (this.isActive) {
+                        // mark all hidden elements with our identification
+                        document.querySelector(selector).dataset.scroll = 'hidden';
+                        document.querySelector(selector).classList.add('hidden');
+                    } else {
+                        // show only elements hidden by us
+                        if (document.querySelectorAll(selector + ' [data-scroll="hidden"]').length) {
+                            document.querySelector(selector + ' [data-scroll="hidden"]').classList.remove('hidden');
+                        }
+                    }
+                }.bind(this));
+            },
+
+            _bind: function () {
+                var self = this;
+
+                // observe "load more" buttons clicks
+                if (document.querySelectorAll('.' + this.moreBtnClass).length) {
+                    document.querySelectorAll('.' + this.moreBtnClass).forEach(function (button) {
+                        button.addEventListener('click', function (e) {
+                            var page = e.target.dataset.page,
+                                targetBtn = page > self.initPageNum ? self.nextBtn : self.prevBtn;
+
+                            self.currLimit--;
+
+                            // stop processing nextBtn when page limit reached
+                            if (self.mode === 'button_infinite' && self.currLimit < 0 && targetBtn.hasClass('_next')) {
+                                return;
+                            }
+
+                            targetBtn.classList.add('_loading');
+
+                            self._request(window.location.href, {p: page})
+                                .then(function (data) {
+                                    targetBtn.classList.remove('_loading');
+
+                                    return data;
+                                }.bind(self))
+                                .then(function (data) {
+                                    self._updatePaging(data);
+                                    self._updateCatalog(data);
+                                }.bind(self));
+                        }.bind(self));
+                    }.bind(self));
+                }
+
+                // sort options change workaround
+                document.querySelectorAll('select[data-role="sorter"]').forEach(function (sorter) {
+                    sorter.addEventListener('change', function (e) {
+                        let baseUrl = window.location.origin + window.location.pathname;
+
+                        let queryString = new URLSearchParams(window.location.search);
+
+                        if (queryString.has('product_list_order') && queryString.get('product_list_order') != e.target.value) {
+                            queryString.set('product_list_order', e.target.value);
+
+                            window.history.pushState({}, '', baseUrl + '?' + queryString.toString());
+                        }
+                    })
+                });
+
+                // update URL when scrolling through pages
+                window.addEventListener('scroll', function () {
+                    if (this.isActive) {
+                        this._updateHistory({config: {pageNum: this._determineCurrentPage()}});
+                    }
+                }.bind(this));
+            },
+
+            /**
+             * Determine current page by scrollTop position.
+             *
+             * @return {Number} - current page number
+             */
+            _determineCurrentPage: function () {
+                var page        = null,
+                    self        = this,
+                    biggestPart = 0;
+
+                this._getProductLists().forEach(function (list) {
+                    let visiblePart = 0; // visible part of a product list block in window
+
+                    if (list.getBoundingClientRect().top - document.body.scrollTop < 0) { // list block is above window
+                        visiblePart = list.getBoundingClientRect().top + list.offsetHeight - document.body.scrollTop;
+                    } else {
+                        visiblePart = window.offsetHeight - (list.getBoundingClientRect().top - document.body.scrollTop);
+                    }
+
+                    if (visiblePart < 0) {
+                        return; // skip current product list and continue loop
+                    }
+
+                    // if whole product list completely fit on the window
+                    if (visiblePart >= list.offsetHeight
+                        // or the product list takes up most of the window size
+                        || list.offsetHeight > window.offsetHeight && window.offsetHeight / visiblePart < 2
+                    ) {
+                        page = list.getAttribute('data-' + self.dataPageAttr) || 1;
+                        return false; // we found page, stop looping
+                    }
+
+                    // otherwise use the page that takes up the most part of a space in the window
+                    if (visiblePart > biggestPart) {
+                        biggestPart = visiblePart;
+                        page = list.getAttribute('data-' + self.dataPageAttr) || 1;
+                    }
+                });
+
+                return page;
+            },
+
+            _updateLabels: function (config) {
+                const btnPattern    = "%limit%";
+                const totalPattern  = '%total%';
+                const loadedPattern = '%loaded%';
+
+                if (this.prevBtn) {
+                    this.prevBtn.innerHTML = config.loadPrevText.replace(btnPattern, config.itemsLimit);
+                }
+
+                let nextLimit = config.itemsLimit;
+
+                if ((config.pageNum + 1) * config.itemsLimit > config.itemsTotal) {
+                    nextLimit = config.itemsTotal - config.pageNum * config.itemsLimit;
+                }
+
+                if (this.nextBtn) {
+                    this.nextBtn.innerHTML = config.loadNextText.replace(btnPattern, nextLimit);
+                }
+
+                if (this.progressBar) {
+                    let progressBarLabel = config.progressBarText;
+                    let initPageItems    = this.initPageNum * config.itemsLimit > this.itemsTotal
+                        ? this.itemsTotal - (this.initPageNum - 1) * config.itemsLimit
+                        : config.itemsLimit;
+
+                    let calculatedLoadedItems = initPageItems + (this.loadedPages - 1) * config.itemsLimit;
+
+                    let current = calculatedLoadedItems > config.itemsTotal
+                        ? config.itemsTotal
+                        : calculatedLoadedItems;
+
+                    progressBarLabel = progressBarLabel.replace(totalPattern, config.itemsTotal)
+                        .replace(loadedPattern, current);
+
+                    document.querySelectorAll('.mst-scroll__progress-label').forEach(function (label) {
+                        label.innerHTML = progressBarLabel;
+                    });
+
+                    let width = Math.round(current / config.itemsTotal * 100) + '%';
+
+                    document.querySelectorAll('.mst-scroll__progress-bar div').forEach(function (bar) {
+                        bar.style.width = width;
+                    });
+                }
+
+                this.loadedPages++;
+            },
+
+            /**
+             * Update catalog products.
+             *
+             * @param {Object} response
+             */
+            _updateCatalog: function (response) {
+                var selector      = this._getProductListSelector(),
+                    productList   = null,
+                    doc = document.documentElement,
+                    top = (window.pageYOffset || doc.scrollTop) - (doc.clientTop || 0);
+
+                if (response.products && response.config) {
+                    this._updateLabels(response.config);
+                    // wrap product list into div to be able to retrieve needed selector
+                    let wrapper = document.createElement('div');
+                    wrapper.innerHTML = response.products;
+
+                    productList = wrapper.querySelector(selector);
+
+                    getContentUpdater().renderJSFromContent(response.products);
+
+                    productList.setAttribute('data-' + this.dataPageAttr, response.config.pageNum);
+                    // insert products after last of first list accordingly
+                    if (response.config.pageNum > this.initPageNum) {
+                        this._getLastProductList()
+                            .parentNode
+                            .insertBefore(productList, this._getLastProductList().nextSibling);
+                        window.scroll(0, top);
+                    } else {
+                        this._getFirstProductList()
+                            .parentNode
+                            .insertBefore(productList, this._getFirstProductList());
+                    }
+
+                    window.scroll(0, top);
+
+                    // switch infinite mode to button mode
+                    if (this.mode === 'infinite_button' && this.currLimit <= 0 && !this.modeSwitched) {
+                        if (this.nextPageNum) {
+                            this.nextPageNum++;
+
+                            if (this.lastPageNum >= this.nextPageNum) {
+                                this.nextBtn = this._createButton(this.loadNextText, this.nextPageNum, 'insertAfter');
+                                this.progressBar = this._createProgressBar();
+                                this._bind();
+                            }
+                        }
+
+                        this.modeSwitched = true;
+                    }
+
+                    // switch button mode to infinite mode
+                    if (this.mode === 'button_infinite' && this.currLimit <= 0 && !this.modeSwitched) {
+                        if (this.nextPageNum) {
+                            this.nextPageNum += 2;
+
+                            if (this.lastPageNum >= this.nextPageNum) {
+                                this._initScroll();
+                                this._bind();
+                            }
+                        }
+
+                        let elem = document.querySelector('.mst-scroll__button._next');
+
+                        elem.parentNode.removeChild(elem);
+
+                        this.modeSwitched = true;
+
+                    }
+
+                    // third-party review widgets compatibility
+                    this.config.load3rdPartyReviewWidgets();
+                }
+            },
+
+            /**
+             * @return {String}
+             */
+            _getProductListSelector: function () {
+                var selector = '<?= $block->getProductListSelector() ?>';
+                if (document.querySelectorAll(selector).length) {
+                    return selector;
+                }
+                return '.' + this.$el().getAttribute('class').split(' ').filter(Boolean).join('.');
+            },
+
+            _getProductLists: function () {
+                return document.querySelectorAll(this._getProductListSelector());
+            },
+
+            _getLastProductList: function () {
+                return this._getProductLists()[this._getProductLists().length - 1];
+            },
+
+            _getFirstProductList: function () {
+                return this._getProductLists()[0];
+            },
+
+            /**
+             * Update paging buttons.
+             *
+             * @param {Object} response
+             */
+            _updatePaging: function (response) {
+                // hide next/prev buttons
+                if (response.config) {
+                    // if next page was loaded - change next page number, otherwise change prev page number
+                    if (response.config.pageNum > this.initPageNum) {
+                        this.nextBtn.dataset.page = response.config.nextPageNum;
+                    } else {
+                        this.prevBtn.dataset.page = response.config.prevPageNum;
+                    }
+
+                    // for hiding nextBtn if last page is loaded and prevBtn clicked (initial page != 1)
+                    this.maxLoadedPageNum = this.maxLoadedPageNum > response.config.pageNum
+                        ? this.maxLoadedPageNum
+                        : response.config.pageNum;
+
+                    // for hiding prevBtn if first page is loaded and nextBtn clicked (initial page != 1)
+                    this.minLoadedPageNum = this.minLoadedPageNum < response.config.pageNum
+                        ? this.minLoadedPageNum
+                        : response.config.pageNum;
+
+                    // hide next/prev page buttons if first or last pages loaded
+                    if (response.config.pageNum === 1 || this.minLoadedPageNum === 1) {
+                        this.prevBtn.classList.add('hidden');
+                    } else if (this.prevBtn) {
+                        this.prevBtn.classList.remove('hidden');
+                    }
+
+                    if (response.config.pageNum === response.config.lastPageNum || this.maxLoadedPageNum === response.config.lastPageNum) {
+                        this.nextBtn.classList.add('hidden');
+                    } else if (this.nextBtn) {
+                        this.nextBtn.classList.remove('hidden');
+                    }
+                }
+            },
+
+            /**
+             * Update page number param in URL.
+             *
+             * @param {Object} response
+             */
+            _updateHistory: function (response) {
+                var url            = null,
+                    currentPageNum = null;
+
+                if (response.config) {
+                    url = this._getUrl(response.config.pageNum);
+                    currentPageNum = this._getUrl().searchParams.get(this.pageParam);
+
+                    // ignore page #1
+                    if (response.config.pageNum === 1 && currentPageNum === null) {
+                        return;
+                    }
+
+                    if (parseInt(currentPageNum) !== parseInt(response.config.pageNum)) {
+                        history.replaceState({}, document.title, url.href);
+                    }
+                }
+            },
+
+            /**
+             * Send XHR.
+             *
+             * @param {String} url
+             * @param {Object} data
+             *
+             * @return {Object}
+             */
+            _request: function (url, data) {
+                data.is_scroll = 1;
+                data.isAjax = 1;
+
+                let queryParams = new URLSearchParams();
+
+                for (const key in data) {
+                    queryParams.set(key, data[key]);
+                }
+
+                const separator = url.indexOf('?') > 0 ? '&' : '?';
+
+                return fetch(url + separator + queryParams.toString())
+                    .then(response => {
+                        if (!response.ok) console.warn('GET request failed');
+                        return response.json()
+                    });
+            },
+
+            _getExcludeHeight: function () {
+                var height = 0;
+
+                if (this.excludeHeight === null) {
+                    if (!this.postCatalogHeightSelectors) {
+                        this.postCatalogHeightSelectors = [
+                            '.main .products ~ .block-static-block',
+                            '.page-footer',
+                            '.page-bottom'
+                        ];
+                    }
+
+                    this.postCatalogHeightSelectors.map(function (selector) {
+                        var block = document.querySelector(selector);
+
+                        if (block && block.length) {
+                            height += block[0].offsetHeight;
+                        }
+                    });
+
+                    this.excludeHeight = height;
+                }
+
+                return this.excludeHeight;
+            },
+
+            /**
+             * Get the URL for fetching additional products.
+             *
+             * @param {Number|Null} pageNum
+             *
+             * @return {URL}
+             */
+            _getUrl: function (pageNum) {
+                var url = new URL(window.location);
+
+                if (pageNum) {
+                    if (parseInt(pageNum) === 1) {
+                        url.searchParams.delete(this.pageParam);
+                    } else {
+                        url.searchParams.set(this.pageParam, pageNum);
+                    }
+                }
+
+                return url;
+            }
+        }
+    }
+</script>
+
+<script>
+    function initCheckedOptionsCounter() {
+        return {
+            apply: function () {
+                const filters = document.querySelectorAll('.filter-option');
+
+                filters.forEach(function (filter) {
+                    const title = filter.querySelector('.filter-options-title');
+                    const checkedCounterContainer = filter.querySelector('template').content.querySelector('.mst-clear-options-link');
+
+                    if (!checkedCounterContainer || checkedCounterContainer.getAttribute('data-checked-count') == 0) {
+                        return;
+                    }
+
+                    const checkedCounter = checkedCounterContainer.querySelector('.mst-nav__checked-counter__wrapper');
+
+                    checkedCounter.querySelector('a').addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        initApplier().apply(e.target.href);
+                    })
+
+                    const filterTitle = filter.querySelector('.filter-options-title');
+
+                    filterTitle.insertBefore(checkedCounter, filterTitle.querySelector('span.title').nextElementSibling);
+                });
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initCheckedOptionsCounter().apply();
+    });
+</script>
+
+<script>
+    function initAlphabeticalIndex(shouldDisplay, limit) {
+        return {
+            letters:         [],
+            visibleSelector: '[data-letter][data-value][data-search-hidden = false]',
+
+            options: {
+                shouldDisplay: shouldDisplay,
+                limit: limit
+            },
+
+            init: function () {
+                if (!this.options.shouldDisplay) {
+                    return;
+                }
+
+                const options = this.$el.parentElement.querySelectorAll('[data-element="filter"][data-value]');
+
+                if (!options.length) {
+                    return;
+                }
+
+                if (this.$el.querySelectorAll('.mst-nav__alphabetical').length) {
+                    return;
+                }
+
+                this.createAlphabeticalIndex(options);
+            },
+
+            createAlphabeticalIndex: function (options) {
+                this.letters = [];
+
+                options.forEach(function (option) {
+                    let label = option.querySelectorAll('label').length
+                        ? option.querySelector('label').innerText.trim()
+                        : option.getAttribute('aria-label');
+
+                    let letter = label.substring(0, 1).toUpperCase();
+                    letter = letter.match(/[a-zA-Z]/) ? letter : '#';
+
+                    if (this.letters.indexOf(letter) < 0) {
+                        this.letters.push(letter);
+                    }
+                }.bind(this));
+
+                this.letters.sort();
+
+                const $container = document.createElement('div');
+                $container.classList.add('mst-nav__alphabetical');
+
+                this.letters.forEach(function (letter) {
+                    const $letter = document.createElement('span');
+                    $letter.innerText = letter;
+                    $letter.addEventListener('click', this.filterOptions.bind(this));
+                    $letter.addEventListener('click', this.handleVisibility.bind(this));
+
+                    $container.appendChild($letter);
+                }.bind(this));
+
+                this.$el.appendChild($container);
+
+                this.$el.closest('.filter-option').addEventListener('alphabetical', this.handleVisibility.bind(this));
+            },
+
+            filterOptions: function (e) {
+                const letter = e.target;
+
+                if (letter.classList.contains('_checked')) {
+                    letter.classList.remove('_checked');
+                } else {
+                    letter.classList.add('_checked');
+                }
+
+                const checkedLetters = this.getCheckedLetters();
+
+                getEventManager().triggerEvent(this.$el.closest('.filter-option'), 'showhide') // communicate with sizeLimiter
+
+                this.$el.parentElement.querySelectorAll('[data-letter]').forEach(function (option) {
+                    option.setAttribute('data-hidden', 'false');
+
+                    if (checkedLetters.length && checkedLetters.indexOf(option.getAttribute('data-letter')) < 0) {
+                        option.setAttribute('data-letter-hidden', 'true');
+                    } else {
+                        option.setAttribute('data-letter-hidden', 'false');
+                    }
+                });
+            },
+
+            handleVisibility: function () {
+                const visibleFilters = this.$el.parentElement.querySelectorAll(this.visibleSelector);
+
+                if (visibleFilters.length < this.options.limit) {
+                    this.$el.querySelectorAll('span').forEach(function (letter) {
+                        letter.classList.add('hidden');
+                    });
+
+                    return;
+                }
+
+                let visibleLetters = [];
+
+                visibleFilters.forEach(function (filter) {
+                    if (visibleLetters.indexOf(filter.getAttribute('data-letter')) < 0) {
+                        visibleLetters.push(filter.getAttribute('data-letter'));
+                    }
+                });
+
+                if (visibleLetters.length) {
+                    this.$el.querySelectorAll('span').forEach(function (letter) {
+                        if (visibleLetters.indexOf(letter.innerText) < 0) {
+                            letter.classList.add('hidden');
+                        } else {
+                            letter.classList.remove('hidden');
+                        }
+                    });
+                }
+            },
+
+            getCheckedLetters: function () {
+                let checkedLetters = [];
+
+                this.$el.querySelectorAll('span._checked').forEach(function (letter) {
+                    checkedLetters.push(letter.innerText);
+                })
+
+                return checkedLetters;
+            },
+        }
+    }
+</script>
+
+<script>
+    function getEventManager () {
+        return {
+            triggerEvent: function (element, eventName, data) {
+                if (!element) {
+                    console.warn('Attempt to trigger event ' + eventName + ' on unknown element');
+                    return;
+                }
+
+                let event;
+
+                if (window.CustomEvent && typeof window.CustomEvent === 'function') {
+                    event = new CustomEvent(eventName, {detail: data ? data : {}});
+                } else {
+                    event = document.createEvent('CustomEvent', true, true, data ? data : {});
+                    event.initCustomEvent(eventName);
+                }
+
+                element.dispatchEvent(event);
+            }
+        }
+    }
+</script>
+
+<div class="fixed inset-0 z-10 hidden" id="mst-nav__overlay">
+    <?= $block->getChildHtml('loading') ?>
+</div>
+<!--<div class="fixed inset-0 bg-black bg-opacity-50 z-10 hidden" id="mst-nav__overlay"></div>-->

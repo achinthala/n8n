@@ -1,0 +1,78 @@
+diff --git a/vendor/amasty/module-request-quote/Model/Quote.php b/vendor/amasty/module-request-quote/Model/Quote.php
+index 3ee2rd..8349152 111644
+--- a/vendor/amasty/module-request-quote/Model/Quote.php
++++ b/vendor/amasty/module-request-quote/Model/Quote.php
+@@ -433,18 +433,40 @@
+             $this->setStoreId($quote->getStoreId());
+ 
+             if ($advancedMode && count($this->getAllAddresses()) == 0) {
++                // Clear existing addresses to avoid duplication
++                $this->removeAllAddresses();
++                
+                 foreach ($quote->getAllAddresses() as $address) {
+                     $newAddress = clone $address;
+-                    $this->addAddress($newAddress);
+-                }
+ 
++                    foreach ($quote->getAllAddresses() as $address) {
++                        $newAddress = clone $address;
++                        // Add logic to differentiate between billing and shipping addresses
++                        if ($address->getAddressType() == \Magento\Quote\Model\Quote\Address::TYPE_BILLING) {
++                            $this->setBillingAddress($newAddress);
++                        } elseif ($address->getAddressType() == \Magento\Quote\Model\Quote\Address::TYPE_SHIPPING) {
++                            $this->setShippingAddress($newAddress);
++                        }
++                    }
++
++                   
++                    //$this->addAddress($newAddress);
++                }
++                // Reset totalsCollectedFlag and recalculate totals to include tax
++                $this->setTotalsCollectedFlag(false);
++                $this->collectTotals(); 
+                 foreach ($this->customerFields as $field) {
+                     $value = $quote->getData($field);
+                     $this->setData($field, $value);
+                 }
++            }else{
++                $this->setTotalsCollectedFlag(false);
++                $this->collectTotals();
+             }
+-            foreach ($itemsForRemove as $itemId) {
+-                $quote->removeItem($itemId);
++            if($this->getAdminIdLoggedAsCustomer()==''){
++                foreach ($itemsForRemove as $itemId) {
++                    $quote->removeItem($itemId);
++                }
+             }
+             $this->setTotalsCollectedFlag(false);
+             $this->collectTotals();
+@@ -453,6 +475,28 @@
+         return $this->advancedMergeResultFactory->create(['result' => $result, 'warnings' => $warnings]);
+     }
+ 
++    public function getAdminIdLoggedAsCustomer()
++    {
++        // Use Object Manager to get the necessary classes
++        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
++        
++        // Get the LoggedAsCustomerAdminIdInterface
++        $loggedAsCustomerAdminIdInterface = $objectManager->get('Magento\LoginAsCustomerApi\Api\GetLoggedAsCustomerAdminIdInterface');
++        $adminId = $loggedAsCustomerAdminIdInterface->execute();
++
++        if (!empty($adminId) && ($adminId != 0)) {
++            // Get the User Factory
++            $userFactory = $objectManager->get('Magento\User\Model\UserFactory');
++            $adminUser = $userFactory->create()->load($adminId);
++
++            // Get the admin username
++            $adminUsername = $adminUser->getUsername();
++            return $adminUsername;
++        } else {
++            return '';
++        }
++    }
++
+     /**
+      * @param   \Magento\Quote\Model\Quote\Item $item
+      * @return $this

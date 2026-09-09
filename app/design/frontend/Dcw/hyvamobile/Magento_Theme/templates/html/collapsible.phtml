@@ -1,0 +1,47 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\Escaper;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+?>
+
+<div class="block <?= $escaper->escapeHtmlAttr($block->getBlockCss()) ?> filter-option"
+     x-data="{ open: false }">
+    <div class="title <?= $escaper->escapeHtmlAttr($block->getBlockCss()) ?>-title flex justify-between
+        items-center cursor-pointer"
+         @click="open = !open"
+    >
+        <span class="text-lg title">
+            <?= $escaper->escapeHtml(__($block->getData('block_title'))) ?>
+        </span>
+        <span class="px-1 py-1 border rounded border-container">
+            <?= $heroicons->chevronDownHtml(
+                'transition-transform duration-300 ease-in-out transform rotate-180',
+                24,
+                24,
+                [":class" => "{ 'rotate-180': open, 'rotate-0': !open }"]
+            ); ?>
+        </span>
+    </div>
+    <div class="content <?= $escaper->escapeHtmlAttr($block->getBlockCss()) ?>-content block"
+         :class="{ 'hidden': !open , 'block': open }"
+         id="<?= $escaper->escapeHtmlAttr($block->getBlockCss()) ?>">
+        <?= $block->getChildHtml() ?>
+    </div>
+</div>

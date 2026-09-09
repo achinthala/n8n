@@ -1,0 +1,13 @@
+diff --git a/vendor/magento/zendframework1/library/Zend/Log/Formatter/Simple.php b/vendor/magento/zendframework1/library/Zend/Log/Formatter/Simple.php
+index 2bc5a3f1..6fc4fd04 100644
+--- a/vendor/magento/zendframework1/library/Zend/Log/Formatter/Simple.php
++++ b/vendor/magento/zendframework1/library/Zend/Log/Formatter/Simple.php
+@@ -100,7 +100,7 @@ class Zend_Log_Formatter_Simple extends Zend_Log_Formatter_Abstract
+                 $value = gettype($value);
+             }
+ 
+-            $output = str_replace("%$name%", $value, $output);
++            $output = str_replace("%$name%", $value ?? '', $output);
+         }
+ 
+         return $output;

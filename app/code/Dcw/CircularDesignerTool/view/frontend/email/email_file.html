@@ -1,0 +1,32 @@
+<!--@subject {{trans "DesignerWrestlingMat from %store_name" store_name=$store.getFrontendName()}} @-->
+<!--@vars {
+"var store.getFrontendName()":"store name",
+"var name":"Name",
+"var school":"School",
+"var zip":"Zip",
+"var phone":"Phone",
+"var email":"Email",
+"var howfound":"Heard About",
+"var comments":"Comments",
+"var cdt_id":"Id",
+"var raw_designer_data":"Raw Designer Data",
+"var raw_designer_data_encode":"Raw Designer Data Encode"
+} @-->
+
+{{template config_path="design/email/header_template"}}
+
+<div style="min-width: 560px;max-width: 560px;width: 560px;">
+<p><b>Name:</b> {{var name}} </p>
+<p><b>School:</b> {{var school}} </p>
+<p><b>Zip:</b> {{var zip}} </p>
+<p><b>Phone:</b> {{var phone}} </p>
+<p><b>Email:</b> {{var email}}</p>
+<p><b>Heard About:</b> {{var howfound}} </p>
+<p><b>Comments:</b> {{var comments}} </p>
+<br><br><br>
+<p><a href="{{store url=''}}DesignerWrestlingMat?id={{var cdt_id}}&data={{var raw_designer_data_encode}}"><span style="color: #15c!important;">View User's Layout</span></a></p>
+<br><br><br>
+<b>Raw Designer Data:</b> {{var raw_designer_data}}
+</div>
+
+{{template config_path="design/email/footer_template"}}

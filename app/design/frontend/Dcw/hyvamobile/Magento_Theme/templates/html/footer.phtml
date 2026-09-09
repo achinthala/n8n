@@ -1,0 +1,44 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\Escaper;
+
+/** @var Template $block */
+/** @var Escaper $escaper */
+?>
+
+<?php
+echo $this->getLayout()
+->createBlock('Magento\Cms\Block\Block')
+->setBlockId('footer_main')
+->toHtml();
+?>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function updateRatingsClass(ratingEl) {
+            const hasReviews = ratingEl.querySelector('.bv_numReviews_component_container');
+            ratingEl.classList.toggle('no-reviews', !hasReviews);
+        }
+        document.querySelectorAll('.ratings').forEach(ratingEl => {        
+            updateRatingsClass(ratingEl);        
+            const observer = new MutationObserver(() => {
+                updateRatingsClass(ratingEl);
+            });
+            observer.observe(ratingEl, {
+                childList: true,
+                subtree: true
+            });
+        });
+    });
+</script>
+
+<!-- <script defer type="text/javascript" src="//static.klaviyo.com/onsite/js/klaviyo.js?company_id=WAwVDg"></script> -->

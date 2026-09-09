@@ -1,0 +1,67 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+declare(strict_types=1);
+
+use Magento\DataServices\Block\Context;
+
+/**
+ * @var Context $block
+ */
+
+?>
+
+<script>
+    function dataServicesShoppingCartContextData()
+    {
+        return {
+            initContext(cartData) {
+                let contextCartItems = [];
+
+                cartData.items.forEach(function (item){
+                    contextCartItems.push({
+                        id: item.item_id,
+                        formattedPrice: parseFloat(item.product_price_value ? item.product_price_value : 0),
+                        quantity: item.qty,
+                        product: {
+                            productType: item.product_type,
+                            productId: item.product_id,
+                            name: item.product_name,
+                            sku: item.product_sku,
+                            mainImageUrl : item.product_image.src
+                        },
+                        prices: {
+                            price: {
+                                value: parseFloat(item.product_price_value ? item.product_price_value : 0)
+                            }
+                        }
+                    })
+                });
+
+                magentoStorefrontEvents.context.setShoppingCart({
+                    id: cartData.dsCartId,
+                    totalQuantity: cartData.summary_count,
+                    prices: {
+                        subtotalExcludingTax: {
+                            value: parseFloat(cartData.subtotalAmountExclTax ? cartData.subtotalAmountExclTax : 0)
+                        },
+                        subtotalIncludingTax: {
+                            value: parseFloat(cartData.subtotalAmount ? cartData.subtotalAmount : 0)
+                        }
+                    },
+                    items: contextCartItems,
+                    possibleOnepageCheckout: cartData.possible_onepage_checkout,
+                    giftMessageSelected : false,
+                    giftWrappingSelected : false
+                });
+
+                window.dispatchEvent(new Event("shoppingCartContextSet"));
+            }
+        }
+    }
+</script>
+<div x-data="dataServicesShoppingCartContextData()"
+     @private-content-loaded.window="initContext($event.detail.data.cart)"></div>

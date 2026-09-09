@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+    <event name="customer_login">
+        <observer name="customer_login_observer" instance="Dcw\Company\Observer\CustomerLogin" />
+    </event>
+     <event name="sales_quote_remove_item">
+        <observer name="remove_item" instance="Dcw\Company\Observer\RemoveItemObserver" />
+    </event>
+
+    <event name="checkout_onepage_controller_success_action">
+        <observer name="freetshirt_checkout_observer" instance="Dcw\Company\Observer\ProcessOrder" />
+    </event>
+    <event name="controller_action_predispatch_checkout_index_index">
+    <observer name="restrict_checkout" instance="Dcw\Company\Observer\RestrictCheckoutObserver" />
+    </event>
+</config>

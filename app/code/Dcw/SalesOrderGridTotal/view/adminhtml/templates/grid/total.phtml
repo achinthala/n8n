@@ -1,0 +1,444 @@
+<?php
+/**
+ * @var \Magento\Backend\Block\Template $block
+ */
+$gridTotalUrl = $block->getUrl('dcwsalesordergridtotal/order/gridTotal');
+?>
+<script>
+window.dcwGridTotalUrl = <?= /* @noEscape */ json_encode($gridTotalUrl) ?>;
+</script>
+<div id="grid-total-top" class="grid-total-container" data-grid-total-url="<?= $block->escapeUrl($gridTotalUrl) ?>" style="display: none;">
+    <span class="total-label"><?= $block->escapeHtml(__('Total:')) ?></span>
+    <span class="total-amount">$0.00</span>
+</div>
+
+<script>
+(function() {
+    var lastGridQueryString = '';
+    function buildQueryFromRequest(url, body) {
+        var q = '';
+        if (url && url.indexOf('?') !== -1) {
+            q = url.substring(url.indexOf('?'));
+        }
+        if (body && typeof body === 'string') {
+            body = body.trim();
+            if (body.length > 0) {
+                if (body.charAt(0) === '{') {
+                    try {
+                        var obj = JSON.parse(body);
+                        var parts = [];
+                        if (obj.filters) {
+                            Object.keys(obj.filters).forEach(function(k) {
+                                if (k !== 'placeholder' && obj.filters[k] !== '' && obj.filters[k] != null) {
+                                    var v = obj.filters[k];
+                                    if (typeof v === 'object' && v !== null && (v.from !== undefined || v.to !== undefined)) {
+                                        if (v.from) parts.push('filters[' + k + '][from]=' + encodeURIComponent(v.from));
+                                        if (v.to) parts.push('filters[' + k + '][to]=' + encodeURIComponent(v.to));
+                                    } else {
+                                        parts.push('filters[' + k + ']=' + encodeURIComponent(String(v)));
+                                    }
+                                }
+                            });
+                        }
+                        if (obj.namespace) parts.unshift('namespace=' + encodeURIComponent(obj.namespace));
+                        if (parts.length) q = (q ? q + '&' : '?') + parts.join('&');
+                    } catch (e) {}
+                } else {
+                    q = q ? q + '&' + body : (body.charAt(0) === '?' ? body : '?' + body);
+                }
+            }
+        }
+        return q;
+    }
+    var NativeXHR = window.XMLHttpRequest;
+    if (NativeXHR) {
+        window.XMLHttpRequest = function() {
+            var xhr = new NativeXHR();
+            var reqUrl = '';
+            var reqBody = '';
+            var open = xhr.open;
+            xhr.open = function(method, url) {
+                reqUrl = url || '';
+                return open.apply(this, arguments);
+            };
+            var send = xhr.send;
+            xhr.send = function(body) {
+                reqBody = (body && typeof body === 'string') ? body : '';
+                var isGrid = (reqUrl + reqBody).indexOf('namespace=sales_order_grid') !== -1 ||
+                    (reqUrl + reqBody).indexOf('sales_order_grid') !== -1;
+                var thisRequestQ = '';
+                if (isGrid && reqUrl.indexOf('gridTotal') === -1 && reqUrl.indexOf('dcwsalesordergridtotal') === -1) {
+                    thisRequestQ = buildQueryFromRequest(reqUrl, reqBody);
+                    if (thisRequestQ) lastGridQueryString = thisRequestQ;
+                }
+                xhr.addEventListener('load', function() {
+                    if (isGrid && thisRequestQ && window.dcwGridTotalQueryStringCallback) {
+                        window.dcwGridTotalQueryStringCallback(thisRequestQ);
+                    }
+                }, false);
+                return send.apply(this, arguments);
+            };
+            return xhr;
+        };
+    }
+    window.dcwGridTotalGetLastQueryString = function() { return lastGridQueryString; };
+    window.dcwGridTotalSetLastQueryString = function(q) { lastGridQueryString = q; };
+})();
+</script>
+<script>
+require(['jquery'], function($) {
+    'use strict';
+
+    var fetchTotalDebounceTimer = null;
+    var lastFetchParams = null;
+
+    function getUrl() {
+        return window.dcwGridTotalUrl || $('#grid-total-top').data('grid-total-url') || $('#grid-total-top').attr('data-grid-total-url') || '';
+    }
+
+    function setGridTotalVisible(visible) {
+        if (visible) {
+            $('#grid-total-top, #grid-total-bottom').show();
+        } else {
+            $('#grid-total-top, #grid-total-bottom').hide();
+        }
+    }
+
+    function updateDisplay(totalAmount, totalCount) {
+        totalAmount = parseFloat(totalAmount) || 0;
+        totalCount = parseInt(totalCount, 10) || 0;
+        var formatted = '$' + totalAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        var html = 'Total: <span class="total-amount">' + formatted + '</span>';
+        $('#grid-total-top').html(html);
+        $('#grid-total-bottom').html(html);
+    }
+
+    function addBottomTotal() {
+        if ($('#grid-total-bottom').length === 0) {
+            var html = '<div id="grid-total-bottom" class="grid-total-container bottom" style="display: none;">Total: <span class="total-amount">$0.00</span></div>';
+            var $wrap = $('.admin__data-grid-wrap').first();
+            if ($wrap.length) {
+                $wrap.after(html);
+            } else {
+                $('body').find('.page-content').append(html);
+            }
+        }
+    }
+
+    /**
+     * Build only backend-understood params: filters[*], paging, sorting. Never pass data={...} or form_key.
+     */
+    function paramsFromObject(obj) {
+        var parts = [];
+        if (obj.filters && typeof obj.filters === 'object') {
+            Object.keys(obj.filters).forEach(function(k) {
+                if (k === 'placeholder' || obj.filters[k] === '' || obj.filters[k] == null) return;
+                var v = obj.filters[k];
+                if (typeof v === 'object' && v !== null && (v.from !== undefined || v.to !== undefined)) {
+                    if (v.from) parts.push('filters[' + k + '][from]=' + encodeURIComponent(v.from));
+                    if (v.to) parts.push('filters[' + k + '][to]=' + encodeURIComponent(v.to));
+                } else {
+                    parts.push('filters[' + k + ']=' + encodeURIComponent(String(v)));
+                }
+            });
+        }
+        if (obj.paging && typeof obj.paging === 'object') {
+            if (obj.paging.pageSize != null) parts.push('paging[pageSize]=' + encodeURIComponent(obj.paging.pageSize));
+            if (obj.paging.current != null) parts.push('paging[current]=' + encodeURIComponent(obj.paging.current));
+        }
+        if (obj.sorting && typeof obj.sorting === 'object') {
+            if (obj.sorting.field) parts.push('sorting[field]=' + encodeURIComponent(obj.sorting.field));
+            if (obj.sorting.direction) parts.push('sorting[direction]=' + encodeURIComponent(obj.sorting.direction));
+        }
+        return parts.length ? parts.join('&') : '';
+    }
+
+    /**
+     * Normalize any query string or POST-style string to only params our backend accepts. Reject data={...}&form_key=...
+     */
+    function normalizeGridTotalParams(raw) {
+        if (!raw || typeof raw !== 'string') return '';
+        raw = raw.trim();
+        if (raw.charAt(0) === '?') raw = raw.slice(1);
+        if (!raw) return '';
+
+        if (raw.indexOf('data=') !== -1 || raw.indexOf('data%3D') !== -1) {
+            var dataMatch = raw.match(/data=([^&]*)/) || raw.match(/data%3D([^&]*)/);
+            if (dataMatch && dataMatch[1]) {
+                try {
+                    var decoded = decodeURIComponent(dataMatch[1].replace(/\+/g, ' '));
+                    var obj = typeof decoded === 'string' && decoded.charAt(0) === '{' ? JSON.parse(decoded) : null;
+                    if (obj && typeof obj === 'object') return paramsFromObject(obj);
+                } catch (e) {}
+                return '';
+            }
+        }
+
+        var allowed = [];
+        raw.split('&').forEach(function(pair) {
+            var eq = pair.indexOf('=');
+            if (eq === -1) return;
+            var key = pair.substring(0, eq);
+            var keyDec = decodeURIComponent(key.replace(/\+/g, ' '));
+            if (keyDec === 'form_key' || keyDec === 'data' || keyDec === 'isAjax') return;
+            if (keyDec.indexOf('filters[') === 0 || keyDec.indexOf('paging[') === 0 || keyDec.indexOf('sorting[') === 0 || keyDec === 'namespace') {
+                allowed.push(pair);
+            }
+        });
+        return allowed.join('&');
+    }
+
+    function fetchTotal(queryString) {
+		console.log(queryString);
+        var url = getUrl();
+        if (!url) return;
+        console.log('l1');
+        var q = normalizeGridTotalParams(queryString || '');
+		console.log('qq='+q);
+		console.log('l2');
+        if (queryString && q === '' && String(queryString).indexOf('data=') !== -1) {
+            return;
+        }
+		console.log('l3');
+        if (q === '') {
+            return;
+        }
+		console.log('l4');
+		console.log('q='+q);
+
+        url = url + (url.indexOf('?') !== -1 ? '&' : '?') + q;
+
+        var qStr = (q || '') + ' ' + (queryString || '');
+        var hasFilters = false;
+        if (qStr.indexOf('filters[') !== -1 || qStr.indexOf('filters%5B') !== -1) {
+            var pairs = (q || '').split('&');
+            for (var i = 0; i < pairs.length; i++) {
+                var eq = pairs[i].indexOf('=');
+                if (eq === -1) continue;
+                var key = pairs[i].substring(0, eq);
+                try {
+                    var keyDec = decodeURIComponent(key.replace(/\+/g, ' '));
+                    if (keyDec.indexOf('filters[') === 0 && keyDec !== 'filters[placeholder]') {
+                        hasFilters = true;
+                        break;
+                    }
+                } catch (e) {}
+            }
+        }
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                var total = 0, count = 0;
+                if (data && data.grid_total) {
+                    total = parseFloat(data.grid_total.total_amount || data.grid_total.base_total_amount) || 0;
+                    count = parseInt(data.grid_total.total_count, 10) || 0;
+                }
+                updateDisplay(total, count);
+                if (hasFilters) setGridTotalVisible(true);
+            },
+            error: function(xhr) {
+                var data = null;
+                try {
+                    if (xhr && xhr.responseText) {
+                        data = typeof xhr.responseText === 'string' ? JSON.parse(xhr.responseText) : null;
+                        if (data && data.grid_total) {
+                            updateDisplay(
+                                parseFloat(data.grid_total.total_amount || data.grid_total.base_total_amount) || 0,
+                                parseInt(data.grid_total.total_count, 10) || 0
+                            );
+                            if (hasFilters) setGridTotalVisible(true);
+                            return;
+                        }
+                    }
+                } catch (e) {}
+                updateDisplay(0, 0);
+                if (hasFilters) setGridTotalVisible(true);
+            }
+        });
+    }
+
+    function getGridQueryString(settings) {
+        var raw = '';
+        if (settings.url && settings.url.indexOf('?') !== -1) {
+            raw = settings.url.substring(settings.url.indexOf('?') + 1);
+        }
+        if (settings.data && typeof settings.data === 'string') {
+            var d = settings.data.trim();
+            raw = raw ? raw + '&' + d : d;
+        }
+        return normalizeGridTotalParams(raw ? '?' + raw : raw);
+    }
+
+    function scheduleFetchTotal(queryString) {
+        var q = normalizeGridTotalParams(queryString || '');
+        if (!q) return;
+        if (fetchTotalDebounceTimer) clearTimeout(fetchTotalDebounceTimer);
+        lastFetchParams = q;
+        fetchTotalDebounceTimer = setTimeout(function() {
+            fetchTotalDebounceTimer = null;
+            fetchTotal(lastFetchParams);
+        }, 280);
+    }
+
+    window.dcwGridTotalQueryStringCallback = function(q) {
+        if (q) scheduleFetchTotal(q);
+    };
+
+    /** Build query string from grid filter inputs in the DOM (fallback when mixin has no params) */
+    function getFiltersFromDom() {
+        var parts = ['namespace=sales_order_grid'];
+        var container = document.querySelector('.admin__data-grid-wrap') || document.querySelector('[data-role="grid"]') || document.querySelector('.page-content');
+        if (!container) return '';
+
+        var inputs = container.querySelectorAll('select[name^="filters["], input[name^="filters["]');
+        inputs.forEach(function(el) {
+            var name = el.getAttribute('name');
+            if (!name || name.indexOf('placeholder') !== -1) return;
+            var val = (el.value || '').trim();
+            if (val === '') return;
+            parts.push(encodeURIComponent(name) + '=' + encodeURIComponent(val));
+        });
+
+        if (parts.length > 1) return '?' + parts.join('&');
+
+        var dataIndexFields = ['status', 'created_at', 'store_id'];
+        dataIndexFields.forEach(function(field) {
+            var cell = container.querySelector('th[data-index="' + field + '"]');
+            if (!cell) return;
+            var input = cell.querySelector('select, input[type="text"], input:not([type])');
+            if (input && input.value && input.value.trim() !== '') {
+                parts.push('filters[' + field + ']=' + encodeURIComponent(input.value.trim()));
+            }
+        });
+        return parts.length > 1 ? '?' + parts.join('&') : '';
+    }
+
+    function fetchTotalWithFallback(queryString) {
+        var q = (queryString && String(queryString).length > 0) ? String(queryString) : getFiltersFromDom();
+        if (q) q = normalizeGridTotalParams(q);
+        if (q) scheduleFetchTotal(q);
+    }
+
+    addBottomTotal();
+
+    $(document).on('dcwGridTotalUpdate', function(e, queryString) {
+        setTimeout(function() { fetchTotalWithFallback(queryString); }, 80);
+        setTimeout(function() { fetchTotalWithFallback(queryString || getFiltersFromDom()); }, 500);
+    });
+
+    $(document).ready(function() {
+		function formatDate(value) {
+			if (!value) return value;
+			var parts = value.split('/');
+			if (parts.length !== 3) return value;
+			var month = parseInt(parts[0], 10); // remove leading zero
+			var day = parts[1].padStart(2, '0'); // ensure 2 digits
+			var year = parts[2];
+			return month + '/' + day + '/' + year;
+		}
+		function buildGridTotalParamsFromDom() {
+			var params = [];
+			$('.admin__data-grid-filters-wrap')
+				.find('input, select')
+				.each(function () {
+					var name = $(this).attr('name');
+					var value = $(this).val();
+
+					if (value && value !== '') {
+						if (name && name.indexOf('created_at') !== -1) {
+							value = formatDate(value);
+						}
+						if (name) {
+							var paramKey = 'filters[' + name + ']';
+							if (name === 'created_at[from]' || name === 'created_at[to]') {
+								paramKey = name === 'created_at[from]'
+									? 'filters[created_at][from]'
+									: 'filters[created_at][to]';
+							}
+							params.push(paramKey + '=' + encodeURIComponent(value));
+						}
+					}
+				});
+			return params.length ? 'namespace=sales_order_grid&' + params.join('&') : 'namespace=sales_order_grid';
+		}
+		function applyGridTotalFromDom() {
+			var queryString = buildGridTotalParamsFromDom();
+			if (queryString) fetchTotal(queryString);
+		}
+		$(document).on('click', '[data-action="grid-filter-apply"]', function () {
+			applyGridTotalFromDom();
+		});
+		$(document).on('click', '[data-action="grid-filter-remove-chip"]', function () {
+			setTimeout(function() {
+				var q = buildGridTotalParamsFromDom();
+				if (!q || q.indexOf('filters[') === -1) setGridTotalVisible(false);
+				applyGridTotalFromDom();
+			}, 200);
+		});
+		function onClearAllClick() {
+			setGridTotalVisible(false);
+			setTimeout(function() {
+				applyGridTotalFromDom();
+			}, 200);
+			setTimeout(function() {
+				applyGridTotalFromDom();
+			}, 500);
+			setTimeout(function() {
+				fetchTotal('namespace=sales_order_grid');
+			}, 600);
+		}
+		$(document).on('click', '[data-action="grid-filter-reset"]', onClearAllClick);
+		$(document).on('click', '.action-clear', function () {
+			if ($(this).closest('.admin__data-grid-wrap, [data-role="grid"], .page-content').length) {
+				onClearAllClick();
+			}
+		});
+        addBottomTotal();
+
+        var q = '';
+        var lastQ = window.dcwGridTotalGetLastQueryString && window.dcwGridTotalGetLastQueryString();
+        if (lastQ) q = normalizeGridTotalParams(lastQ);
+
+        if (!q && window.location.search && (window.location.search.indexOf('filters[') !== -1 || window.location.search.indexOf('namespace=') !== -1)) {
+            q = normalizeGridTotalParams(window.location.search);
+        }
+        if (q) scheduleFetchTotal(q);
+
+        [1200, 2200].forEach(function(delay) {
+            setTimeout(function() {
+                var domQ = getFiltersFromDom();
+                if (domQ) domQ = normalizeGridTotalParams(domQ);
+                if (domQ && domQ.indexOf('filters[') !== -1) scheduleFetchTotal(domQ);
+            }, delay);
+        });
+
+        function moveGridTotalAfterRecordsFound() {
+            var totalEl = document.getElementById('grid-total-top');
+            var recordsEl = document.querySelector('.admin__control-support-text');
+            if (totalEl && recordsEl && recordsEl.parentNode && !totalEl.dataset.dcwMoved) {
+                recordsEl.parentNode.insertBefore(totalEl, recordsEl.nextSibling);
+                totalEl.setAttribute('data-dcw-moved', '1');
+                return true;
+            }
+            return false;
+        }
+        moveGridTotalAfterRecordsFound();
+        setTimeout(moveGridTotalAfterRecordsFound, 400);
+        setTimeout(moveGridTotalAfterRecordsFound, 1200);
+    });
+
+    $(document).ajaxComplete(function(e, xhr, settings) {
+        var url = (settings.url || '').toLowerCase();
+        if (url.indexOf('dcwsalesordergridtotal') !== -1 || url.indexOf('gridtotal') !== -1) return;
+        var fullUrl = (settings.url || '') + (typeof settings.data === 'string' ? '?' + settings.data : '');
+        if (fullUrl.indexOf('namespace=sales_order_grid') !== -1) {
+            var q = getGridQueryString(settings);
+            if (q && window.dcwGridTotalSetLastQueryString) window.dcwGridTotalSetLastQueryString(q);
+            if (q) scheduleFetchTotal(q);
+        }
+    });
+});
+</script>

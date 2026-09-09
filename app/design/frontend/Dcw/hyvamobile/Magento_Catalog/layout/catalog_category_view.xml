@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="2columns-left"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="columns.top">
+            <container name="category.view.container" htmlTag="div" htmlClass="category-view" after="-">
+                <block class="Magento\Catalog\Block\Category\View" name="category.image"
+                       template="Magento_Catalog::category/image.phtml">
+                    <arguments>
+                        <argument name="image" xsi:type="object">Magento\Catalog\ViewModel\Category\Image</argument>
+                        <argument name="output" xsi:type="object">Magento\Catalog\ViewModel\Category\Output</argument>
+                    </arguments>
+                </block>
+                <block class="Magento\Catalog\Block\Category\View" name="category.description"
+                       template="Magento_Catalog::category/description.phtml"/>
+                <block class="Magento\Catalog\Block\Category\View" name="category.description.after"
+                       template="Magento_Catalog::category/description_after.phtml">
+                    <block class="Magento\Cms\Block\Block" name="cpp_shop_by_category" as="cpp_shop_by_category">
+                        <action method="setBlockId">
+                            <argument name="block_id" xsi:type="string">cpp_shop_by_category</argument>
+                        </action>
+                    </block>
+                    <block class="Magento\Cms\Block\Block" name="cpp_fAQ_content" as="cpp_fAQ_content">
+                        <action method="setBlockId">
+                            <argument name="block_id" xsi:type="string">cpp_fAQ_content</argument>
+                        </action>
+                    </block>
+                </block>
+                <block class="Magento\Catalog\Block\Category\View" name="category.cms"
+                       template="Magento_Catalog::category/cms.phtml"/>
+            </container>
+        </referenceContainer>
+        <referenceContainer name="content">
+            <block class="Magento\Catalog\Block\Category\View" name="category.top.spotlight" after="mst_category_search"
+                   template="Magento_Catalog::category/spotlight.phtml"/>
+        </referenceContainer>
+    </body>
+</page>

@@ -1,0 +1,40 @@
+diff --git a/vendor/amasty/module-request-quote/Model/Email/Sender.php b/vendor/amasty/module-request-quote/Model/Email/Sender.php
+index fa0cd49..7d4da73 100644
+--- a/vendor/amasty/module-request-quote/Model/Email/Sender.php
++++ b/vendor/amasty/module-request-quote/Model/Email/Sender.php
+@@ -193,6 +193,12 @@ class Sender
+                     $sendTo
+                 );
+ 
++                if (isset($data['adminEmail'])) {
++                    $transport->addTo($data['adminEmail']);
++                }
++
++                unset($data['adminEmail']);
++
+                 if ($this->helper->isPdfAttach()
+                     && $configPath == Data::CONFIG_PATH_CUSTOMER_APPROVE_EMAIL
+                 ) {
+@@ -235,6 +241,11 @@ class Sender
+             $customerName = $quote->getCustomerName();
+         }
+ 
++        $adminEmail = null;
++        if ($emailTemplate === Data::CONFIG_PATH_CUSTOMER_EDIT_EMAIL) {
++            $adminEmail = $this->helper->getSendToEmail("admin_notifications");
++        }
++
+         $this->sendEmail(
+             $emailTemplate,
+             $quote->getCustomerEmail(),
+@@ -245,7 +256,8 @@ class Sender
+                 'store' => $quote->getStore(),
+                 'expiredDate' => $this->getExpiredDate($quote),
+                 'remarks' => $this->retrieveCustomerNote($quote->getRemarks()),
+-                'adminRemarks' => $this->retrieveAdminNote($quote->getRemarks())
++                'adminRemarks' => $this->retrieveAdminNote($quote->getRemarks()),
++                'adminEmail' => $adminEmail
+             ],
+             $notificationTemplateId
+         );
+

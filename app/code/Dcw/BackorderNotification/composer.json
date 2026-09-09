@@ -1,0 +1,25 @@
+{
+    "name": "dcw/module-backorder-notification",
+    "description": "Klaviyo notifications for backorder items with promise dates",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "license": [
+        "proprietary"
+    ],
+    "require": {
+        "php": "~8.1.0|~8.2.0",
+        "magento/framework": "*",
+        "magento/module-sales": "*",
+        "magento/module-catalog": "*",
+        "magento/module-checkout": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Dcw\\BackorderNotification\\": ""
+        }
+    }
+}
+

@@ -1,0 +1,44 @@
+<?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+?>
+<?php $_invoice = $block->getInvoice() ?>
+<?php $_order   = $block->getOrder() ?>
+<?php if ($_invoice && $_order) : ?>
+    <table class="email-items" align="center" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td style="background: #DCE5EC;padding-top: 40px !important;padding-bottom: 20px;">
+                <table class="email-items" align="center" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <thead>
+                        <tr>
+                            <th width="30">&nbsp;</th>
+                            <th class="item-info" style="font-weight: 700;font-size: 16px;line-height: 24px;color: #000000;text-align: left;">
+                                <span style="display: block !important;border-bottom: 1px solid #CFCFCF;padding-bottom: 10px;"><?= $block->escapeHtml(__('Items')) ?></span>
+                            </th>
+                            <th class="item-qty" style="font-weight: 700;font-size: 16px;line-height: 24px;color: #000000;text-align: center;width:100px;min-width: 100px;">
+                                <span style="display: block !important;border-bottom: 1px solid #CFCFCF;padding-bottom: 10px;"><?= $block->escapeHtml(__('Qty')) ?></span>
+                            </th>
+                            <th class="item-subtotal" style="font-weight: 700;font-size: 16px;line-height: 24px;color: #000000;text-align: right;width: 120px;min-width: 120px;box-sizing: border-box !important;">
+                                <span style="display: block !important;border-bottom: 1px solid #CFCFCF;padding-bottom: 10px;"><?= $block->escapeHtml(__('Subtotal')) ?></span>
+                            </th>
+                            <th width="30">&nbsp;</th>
+                        </tr>
+                    </thead>
+                    <?php foreach ($_invoice->getAllItems() as $_item) : ?>
+                        <?php if (!$_item->getOrderItem()->getParentItem()) : ?>
+                            <tbody>
+                                <?= $block->getItemHtml($_item) ?>
+                            </tbody>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    <tfoot class="order-totals invoice-total-footer" style="">
+                        <?= $block->getChildHtml('invoice_totals') ?>
+                    </tfoot>
+                </table>
+            </td>
+        </tr>            
+    </table>
+<?php endif; ?>

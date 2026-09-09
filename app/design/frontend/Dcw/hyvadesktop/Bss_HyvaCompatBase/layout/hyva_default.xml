@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+/**
+ * BSS Commerce Co.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the EULA
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://bsscommerce.com/Bss-Commerce-License.txt
+ *
+ * @category   BSS
+ * @package    Bss_HyvaCompatBase
+ * @author     Extension Team
+ * @copyright  Copyright (c) 2022 BSS Commerce Co. ( http://bsscommerce.com )
+ * @license    http://bsscommerce.com/Bss-Commerce-License.txt
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="header-content">
+            <action method="setTemplate" ifconfig="hyva_compat_base/rewrite_template/header_content">
+                <argument name="template" xsi:type="string">Bss_HyvaCompatBase::html/header.phtml</argument>
+            </action>
+
+            <block name="header-content.compare-link" ifconfig="hyva_compat_base/rewrite_template/header_content"
+                   template="Bss_HyvaCompatBase::header/compare-link.phtml" />
+            <container name="cart.icon.before" />
+            <container name="cart.icon.after" />
+            <container name="cart.drawer.after" />
+        </referenceBlock>
+
+        <referenceBlock name="header.customer">
+             <action method="setTemplate" ifconfig="hyva_compat_base/rewrite_template/customer_menu">
+                 <argument name="template" xsi:type="string">Bss_HyvaCompatBase::header/customer-menu.phtml</argument>
+             </action>
+
+            <block name="customer.logged-menu"
+                   as="customer_logged-menu"
+                   template="Bss_HyvaCompatBase::header/customer-menu/menu-container.phtml"
+                   ifconfig="hyva_compat_base/rewrite_template/customer_menu">
+                <block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.account"
+                       as="customer_account"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+                    <arguments>
+                        <!-- Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink::LINK_TEXT -->
+                        <argument name="link_text" xsi:type="string" translate="true">My Account</argument>
+
+                        <!-- Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink::LINK_URL_PART -->
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">customer/account</item>
+                        </argument>
+                    </arguments>
+                </block>
+                <!--<block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.menu.wishlist"
+                       as="customer_menu_wishlist"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+                    <arguments>
+                        <argument name="link_text" xsi:type="string" translate="true">My Wishlist</argument>
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">wishlist</item>
+                        </argument>
+                    </arguments>
+                </block>-->
+                <block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.orders"
+                       as="customer_orders"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+                    <arguments>
+                        <argument name="link_text" xsi:type="string" translate="true">My Orders</argument>
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">sales/order/history</item>
+                        </argument>
+                    </arguments>
+                </block>
+				<block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.proadvantage"
+                       as="customer_proadvantage"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+					<arguments>
+						<argument name="link_text" xsi:type="string" translate="true">Pro Advantage</argument>
+						<argument name="link_url_part" xsi:type="array">
+							<item name="path" xsi:type="string">company/</item>
+						</argument>
+					</arguments>
+				</block>
+                <!--<block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.address-book"
+                       as="customer_address-book"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+                    <arguments>
+                        <argument name="link_text" xsi:type="string" translate="true">Address Book</argument>
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">customer/address</item>
+                        </argument>
+                    </arguments>
+                </block>-->
+                <block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.sign-out"
+                       as="customer_sign-out"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+                    <arguments>
+                        <argument name="link_text" xsi:type="string" translate="true">Log Out</argument>
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">customer/account/logout</item>
+                        </argument>
+                    </arguments>
+                </block>
+            </block>
+            <block name="customer.not-login-menu"
+                   as="customer_not-login-menu"
+                   template="Bss_HyvaCompatBase::header/customer-menu/menu-container.phtml"
+                   ifconfig="hyva_compat_base/rewrite_template/customer_menu">
+                <block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.login"
+                       as="customer_login"
+                       template="Bss_HyvaCompatBase::header/customer-menu/login-link.phtml">
+                    <arguments>
+                        <argument name="link_text" xsi:type="string" translate="true">Sign In</argument>
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">customer/account/index</item>
+                        </argument>
+                    </arguments>
+                </block>
+                <block class="Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink"
+                       name="customer.register"
+                       as="customer_register"
+                       template="Bss_HyvaCompatBase::header/customer-menu/link-default.phtml">
+                    <arguments>
+                        <argument name="link_text" xsi:type="string" translate="true">Create an Account</argument>
+                        <argument name="link_url_part" xsi:type="array">
+                            <item name="path" xsi:type="string">customer/account/create</item>
+                        </argument>
+                    </arguments>
+                </block>
+            </block>
+        </referenceBlock>
+        <referenceBlock name="footer-static-links">
+            <action method="setTemplate" ifconfig="hyva_compat_base/rewrite_template/footer_static_link">
+                <argument name="template" xsi:type="string">Bss_HyvaCompatBase::footer/links.phtml</argument>
+            </action>
+            <block name="footer.link-company"
+                   as="footer_link-company"
+                   template="Bss_HyvaCompatBase::footer/link/link-company.phtml"
+                   ifconfig="hyva_compat_base/rewrite_template/footer_static_link">
+            </block>
+            <block name="footer.link-legal"
+                   as="footer_link-legal"
+                   template="Bss_HyvaCompatBase::footer/link/link-legal.phtml"
+                   ifconfig="hyva_compat_base/rewrite_template/footer_static_link">
+            </block>
+        </referenceBlock>
+        <referenceContainer name="before.body.end">
+            <block name="bss.XMLHttpRequest.response.handler" template="Bss_HyvaCompatBase::page/js/xmlHttpRequest-handler.phtml" />
+        </referenceContainer>
+    </body>
+</page>

@@ -1,0 +1,141 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+declare(strict_types=1);
+
+use Magento\Checkout\Block\Cart\Coupon;
+use Magento\Framework\Escaper;
+
+/** @var Coupon $block */
+/** @var Escaper $escaper */
+
+// We should use strlen function because coupon code could be "0", converted to bool will lead to false
+$hasCouponCode = (bool) strlen($block->getCouponCode() ?: "");
+?>
+<script>
+    function initCouponForm() {
+        return {
+            showCouponForm: <?= $hasCouponCode ? 1 : 0 ?>,
+            formData: {
+                coupon_code: '<?= $escaper->escapeJs($block->getCouponCode()) ?>',
+                remove: '<?= (int) $hasCouponCode ?>'
+            },
+            init(){
+                this.showCouponForm = JSON.parse(hyva.getBrowserStorage().getItem('hyva.showCouponForm'))
+            },
+            toggleShowCoupon(){
+                this.showCouponForm = !this.showCouponForm;
+
+                hyva.getBrowserStorage().setItem('hyva.showCouponForm', this.showCouponForm);
+
+                this.$nextTick(() => this.$refs.couponInput.select());
+            },
+            applyCoupon(){
+                var couponCodeElement = document.getElementById('coupon_code');
+                if (couponCodeElement) {
+                    var couponCode = couponCodeElement.value;
+
+                    if (couponCode == "") {
+                        this.couponErrorMessage = 'Sorry, your code is invalid or has expired.';
+                    } else {
+                        this.couponErrorMessage = '';
+                    }
+
+                    let couponSuccessMsg = document.querySelector('.coupon-success-msg');
+                    if (couponSuccessMsg) {
+                        couponSuccessMsg.innerText = '';
+                    }
+
+                    let couponErrorMsg = document.querySelector('.coupon-error-msg');
+                    if (couponErrorMsg) {
+                        couponErrorMsg.innerText = '';
+                    }
+                }
+            }
+        }
+    }
+</script>
+<div class="coupon-form pt-2"
+     x-data="initCouponForm()"
+>
+    <div class="mx-auto md:mx-0">
+        <div class="text-left font-medium relative">
+                <span @click="toggleShowCoupon()"
+                      class="cursor-pointer text-primary-lighter select-none whitespace-nowrap"
+                      id="discount-form-toggle"
+                      x-bind:class="{'active': showCouponForm}"
+                >
+                    <span class="no-line" style="color:#252525">
+                        <?= $escaper->escapeHtml(__('Have a promo code?')) ?> <small><?= $escaper->escapeHtml(__('(Optional)')) ?></small>
+                    </span>                    
+                </span>
+        </div>
+        <div class="discount-coupon-form" x-show="showCouponForm" style="display: none;">
+            <form id="discount-coupon-form"
+                  class="my-4 mb-1"
+                  x-show="showCouponForm"
+                  x-cloak
+                  action="<?= $escaper->escapeUrl($block->getUrl('checkout/cart/couponPost')) ?>"
+                  method="post"
+                  @submit.prevent="if (formData.coupon_code) hyva.postCart($event.target)"
+                  novalidate
+            >
+                <?= $block->getBlockHtml('formkey') ?>
+
+                <div class="fieldset coupon" x-data="{ couponErrorMessage: '' }">
+
+                    <input type="hidden" name="remove" id="remove-coupon" value="<?= (int) $hasCouponCode ?>"/>
+
+                    <div class="flex flex-row sm:flex-row gap-2 justify-center md:justify-start">
+
+                        <label for="coupon_code" class="label sr-only">
+                            <?= $escaper->escapeHtml(__('Enter discount code')) ?>
+                        </label>
+                        <div class="control">
+                            <input type="text"
+                                   class="form-input disabled:opacity-75 disabled:bg-gray-100 disabled:pointer-events-none"
+                                   id="coupon_code"
+                                   name="coupon_code"
+                                   value="<?= $escaper->escapeHtmlAttr($block->getCouponCode()) ?>"
+                                   x-model="formData.coupon_code"
+                                   x-ref="couponInput"
+                                   placeholder="<?= $escaper->escapeHtmlAttr(__('Enter Promo Code')) ?>"
+                                    <?php if ($hasCouponCode): ?>
+                                       disabled="disabled"
+                                    <?php else: ?>
+                                        required
+                                    <?php endif; ?>
+                            />
+                        </div>
+
+                        <div class="inline-block">
+                            <?php if (!$hasCouponCode): ?>
+                            <div class="primary">
+                                <button class="btn btn-primary" type="submit" @click="applyCoupon()" value="<?= $escaper->escapeHtmlAttr(__('Apply Discount')) ?>">
+                                    <span><?= $escaper->escapeHtml(__('Apply')) ?></span>
+                                </button>
+                            </div>
+                            <?php else: ?>
+                                <div class="primary">
+                                    <button type="submit" class="btn btn-primary"
+                                            value="<?= $escaper->escapeHtmlAttr(__('Cancel')) ?>">
+                                        <?= $escaper->escapeHtml(__('Cancel')) ?>
+                                    </button>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <div class="couponErrorMessage text-size12 w-full" style="font-weight:300;color:#E03030;"><span x-text="couponErrorMessage" class="text-red-500"></span></div>
+                    <div class="text-size12 w-full" style="font-weight:300;color:#E03030;"><span class="text-red-500 coupon-error-msg"></span></div>
+                    <div class="text-size12 w-full" style="font-weight:300;color:#299752;"><span class="text-green-500 coupon-success-msg"></span></div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2022 Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="admin-2columns-left" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        
+        <referenceContainer name="content">
+            <referenceBlock name="shipping_address">
+         <action method="setTemplate">
+            <argument name="template" xsi:type="string">Dcw_AddressAutocomplete::quote/create/form/address.phtml</argument>
+         </action>
+      </referenceBlock>
+	  
+	   <referenceBlock name="billing_address">
+         <action method="setTemplate">
+            <argument name="template" xsi:type="string">Dcw_AddressAutocomplete::quote/create/form/address.phtml</argument>
+         </action>
+      </referenceBlock>
+	  <block class="Magento\Framework\View\Element\Template" name="order_create_addresss" template="Dcw_AddressAutocomplete::order/create/address.phtml" />
+        </referenceContainer>
+        
+    </body>
+</page>

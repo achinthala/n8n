@@ -1,0 +1,55 @@
+
+<?php
+    $currentCategory=$block->getCurrentCategory();
+if ($currentCategory) {
+    $parentcategories=$block->getCategoryById($currentCategory->getId());
+    $categories=$parentcategories->getChildrenCategories();
+	$countcat = count($categories->getData());
+    //$placeholderimage = $block->getViewFileUrl('Magento_Catalog::images/product/placeholder/small_image.jpg');
+    $imageHelper =  $this->helper('Magento\Catalog\Helper\Image');
+    $placeholderimage = $imageHelper->getDefaultPlaceholderUrl('small_image');
+    ?> 
+<?php if($countcat > 0){?>
+<h1 class="category-heading text-size28 font-semibold sm:text-size20 sm:text-center">Shop by Category</h1>
+<div class="all-categories">
+<div class="row flex flex-wrap sm:-mx-4">
+    <?php
+    $ij=0;
+    foreach ($categories as $subcat) {
+        $ij++;
+        $sub_cat = $block->getCategoryById($subcat->getId());
+        $imaheurl=$placeholderimage;
+        if ($sub_cat->getCatThumbnail()) {
+            $imaheurl=$block->getUrl().$sub_cat->getCatThumbnail();
+        }
+        ?>
+    <div class="column xl:w-5/12 sm:w-5/12 md:w-4/12 px-4 pb-8 sm:pb-12">
+        <div class="cards">
+            <div class="image mb-2"><a href="<?= /** @noEscape */ $sub_cat->getUrl();?>" class="block">   
+                    <img class="rounded-md w-full shadow-large" 
+                    src="<?= /** @noEscape */ $imaheurl ?>" alt="<?= /** @noEscape */ $sub_cat->getName();?>" x-bind:alt="item.name" title="<?= /** @noEscape */ $sub_cat->getName();?>" style="display: inline-block;"/>
+                </a>
+            </div>
+            <div class="details">
+                <h3 class="mb-2 sm:mb-1">
+                    <a class="text-size16 font-semibold text-black sm:text-size15" title="<?= /** @noEscape */ $sub_cat->getName();?>"
+                    href="<?= /** @noEscape */ $sub_cat->getUrl();?>">
+                        <?= /** @noEscape */ $sub_cat->getName();?>
+                    </a>
+                </h3>
+                <p class="text-size14 font-normal text-black mb-2 sm:mb-1">
+                    <a href="<?= /** @noEscape */ $sub_cat->getUrl();?>"><?= /** @noEscape */ $sub_cat->getCatShortdec();?></a>
+                </p>             
+            </div>
+            <div class="shop-button">
+            <a class="text-size16 font-semibold text-black sm:text-size15" 
+                    href="<?= /** @noEscape */ $sub_cat->getUrl();?>">
+                    Shop <?= /** @noEscape */ $sub_cat->getName();?>
+                    </a>
+            </div>    
+        </div>
+    </div>
+<?php }?>
+</div>
+</div>
+<?php } }?>

@@ -1,0 +1,423 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */
+/**
+ * @var $block \Amasty\RequestQuote\Block\Adminhtml\Quote\Edit\Items\Grid
+ */
+?>
+<?php 
+$items = $block->getItems();
+$canApplyFullDiscount = $block->canApplyFullDiscount();
+$canControlPricing = $block->canControlPricing();
+$quoteId = $block->getQuoteId();
+$logDiscountUrl = $block->getLogDiscountUrl();
+$lockStatusUrl = $block->getLockStatusUrl();
+$isLockedByCustomer = $block->isLockedByCustomer();
+$isDisabled = $isLockedByCustomer || !$canControlPricing;
+?>
+<?php if (empty($items)): ?>
+    <div id="order-items_grid">
+        <div class="admin__table-wrapper">
+            <table class="data-table admin__table-primary order-tables">
+                <thead>
+                    <tr class="headings">
+                        <th class="col-product"><span><?= $escaper->escapeHtml(__('Product')) ?></span></th>
+                        <th class="col-price"><span><?= $escaper->escapeHtml(__('Price')) ?></span></th>
+                        <th class="col-qty"><span><?= $escaper->escapeHtml(__('Qty')) ?></span></th>
+                        <th class="col-subtotal"><span><?= $escaper->escapeHtml(__('Subtotal')) ?></span></th>
+                        <th class="col-row-total"><span><?= $escaper->escapeHtml(__('Row Subtotal')) ?></span></th>
+                        <th class="col-action"><span><?= $escaper->escapeHtml(__('Action')) ?></span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="even">
+                        <td class="empty-text" colspan="100"><?= $escaper->escapeHtml(__('No ordered items')) ?></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php else: ?>
+    <div class="admin__table-wrapper" id="order-items_grid">
+    <?php if (count($items) > 10): ?>
+        <div class="actions update actions-update" id="update-items-quantities-top-container">
+            <button id="update-items-quantities-btn-top" 
+                    type="button" 
+                    class="action-secondary"
+                    onclick="validateDiscountBeforeUpdate()" <?= $isDisabled ? 'disabled="disabled"' : '' ?>>
+                <span><?= $escaper->escapeHtml(__('Update Items and Quantities')) ?></span>
+            </button>
+        </div>
+    <?php endif; ?>
+        <table class="data-table admin__table-primary order-tables">
+            <thead>
+                <tr class="headings">
+                    <th class="col-product"><span><?= $escaper->escapeHtml(__('Product')) ?></span></th>
+                    <th class="col-cost"><span><?= $escaper->escapeHtml(__('Cost')) ?></span></th>
+                    <th class="col-price"><span><?= $escaper->escapeHtml(__('Price') . ' ('
+                            . ($block->priceIncludesTax() ? __('Incl. Tax') : __('Excl. Tax')) . ')') ?></span></th>
+                    <th class="col-qty"><span><?= $escaper->escapeHtml(__('Qty')) ?></span></th>
+                    <th class="col-subtotal"><span><?= $escaper->escapeHtml(__('Subtotal')) ?></span></th>
+                    <th class="col-row-total"><span><?= $escaper->escapeHtml(__('Row Subtotal')) ?></span></th>
+                    <th class="col-action"><span><?= $escaper->escapeHtml(__('Action')) ?></span></th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <td class="col-total"><?= $escaper->escapeHtml(__('Total %1 product(s)', count($items))) ?></td>
+                    <td colspan="2" class="col-subtotal"><?= $escaper->escapeHtml(__('Subtotal:')) ?></td>
+                    <td class="col-price"><strong><?= /* @noEscape */ $block->formatPrice($block->getSubtotal()) ?></strong></td>
+                    <td class="col-price"><strong><?= /* @noEscape */ $block->formatPrice($block->getSubtotalWithDiscount()); ?></strong></td>
+                    <input type="hidden" class="quoteSubtotal" value="<?=$block->getSubtotal()?>"/>
+                    <td colspan="2">&nbsp;</td>
+                </tr>
+            </tfoot>
+                <?php $i = 0 ?>
+                <?php foreach ($items as $item): $i++ ?>
+                <tbody class="<?= /* @noEscape */ ($i%2) ? 'even' : 'odd' ?>">
+                    <tr>
+                        <td class="col-product">
+                            <span id="order_item_<?= $escaper->escapeHtml($item->getId()) ?>_title"><?= $escaper->escapeHtml($item->getName()) ?></span>
+                            <div class="product-sku-block">
+                                <span><?= $escaper->escapeHtml(__('SKU')) ?>:</span>
+                                <?= $block->getSkuHtml($item->getSku()) ?>
+                            </div>
+                            <?php if ($block->canAddOrConfigureProducts() && !$isLockedByCustomer): ?>
+                            <div class="product-configure-block">
+                                <?= $block->getConfigureButtonHtml($item) ?>
+                            </div>
+                            <?php endif; ?>
+                        </td>
+                        <td class="col-cost">
+                            <?= $block->getCostHtml($item) ?>
+                        </td>
+                        <td class="col-price">
+                            <div class="price-excl-tax">
+                                <?= /* @noEscape */ $block->formatPrice($item->getProduct()->getFinalPrice(), true); ?>
+                                
+                            </div>
+                            <?php if ($tier = $block->getTierHtml($item)): ?>
+                                <div id="item_tier_block_<?= $escaper->escapeHtml($item->getId()) ?>">
+                                    <a href="#" onclick="$('item_tier_<?= $escaper->escapeHtml($item->getId()) ?>').toggle();return false;"><?= $escaper->escapeHtml(__('Tier Pricing')) ?></a>
+                                    <div style="display:none" id="item_tier_<?= $escaper->escapeHtml($item->getId()) ?>"><?= /* @noEscape */ $tier ?></div>
+                                </div>
+                            <?php endif; ?>
+                            <input id="itemprice_<?= $escaper->escapeHtml($item->getId()) ?>"
+                                   name="item[<?= $escaper->escapeHtml($item->getId()) ?>][price]"
+                                   value="<?= $escaper->escapeHtml(sprintf("%.2f", $block->getItemEditablePrice($item))) ?>"
+                                   class="input-text item-price admin__control-text"
+                                   <?= (!$block->canEditItemPrices() || $isLockedByCustomer) ? 'disabled="disabled" readonly="readonly"' : '' ?>/>
+                        </td>
+                        <td class="col-qty">
+                            <input name="item[<?= $escaper->escapeHtml($item->getId()) ?>][qty]"
+                                   class="input-text item-qty admin__control-text"
+                                   value="<?= $item->getQty()*1 ?>"
+                                   maxlength="12"
+                                   <?= (!$block->canEditQuantity() || $isLockedByCustomer) ? 'disabled="disabled" readonly="readonly"' : '' ?> />
+                        </td>
+                        <td class="col-subtotal col-price">
+                            <div class="price-excl-tax">
+                                <span class="label">Excl. Tax:</span>
+                                <span class="price"><?= $block->getItemRowTotalHtml($item) ?></span>
+                            </div>
+                            <div class="price-incl-tax">
+                                <span class="label">Incl. Tax:</span>
+                                <span class="price"><?= $block->getItemInclTotalHtml($item) ?></span>
+                            </div>
+                        </td>
+                        <td class="col-price col-row-subtotal">
+                            <div class="price-excl-tax">
+                                <span class="label">Excl. Tax:</span>
+                                <span class="price"><?= $block->getItemRowTotalWithDiscountHtml($item) ?></span>
+                            </div>
+                            <div class="price-incl-tax">
+                                <span class="label">Incl. Tax:</span>
+                                <span class="price"><?= $block->getItemInclTotalWithDiscountHtml($item) ?></span>
+                            </div>
+                        </td>
+                        <td class="col-actions last">
+                            <select class="admin__control-select" name="item[<?= $escaper->escapeHtml($item->getId()) ?>][action]"
+                                    <?= (!$block->canRemoveItems() || $isLockedByCustomer) ? 'disabled="disabled"' : '' ?>>
+                                <option value=""><?= $escaper->escapeHtml(__('Please select')) ?></option>
+                                <option value="remove"><?= $escaper->escapeHtml(__('Remove')) ?></option>
+                            </select>
+                        </td>
+                    </tr>
+                    <?php if ($itemQuestion = $block->getItemQuestion($item)): ?>
+                        <tr class="row-notes-error">
+                            <td colspan="2">
+                                <strong><?= $escaper->escapeHtml(__('Customer Note:')) ?></strong>
+                                <div class="customer-note">
+                                    <?= /* @noEscape */ nl2br($escaper->escapeHtml($itemQuestion)) ?>
+                                </div>
+                            </td>
+                            <td colspan="10">
+                                <?php if ($answer = $block->getItemAnswer($item)): ?>
+                                    <strong><?= $escaper->escapeHtml(__('Administrator Note:')) ?></strong>
+                                    <div class="customer-note">
+                                        <?= /* @noEscape */ nl2br($escaper->escapeHtml($answer)) ?>
+                                    </div>
+                                <?php else: ?>
+                                    <strong><?= $escaper->escapeHtml(__('Administrator Note:')) ?></strong>
+                                    <div class="control">
+                                        <a class="add-note-quote-item"><?= $escaper->escapeHtml(__('Add Note')) ?></a>
+                                        <div class="textarea-control" style="display: none;">
+                                            <textarea name="item[<?= $escaper->escapeHtml($item->getId()) ?>][note]" rows="2" cols="50"></textarea>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+
+                    <?php $hasMessageError = false; ?>
+                    <?php foreach ($item->getMessage(false) as $messageError): ?>
+                        <?php if (!empty($messageError)) {
+                            $hasMessageError = true;
+                        }
+                        ?>
+                    <?php endforeach; ?>
+
+                    <?php if ($hasMessageError): ?>
+                        <tr class="row-messages-error">
+                            <td colspan="100">
+                                <?php foreach ($item->getMessage(false) as $message):
+                                    if (empty($message)) {
+                                        continue;
+                                    }
+                                    ?>
+                                    <div class="message <?php if ($item->getHasError()): ?>message-error<?php else: ?>message-notice<?php endif; ?>">
+                                        <?= $escaper->escapeHtml($message) ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </td>
+                        </tr>
+                    <?php endif;?>
+                </tbody>
+                <?php endforeach; ?>
+        </table>
+    </div>
+
+    <?php if ($block->getAppliedDiscount() || $block->getAppliedSurcharge()): ?>
+    <div class="amquote-line-block amquote-approved-title">
+        <p class="amquote-title">
+            <?= $escaper->escapeHtml(__('Applied') . ' ' . ($block->getAppliedSurcharge() ? __('surcharge') : __('discount')) . ': ') ?>
+            <strong>
+                <?= /* @noEscape */ ($block->getAppliedSurcharge() ? $block->getAppliedSurcharge() : $block->getAppliedDiscount()) . '%' ?>
+            </strong>
+        </p>
+
+        <button class="action-secondary" type="button" id="remove-discount-btn" onclick="removeModificatorsWithLogging()" <?= $isDisabled ? 'disabled="disabled"' : '' ?>>
+            <?= $escaper->escapeHtml(__('Remove') . ' ' . ($block->getAppliedSurcharge() ? __('surcharge') : __('discount'))) ?>
+        </button>
+    </div>
+    <?php endif; ?>
+
+    <div class="amquote-order-discount">
+        <div id="order-coupons" class="amquote-coupons"><?= $block->getChildHtml() ?></div>
+        <button id="update-items-quantities-btn" 
+                type="button" 
+                class="action-secondary"
+                onclick="validateDiscountBeforeUpdate()" <?= $isDisabled ? 'disabled="disabled"' : '' ?>>
+            <span><?= $escaper->escapeHtml(__('Update Items and Quantities')) ?></span>
+        </button>
+    </div>
+<?php endif; ?>
+
+<script>
+require(['jquery', 'mage/translate'], function($, $t) {
+    window.canApplyFullDiscount = <?= $canApplyFullDiscount ? 'true' : 'false' ?>;
+    var quoteId = <?= $quoteId ? (int)$quoteId : 'null' ?>;
+    var logDiscountUrl = '<?= $escaper->escapeJs($logDiscountUrl) ?>';
+    var lockStatusUrl = '<?= $escaper->escapeJs($lockStatusUrl) ?>';
+    var isLockedByCustomer = <?= $isLockedByCustomer ? 'true' : 'false' ?>;
+    var canControlPricing = <?= $canControlPricing ? 'true' : 'false' ?>;
+    var isDisabled = isLockedByCustomer || !canControlPricing;
+    
+    /**
+     * Check if quote is locked by customer (synchronous check)
+     * @param {Function} callback - Function to call if not locked (or if error)
+     * @param {Function} errorCallback - Function to call if locked by customer
+     */
+    function checkLockStatus(callback, errorCallback) {
+        if (!quoteId || !lockStatusUrl) {
+            // If no quote ID or status URL, proceed anyway
+            if (callback) callback();
+            return;
+        }
+        
+        // Use synchronous AJAX to block execution until check completes
+        var isLocked = false;
+        var lockStatus = null;
+        
+        $.ajax({
+            url: lockStatusUrl,
+            type: 'GET',
+            dataType: 'json',
+            async: false, // Make it synchronous to block execution
+            data: {
+                quote_id: quoteId
+            },
+            success: function(response) {
+                if (response.success && response.lock_status) {
+                    lockStatus = response.lock_status;
+                    // Check if locked by customer
+                    if (lockStatus.is_locked && lockStatus.locked_by_type === 'customer') {
+                        isLocked = true;
+                    }
+                }
+            },
+            error: function() {
+                // On error, proceed anyway (don't block if status check fails)
+                isLocked = false;
+            }
+        });
+        
+        if (isLocked && lockStatus) {
+            var customerName = lockStatus.locked_by_name || 'Customer';
+            var message = $t('This quote is currently being edited by customer %1. Please wait until they finish editing or use "Force Unlock" to override.').replace('%1', customerName);
+            alert(message);
+            if (errorCallback) errorCallback();
+            return false;
+        }
+        
+        // Not locked by customer, proceed
+        if (callback) callback();
+        return true;
+    }
+    
+    window.validateDiscountBeforeUpdate = function() {
+        // Check if disabled (locked by customer or no permission)
+        if (isDisabled) {
+            if (isLockedByCustomer) {
+                alert($t('This quote is currently being edited by a customer. Please wait until they finish editing.'));
+            } else if (!canControlPricing) {
+                alert($t('You do not have permission to update items and quantities.'));
+            }
+            return false;
+        }
+        
+        // Check lock status before proceeding - if locked, return early
+        var canProceed = checkLockStatus(
+            function() {
+                // Not locked by customer, proceed with update
+                var discountInput = $('#discount');
+                var discountValue = parseFloat(discountInput.val()) || 0;
+                var oldDiscount = parseFloat(discountInput.data('old-discount')) || 0;
+                
+                if (discountValue >= 100) {
+                    if (!window.canApplyFullDiscount) {
+                        alert($t('You do not have permission to apply 100% discounts.'));
+                        return false;
+                    }
+                }
+                
+                if (quoteId && Math.abs(discountValue - oldDiscount) > 0.0001) {
+                    $.ajax({
+                        url: logDiscountUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            quote_id: quoteId,
+                            old_discount: oldDiscount,
+                            new_discount: discountValue,
+                            form_key: FORM_KEY
+                        }
+                    });
+                }
+                
+                function executeItemsUpdate() {
+                    if (typeof window.quote !== 'undefined' && typeof window.quote.itemsUpdate === 'function') {
+                        window.quote.itemsUpdate();
+                        return true;
+                    }
+                    return false;
+                }
+                
+                if (!executeItemsUpdate()) {
+                    var retryCount = 0;
+                    var maxRetries = 10;
+                    var retryInterval = setInterval(function() {
+                        retryCount++;
+                        if (executeItemsUpdate()) {
+                            clearInterval(retryInterval);
+                        } else if (retryCount >= maxRetries) {
+                            clearInterval(retryInterval);
+                            alert($t('Unable to update items. Please refresh the page and try again.'));
+                        }
+                    }, 100);
+                }
+            },
+            function() {
+                // Locked by customer, do nothing (alert already shown)
+            }
+        );
+        
+        // If checkLockStatus returned false, we're locked - don't proceed
+        if (canProceed === false) {
+            return false;
+        }
+        
+        return true;
+    };
+    
+    window.removeModificatorsWithLogging = function() {
+        // Check if disabled (locked by customer or no permission)
+        if (isDisabled) {
+            if (isLockedByCustomer) {
+                alert($t('This quote is currently being edited by a customer. Please wait until they finish editing.'));
+            } else if (!canControlPricing) {
+                alert($t('You do not have permission to remove discounts.'));
+            }
+            return false;
+        }
+        
+        // Check lock status before proceeding - if locked, return early
+        var canProceed = checkLockStatus(
+            function() {
+                // Not locked by customer, proceed with removal
+                var discountInput = $('#discount');
+                var currentDiscount = parseFloat(discountInput.val()) || 0;
+                
+                if (quoteId && currentDiscount > 0) {
+                    $.ajax({
+                        url: logDiscountUrl,
+                        type: 'POST',
+                        dataType: 'json',
+                        data: {
+                            quote_id: quoteId,
+                            old_discount: currentDiscount,
+                            new_discount: 0,
+                            form_key: FORM_KEY
+                        }
+                    });
+                }
+                
+                if (typeof window.quote !== 'undefined' && typeof window.quote.removeModificators === 'function') {
+                    window.quote.removeModificators();
+                } else if (typeof quote !== 'undefined' && typeof quote.removeModificators === 'function') {
+                    quote.removeModificators();
+                }
+            },
+            function() {
+                // Locked by customer, do nothing (alert already shown)
+            }
+        );
+        
+        // If checkLockStatus returned false, we're locked - don't proceed
+        if (canProceed === false) {
+            return false;
+        }
+    };
+    
+    // Ensure buttons are disabled on page load if permission is missing or quote is locked
+    $(document).ready(function() {
+        if (isDisabled) {
+            $('#update-items-quantities-btn-top, #update-items-quantities-btn, #remove-discount-btn').prop('disabled', true);
+        }
+    });
+});
+</script>

@@ -1,0 +1,30 @@
+{
+	"name" : "narvar/accord-magento",
+	"description" : "Narvar post-purchase customer experience platform helps leading brands and retailers build stronger relationships with their customers beyond the buy button resulting in greater customer engagement and loyalty. This is done by helping retailers build gorgeous tracking pages, seamless online returns portal and proactive notifications center.",
+	"type" : "magento2-module",
+	"version" : "1.1.3",
+	"license" : [
+		"OSL-3.0",
+		"AFL-3.0"
+	],
+	"require" : {
+		"php" : "~5.5.0|~5.6.0| >=7.1.0",
+    "ext-curl" : "*"
+	},
+	"authors" : [{
+			"name" : "Jibin Tomy",
+			"email" : "Jibin.tomy@narvar.com",
+			"role" : "Admin"
+		}
+	],
+	"autoload" : {
+		"files" : [
+			"registration.php"
+		],
+		"psr-4" : {
+			"Narvar\\Accord\\" : ""
+		}
+	},
+	"require-dev": {
+	}
+}

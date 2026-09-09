@@ -1,0 +1,14 @@
+diff --git a/vendor/magento/module-checkout-staging/Plugin/GuestPaymentInformationManagementPlugin.php b/vendor/magento/module-checkout-staging/Plugin/GuestPaymentInformationManagementPlugin.php
+index 10925ea9..7d87a234 100644
+--- a/vendor/magento/module-checkout-staging/Plugin/GuestPaymentInformationManagementPlugin.php
++++ b/vendor/magento/module-checkout-staging/Plugin/GuestPaymentInformationManagementPlugin.php
+@@ -101,7 +101,7 @@ class GuestPaymentInformationManagementPlugin
+         $billingData = $this->convertAddressValueToFlatArray($billingAddress->getData());
+         $billingKeys = array_flip(array_keys($billingData));
+         $shippingData = array_intersect_key($quoteShippingAddressData, $billingKeys);
+-        $removeKeys = ['region_code', 'save_in_address_book'];
++        $removeKeys = ['region_code', 'save_in_address_book', 'extension_attributes'];
+         $billingData = array_diff_key($billingData, array_flip($removeKeys));
+         $difference = array_diff($billingData,$shippingData);
+         return empty($difference);
+

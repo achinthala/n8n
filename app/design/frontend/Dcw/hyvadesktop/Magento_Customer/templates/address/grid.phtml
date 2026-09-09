@@ -1,0 +1,137 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Customer\Block\Address\Grid;
+use Magento\Framework\Escaper;
+
+/** @var Grid $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+?>
+
+<div class="block-addresses-list">
+    <div class="block-title">
+<?= $escaper->escapeHtml(__('Additional Address Entries')) ?></div>
+    <div class="block-content" x-data="initAddresses()">
+        <?php if ($additionalAddresses = $block->getAdditionalAddresses()): ?>
+            <div class="table-wrapper">
+                <div class="table-head">
+                    <div class="company">
+                        <?= $escaper->escapeHtml(
+                            __('Company')
+                        ) ?></div>
+                    <div class="name">
+                        <?= $escaper->escapeHtml(__('Name')) ?>
+                    </div>
+                    <div class="street">
+                        <?= $escaper->escapeHtml(__('Street Address')) ?>
+                    </div>
+                    <div class="city">
+                        <?= $escaper->escapeHtml(__('City')) ?>
+                    </div>
+                    <div class="country">
+                        <?= $escaper->escapeHtml(__('Country')) ?>
+                    </div>
+                    <div class="actions-toolbar"></div>
+                </div>
+                <?php $i = 0; ?>
+                <?php foreach ($additionalAddresses as $address): ?>
+                    <?php $i++ ?>
+                    <div class="table-body">
+                        <div data-th="Company" class="company <?= $i % 2 === 0 ? '' : ' ' ?>">
+                            <?= $escaper->escapeHtml($address->getCompany()) ?></div>
+                        <div data-th="Name" class="name <?= $i % 2 === 0 ? '' : ' ' ?>">
+                            <?= $escaper->escapeHtml($address->getLastname()) ?>,
+                            <?= $escaper->escapeHtml($address->getFirstname()) ?>
+                        </div>
+                        <div data-th="Street Address" class="street <?= $i % 2 === 0 ? '' : ' ' ?>">
+                            <?= $escaper->escapeHtml($block->getStreetAddress($address)) ?>
+                        </div>
+                        <div data-th="City" class="city <?= $i % 2 === 0 ? '' : ' ' ?>">
+                            <?= $escaper->escapeHtml($address->getCity()) ?>
+                        </div>
+                        <div data-th="Country" class="country <?= $i % 2 === 0 ? '' : ' ' ?>">
+                            <?= $escaper->escapeHtml($block->getCountryByCode($address->getCountryId())) ?>
+                        </div>
+                        <div data-th="Actions" class="actions-toolbar <?= $i % 2 === 0 ? '' : ' ' ?>">
+                            <a class="action edit inline-block text-sm underline text-secondary-darker"
+                                title="<?= $escaper->escapeHtmlAttr(__('Edit')) ?>"
+                                href="<?= $escaper->escapeUrl($block->getUrl(
+                                    'customer/address/edit',
+                                    ['id' => $address->getId()]
+                                )) ?>">
+                                <?= $heroicons->pencilAltHtml(); ?>
+                                <span></span>
+                            </a>
+                            <a class="action delete ml-2 inline-block text-sm underline text-secondary-darker"
+                               title="<?= $escaper->escapeHtmlAttr(__('Delete')) ?>"
+                               @click.prevent="deleteAddressById(<?= $escaper->escapeJs($address->getId()) ?>)" href="#">
+                                <?= $heroicons->trashHtml(); ?>
+                            </a>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php if ($block->getChildHtml('pager')): ?>
+                <div class="customer-addresses-toolbar toolbar bottom">
+                    <?= $block->getChildHtml('pager') ?>
+                </div>
+            <?php endif; ?>
+
+        <?php else: ?>
+            <p class="empty" style="margin-bottom: 0;">
+                <?= $escaper->escapeHtml(__('You have no other address entries in your address book.')) ?>
+            </p>
+        <?php endif ?>
+
+        <script>
+            function initAddresses() {
+                return {
+                    deleteAddressById(id) {
+                        if (window.confirm(
+                            '<?= $escaper->escapeJs(__('Are you sure you want to delete this address?')) ?>'
+                        )) {
+                            hyva.postForm(
+                                {
+                                    "action": '<?= $escaper->escapeJs($block->getDeleteUrl()) ?>',
+                                    "data": {
+                                        "id": id
+                                    }
+                                }
+                            );
+                        }
+                    }
+                }
+            }
+        </script>
+    </div>
+</div>
+
+<div class="actions-toolbar" style="padding-top:0">
+    <div class="primary">
+        <a href="<?= $escaper->escapeUrl($block->getUrl('customer/address/new')) ?>"
+           class="btn add-btn">
+            <span>
+                <?= $escaper->escapeHtml(__('Add New Address')) ?>
+            </span>
+        </a>
+    </div>
+    <div class="secondary">
+        <a class="action back"
+           href="<?= $escaper->escapeUrl($block->getUrl('customer/account')) ?>">
+            <span>
+                <?= $escaper->escapeHtml(__('Back')) ?>
+            </span>
+        </a>
+    </div>
+</div>

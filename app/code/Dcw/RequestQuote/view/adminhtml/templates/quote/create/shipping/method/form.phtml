@@ -1,0 +1,190 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package Request a Quote Base for Magento 2
+ */ /** @var $block \Dcw\RequestQuote\Block\Adminhtml\Quote\Create\Shipping\Method\Form */ ?>
+<?php
+use Amasty\RequestQuote\Api\Data\QuoteInterface;
+use Amasty\RequestQuote\Model\Quote\Carrier\Custom;
+
+$shippingRateGroups = $block->getShippingRates();
+$isLockedByCustomer = $block->isLockedByCustomer();
+?>
+<?php if ($shippingRateGroups): ?>
+    <div id="order-shipping-method-choose" class="control amquote-shipping-choose" style="display:none">
+        <dl class="admin__order-shipment-methods">
+            <?php foreach ($shippingRateGroups as $code => $rates): ?>
+                <dt class="amquote-title admin__order-shipment-methods-title">
+                    <?php if ($code === Custom::CODE): ?>
+                        <input name="quote[<?= $escaper->escapeHtml(QuoteInterface::CUSTOM_METHOD_ENABLED) ?>]" type="checkbox" id="custom_method_enabled" value="1"<?php if ($block->isCustomMethodEnabled()): ?> checked="checked"<?php endif; ?>
+                               class="admin__control-checkbox"
+                               onchange="if(typeof quote !== 'undefined') quote.changeCustomMethodAllowed(this)"
+                               <?= /* @noEscape */ (!$block->canOverrideShipping() || $isLockedByCustomer) ? 'disabled="disabled"' : '' ?> />
+                        <label class="amquote-label" for="custom_method_enabled"></label>
+                    <?php endif; ?>
+                    <?= $escaper->escapeHtml($block->getCarrierName($code, $rates)) ?>
+                </dt>
+                <dd class="admin__order-shipment-methods-options">
+                    <ul class="amquote-options-list admin__order-shipment-methods-options-list">
+                        <?php foreach ($rates as $rate): ?>
+                            <?php $_radioProperty = 'name="quote[shipping_method]" type="radio" onclick="if(typeof quote !== \'undefined\') quote.setShippingMethod(this.value)"' ?>
+                            <?php $_code = $rate->getCode() ?>
+                            <li class="amquote-option admin__field-option">
+                                <?php if ($rate->getErrorMessage()): ?>
+                                    <div class="messages">
+                                        <div class="message message-error error">
+                                            <div><?= $escaper->escapeHtml($rate->getErrorMessage()) ?></div>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <?php $_checked = $block->isMethodActive($_code) ? 'checked="checked"' : '' ?>
+                                    <?php $_disabled = (!$block->canOverrideShipping() || $isLockedByCustomer) ? 'disabled="disabled"' : '' ?>
+                                    <input <?= /* @noEscape */ $_radioProperty ?> value="<?= $escaper->escapeHtmlAttr($_code) ?>"
+                                                                                  id="s_method_<?= $escaper->escapeHtmlAttr($_code) ?>" <?= /* @noEscape */ $_checked ?>
+                                                                                  class="admin__control-radio required-entry"
+                                                                                  <?= /* @noEscape */ $_disabled ?>
+                                                                                  <?php if ($rate->getCarrier() === Custom::CODE): ?>data-amquote-js="custom-method"<?php endif; ?> />
+                                    <label class="amquote-label admin__field-label" for="s_method_<?= $escaper->escapeHtmlAttr($_code) ?>">
+                                        <?= $escaper->escapeHtml($rate->getMethodTitle() ? $rate->getMethodTitle() : $rate->getMethodDescription()) ?> -
+                                        <span class="amquote-inner">
+                                            <?php if ($rate->getCarrier() === Custom::CODE): ?>
+                                                <span class="amquote-customfee-block">
+                                                    <?= $escaper->escapeHtml($block->getPriceSymbol()) ?>
+                                                    <input id="custom_fee"
+                                                           class="quote-custom-shipping-fee"
+                                                           name="quote[<?= $escaper->escapeHtml(QuoteInterface::CUSTOM_FEE) ?>]"
+                                                           type="number"
+                                                           min="0"
+                                                           value="<?= $escaper->escapeHtml($block->convertPrice($rate->getPrice(), false)) ?>"
+                                                           onchange="if(typeof quote !== 'undefined') quote.changeCustomFee(this.value)"
+                                                           onkeypress="if(typeof quote !== 'undefined') quote.changeCustomFee(this.value)"
+                                                           onpaste="if(typeof quote !== 'undefined') quote.changeCustomFee(this.value)"
+                                                           oninput="if(typeof quote !== 'undefined') quote.changeCustomFee(this.value)"
+                                                           data-amquote-js="custom-method"
+                                                           <?= /* @noEscape */ (!$block->canOverrideShipping() || $isLockedByCustomer) ? 'disabled="disabled" readonly="readonly"' : '' ?>
+                                                    />
+                                                </span>
+                                            <?php else: ?>
+                                                <?php $_excl = $block->getShippingPrice($rate->getPrice(), $block->displayShippingPriceIncludingTax()); ?>
+                                                <?php $_incl = $block->getShippingPrice($rate->getPrice(), true); ?>
+
+                                                <?= /* @noEscape */ $_excl ?>
+                                                <?php if ($block->displayShippingBothPrices() && $_incl != $_excl): ?>
+                                                    (<?= $escaper->escapeHtml(__('Incl. Tax')) ?> <?= /* @noEscape */ $_incl ?>)
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </span>
+                                    </label>
+                                <?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </dd>
+            <?php endforeach; ?>
+        </dl>
+    </div>
+    <?php if ($rate = $block->getActiveMethodRate()): ?>
+        <div id="order-shipping-method-info" class="order-shipping-method-info">
+            <dl class="admin__order-shipment-methods">
+                <dt class="admin__order-shipment-methods-title">
+                    <?= $escaper->escapeHtml($block->getCarrierName($rate->getCarrier())) ?>
+                </dt>
+                <dd class="admin__order-shipment-methods-options">
+                    <?= $escaper->escapeHtml($rate->getMethodTitle() ? $rate->getMethodTitle() : $rate->getMethodDescription()) ?> -
+                    <strong>
+                        <?php $ratePrice = $rate->getPrice() ?>
+                        <?php $_excl = $block->getShippingPrice($ratePrice, $block->displayShippingPriceIncludingTax()); ?>
+                        <?php $_incl = $block->getShippingPrice($ratePrice, true); ?>
+
+                        <?= /* @noEscape */ $_excl ?>
+                        <?php if ($block->displayShippingBothPrices() && $_incl != $_excl): ?>
+                            (<?= $escaper->escapeHtml(__('Incl. Tax')) ?> <?= /* @noEscape */ $_incl ?>)
+                        <?php endif; ?>
+                    </strong>
+                </dd>
+            </dl>
+            <?php if ($block->canOverrideShipping()): ?>
+                <a href="#"
+                   onclick="$('order-shipping-method-info').hide();$('order-shipping-method-choose').show();return false"
+                   class="action-default">
+                    <span><?= $escaper->escapeHtml(__('Click to change shipping method')) ?></span>
+                </a>
+            <?php endif; ?>
+        </div>
+    <?php else: ?>
+        <script>
+            require(['prototype'], function(){
+                <?php if ($block->canOverrideShipping()): ?>
+                    $('order-shipping-method-choose').show();
+                <?php endif; ?>
+            });
+        </script>
+    <?php endif; ?>
+    <div class="admin__field admin__field-option">
+        <input name="quote[<?= $escaper->escapeHtml(QuoteInterface::SHIPPING_CAN_BE_MODIFIED) ?>]" type="checkbox" id="shipping_can_modified" value="1"<?php if ($block->isShippingCanBeModified()): ?> checked="checked"<?php endif; ?>
+               class="admin__control-checkbox"
+               onchange="if(typeof quote !== 'undefined') quote.changeShippingModified(this)"
+               <?= /* @noEscape */ (!$block->canOverrideShipping() || $isLockedByCustomer) ? 'disabled="disabled"' : '' ?>/>
+        <label for="shipping_can_modified" class="admin__field-label"><?= $escaper->escapeHtml(__('Chosen Shipping Address and Method are allowed to be modified on checkout')) ?></label>
+    </div>
+<?php elseif ($block->getIsRateRequest()): ?>
+    <div class="order-shipping-method-summary">
+        <strong class="order-shipping-method-not-available"><?= $escaper->escapeHtml(__('Sorry, no quotes are available for this order.')) ?></strong>
+    </div>
+<?php else: ?>
+    <div id="order-shipping-method-summary" class="order-shipping-method-summary">
+        <?php if ($block->canOverrideShipping()): ?>
+            <a href="#" onclick="if(typeof quote !== 'undefined') { quote.loadShippingRates(); } return false;" class="action-default">
+                <span><?= $escaper->escapeHtml(__('Get shipping methods and rates')) ?></span>
+            </a>
+        <?php endif; ?>
+        <input type="hidden" name="quote[has_shipping]" value="" class="required-entry" />
+    </div>
+<?php endif; ?>
+<div style="display: none;" id="shipping-method-overlay" class="order-methods-overlay">
+    <span><?= $escaper->escapeHtml(__('You don\'t need to select a shipping method.')) ?></span>
+</div>
+<script>
+    require(["Amasty_RequestQuote/quote/create/form", "jquery"], function(quoteObj, $){
+        if (typeof quote === 'undefined') {
+            window.quote = quoteObj;
+        }
+        quote.overlay('shipping-method-overlay', <?php if ($block->getQuote()->isVirtual()): ?>false<?php else: ?>true<?php endif; ?>);
+        quote.overlay('address-shipping-overlay', <?php if ($block->getQuote()->isVirtual()): ?>false<?php else: ?>true<?php endif; ?>);
+        quote.isOnlyVirtualProduct = <?= /* @noEscape */ $block->getQuote()->isVirtual() ? 'true' : 'false'; ?>;
+        
+        <?php if (!$block->canOverrideShipping()): ?>
+        // Prevent enabling custom_fee field if admin doesn't have permission
+        var originalDisableCustomMethod = quote.disableCustomMethod;
+        quote.disableCustomMethod = function(disabled) {
+            originalDisableCustomMethod.call(this, disabled);
+            // Force disable custom_fee field if admin doesn't have permission
+            var customFeeInput = $('#custom_fee');
+            if (customFeeInput.length) {
+                customFeeInput.attr('disabled', true).attr('readonly', true);
+            }
+        };
+        
+        // Ensure custom_fee stays disabled on page load and after AJAX updates
+        var ensureCustomFeeDisabled = function() {
+            var customFeeInput = $('#custom_fee');
+            if (customFeeInput.length && !customFeeInput.attr('disabled')) {
+                customFeeInput.attr('disabled', true).attr('readonly', true);
+            }
+        };
+        
+        // Check on page load
+        ensureCustomFeeDisabled();
+        
+        // Monitor for AJAX updates that might re-enable the field
+        $(document).on('contentUpdated', function() {
+            ensureCustomFeeDisabled();
+        });
+        
+        // Also check periodically in case AJAX updates don't trigger contentUpdated
+        setInterval(ensureCustomFeeDisabled, 500);
+        <?php endif; ?>
+    });
+</script>
+

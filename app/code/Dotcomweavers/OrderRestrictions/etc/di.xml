@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!--
+/** OrderRestrictions di xml
+ * @category  Dotcomweavers
+ * @package   Dotcomweavers_OrderRestrictions
+ * @author    Dotcomweavers
+ * @copyright Copyright (c) Dotcomweavers
+ */
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Magento\SalesRule\Model\Rule\Condition\Product\Found"
+                type="Dotcomweavers\OrderRestrictions\Model\Rule\Condition\Product\Found"/>
+
+    <type name="Magento\SalesRule\Model\Rule\Condition\Product">
+        <plugin name="dotcomweavers_order_restrictions_configurable_child_line_totals"
+                type="Dotcomweavers\OrderRestrictions\Plugin\SalesRule\UseParentLineTotalsForConfigurableChildConditions"/>
+    </type>
+
+    <type name="Magento\Sales\Api\OrderManagementInterface">
+        <plugin name="before_place_order_operation"
+                type="Dotcomweavers\OrderRestrictions\Plugin\OrderManagement"/>
+    </type>
+
+    <preference for="Dotcomweavers\OrderRestrictions\Api\ShippingAddressManagementInterface" type="Dotcomweavers\OrderRestrictions\Model\ShippingAddressManagement" />
+</config>

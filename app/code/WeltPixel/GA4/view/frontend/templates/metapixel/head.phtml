@@ -1,0 +1,23 @@
+<?php
+// @codingStandardsIgnoreFile
+/** @var $block \WeltPixel\GA4\Block\MetaPixel\Common */
+
+/** @var \WeltPixel\GA4\Helper\MetaPixelTracking $metaPixelHelper */
+$metaPixelHelper = $this->helper('WeltPixel\GA4\Helper\MetaPixelTracking');
+$cspNonceProvider = $metaPixelHelper->getCspNonceProvider();
+$metaPixelTrackingCode = $block->getMetaPixelTrackingCode();
+?>
+<?php if ($block->isMetaPixelTrackingEnabled()) : ?>
+    <?php
+    $metaPixelTrackingCode = str_replace(
+        ['<script>', '<script data-rocketjavascript="false">', '<script data-rocketjavascript="true">', '<script exclude-this-tag="text/x-magento-template">', '</script>'],
+        ['<script>  if (window.ga4AllowServices) { ', '<script data-rocketjavascript="false"> if (window.ga4AllowServices) { ', '<script data-rocketjavascript="true"> if (window.ga4AllowServices) { ' ,'<script exclude-this-tag="text/x-magento-template">  if (window.ga4AllowServices) { ', '} </script>'],
+        $metaPixelTrackingCode);
+
+    if ($cspNonceProvider) {
+        $metaPixelTrackingCode = str_replace('<script', '<script nonce="' . $cspNonceProvider->generateNonce() . '" ', $metaPixelTrackingCode);
+    }
+
+    echo $metaPixelTrackingCode;
+    ?>
+<?php endif; ?>

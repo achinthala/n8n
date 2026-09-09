@@ -1,0 +1,51 @@
+<?php
+declare(strict_types=1);
+/**
+ * BSS Commerce Co.
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the EULA
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://bsscommerce.com/Bss-Commerce-License.txt
+ *
+ * @category   BSS
+ * @package    Hyva_BssSocialLogin
+ * @author     Extension Team
+ * @copyright  Copyright (c) 2022 BSS Commerce Co. ( http://bsscommerce.com )
+ * @license    http://bsscommerce.com/Bss-Commerce-License.txt
+ */
+
+use Magento\Customer\Model\Account\Redirect;
+use Magento\Framework\Escaper;
+use Bss\HyvaCompatBase\Block\Customer\Menu\CustomerMenuLink;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\BssSocialLogin\ViewModels\Helper as ModuleViewModel;
+
+/** @var Escaper $escaper */
+/** @var CustomerMenuLink $block */
+/** @var ViewModelRegistry $viewModels */
+
+$moduleViewModel = $viewModels->require(ModuleViewModel::class);
+$helperSocial = $moduleViewModel->getHelper();
+$checkButtonLogin = $moduleViewModel->checkButtonLogin();
+?>
+<a class="<?= $escaper->escapeHtmlAttr(implode(" ", $block->getCss())) ?> block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+    <?php if ($helperSocial->popupEnabled()) : ?>
+        @click.prevent="$dispatch('popup-register',
+        { open: true,openRegister : false,openLogin : true,openCreate :true,
+        openButtonLogin :<?php echo(json_encode($checkButtonLogin)); ?>,
+        openButtonRegister :false,
+        })"
+    <?php endif; ?>
+   onclick="hyva.setCookie && hyva.setCookie(
+       '<?= /** @noEscape */ Redirect::LOGIN_REDIRECT_URL ?>',
+       window.location.href,
+       1
+   )"
+   href="<?= $escaper->escapeUrl($block->getLink()) ?>">
+    <?= $block->getChildHtml('customer_menu_item_before_link_text') ?>
+    <?= $escaper->escapeHtml($block->getLinkText()); ?>
+    <?= $block->getChildHtml('customer_menu_item_after_link_text') ?>
+</a>

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_share_cart>
+            <general>
+                <enabled>1</enabled>
+                <link_expiry_days>7</link_expiry_days>
+                <recipient_cart_mode>merge</recipient_cart_mode>
+            </general>
+        </dcw_share_cart>
+    </default>
+</config>

@@ -1,0 +1,12 @@
+<?php
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) Amasty (https://www.amasty.com)
+ * @package FAQ and Product Questions for Magento 2
+ */ /** @var \Amasty\Faq\Block\Widgets\SearchBox $block */ ?>
+<div class="am-search-box-wrapper">
+    <div class="<?= $block->escapeHtml($block->getSearchBoxAlign()) ?>"
+        >
+        <?= /** @noEscape */ $block->getSearchBlockHtml() ?>
+    </div>
+</div>

@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_po_review>
+            <general>
+                <enabled>1</enabled>
+                <subtotal_threshold>1000</subtotal_threshold>
+                <allow_guest_po>0</allow_guest_po>
+            </general>
+            <checkout>
+                <shipping_modal_cms_block>po_shipping_modal</shipping_modal_cms_block>
+            </checkout>
+            <zendesk>
+                <enabled>1</enabled>
+            </zendesk>
+            <fallback>
+                <email>customerassistance@gmail.com</email>
+            </fallback>
+        </dcw_po_review>
+        <payment>
+            <dcw_po_gateway>
+                <active>1</active>
+                <model>Dcw\PurchaseOrderReview\Model\PaymentMethod</model>
+                <title>Purchase Order</title>
+                <order_status>pending_payment</order_status>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+                <sort_order>999</sort_order>
+            </dcw_po_gateway>
+        </payment>
+    </default>
+</config>

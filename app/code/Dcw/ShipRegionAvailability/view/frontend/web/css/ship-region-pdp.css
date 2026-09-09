@@ -1,0 +1,832 @@
+/* ===== Shipping Saver ZIP panel (matches shipping-module-mockup.html) ===== */
+.dcw-shipping-saver {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 45%, #2563eb 100%);
+    border-radius: 16px;
+    padding: 22px;
+    color: #fff;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dcw-shipping-saver::after {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.dcw-shipping-saver__truck {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 64px;
+    height: 64px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.dcw-shipping-saver__badge {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__headline {
+    font-size: 24px;
+    line-height: 1.18;
+    font-weight: 800;
+    margin: 0 0 6px;
+    max-width: 84%;
+    letter-spacing: -0.02em;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__accent-green {
+    background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.dcw-shipping-saver__accent-yellow {
+    background: linear-gradient(90deg, #fde047 0%, #facc15 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.dcw-shipping-saver__sub {
+    font-size: 13.5px;
+    opacity: 0.88;
+    margin: 0 0 14px;
+    max-width: 82%;
+    line-height: 1.45;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__zip-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__zip-input-wrap {
+    flex: 1;
+    min-width: 160px;
+    background: #fff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border: 2px solid transparent;
+    transition: border-color 0.15s;
+}
+
+.dcw-shipping-saver__zip-input-wrap:focus-within {
+    border-color: #fde047;
+}
+
+.dcw-shipping-saver__pin {
+    width: 18px;
+    height: 18px;
+    color: #ec4899;
+    flex-shrink: 0;
+}
+
+.dcw-shipping-saver__input {
+    border: none;
+    outline: none;
+    padding: 8px 8px;
+    font-size: 15px;
+    flex: 1;
+    background: transparent;
+    color: #1a1a1a;
+    font-weight: 600;
+    min-width: 0;
+}
+
+.dcw-shipping-saver__input::placeholder {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.dcw-shipping-saver__clear {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.dcw-shipping-saver__clear:hover {
+    color: #6b7280;
+}
+
+.dcw-shipping-saver__cta {
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+    color: #fff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
+    transition: transform 0.1s;
+}
+
+.dcw-shipping-saver__cta:hover {
+    transform: translateY(-1px);
+}
+
+.dcw-shipping-saver__error {
+    color: #fecaca;
+    font-size: 13px;
+    margin: 0 0 8px;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__region-label {
+    font-size: 12.5px;
+    margin: 0 0 10px;
+    font-weight: 600;
+    opacity: 0.95;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__why-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    position: relative;
+    z-index: 2;
+    transition: background 0.15s;
+    width: 100%;
+    text-align: left;
+}
+
+.dcw-shipping-saver__why-toggle:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.dcw-shipping-saver__why-icon {
+    flex-shrink: 0;
+}
+
+.dcw-shipping-saver__chev {
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.dcw-shipping-saver__why-toggle.is-open .dcw-shipping-saver__chev {
+    transform: rotate(180deg);
+}
+
+.dcw-shipping-saver__why-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, margin-top 0.3s ease;
+    margin-top: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    position: relative;
+    z-index: 2;
+}
+
+.dcw-shipping-saver__why-content.is-open {
+    max-height: 220px;
+    margin-top: 10px;
+}
+
+.dcw-shipping-saver__why-inner {
+    background: rgba(0, 0, 0, 0.22);
+    padding: 12px 14px;
+    border-radius: 10px;
+}
+
+@media (max-width: 640px) {
+    .dcw-shipping-saver__headline {
+        font-size: 20px;
+        max-width: 72%;
+    }
+
+    .dcw-shipping-saver__sub {
+        max-width: 100%;
+    }
+
+    .dcw-shipping-saver__cta {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ===== Region swatch sections (post-ZIP) — from shipping-module-mockup.html ===== */
+.dcw-ship-region-section,
+.region-section.dcw-ship-region-section {
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 12px;
+}
+
+.dcw-ship-region-section--near,
+.region-section.dcw-ship-region-section--near {
+    border: 1.5px solid #86efac;
+    background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
+}
+
+.dcw-ship-region-section--far,
+.region-section.farther.dcw-ship-region-section--far {
+    border: 1.5px solid #fcd34d;
+    background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.dcw-ship-region-section__badge,
+.dcw-ship-region-section .region-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.dcw-ship-region-section--near .dcw-ship-region-section__badge,
+.dcw-ship-region-section--near .region-badge {
+    background: #16a34a;
+}
+
+.dcw-ship-region-section--far .dcw-ship-region-section__badge,
+.dcw-ship-region-section--far .region-badge {
+    background: #d97706;
+}
+
+.dcw-ship-region-section__header,
+.dcw-ship-region-section .region-header {
+    margin-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.dcw-ship-region-section__title,
+.dcw-ship-region-section h3 {
+    font-size: 19px;
+    font-weight: 800;
+    color: #111827;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    margin: 0;
+}
+
+.dcw-ship-region-section__sub,
+.dcw-ship-region-section .region-subtitle {
+    font-size: 12.5px;
+    color: #4b5563;
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+
+.dcw-ship-region-section--far .dcw-ship-region-section__sub,
+.dcw-ship-region-section--far .region-subtitle {
+    color: #78350f;
+}
+
+.dcw-ship-region-section__cost-note,
+.dcw-ship-region-section .shipping-cost-note {
+    font-size: 12px;
+    color: #78350f;
+    background: rgba(252, 211, 77, 0.35);
+    border: 1px dashed #d97706;
+    padding: 7px 10px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.45;
+}
+
+.dcw-ship-region-section__subhead,
+.dcw-ship-region-section .sub-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-top: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: -0.005em;
+}
+
+.dcw-ship-region-section--far .dcw-ship-region-section__subhead,
+.dcw-ship-region-section--far .sub-header {
+    color: #78350f;
+}
+
+.dcw-ship-region-section .sub-header .bolt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: #22c55e;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+.dcw-ship-region-section--far .sub-header .bolt {
+    background: #d97706;
+}
+
+.dcw-ship-region-section .color-count {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.dcw-ship-region-section--far .color-count {
+    color: #78350f;
+    opacity: 0.85;
+}
+
+.dcw-ship-region-section .sub-header .count {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 12px;
+    margin-left: 2px;
+}
+
+.dcw-ship-region-section--far .sub-header .count {
+    color: #78350f;
+    opacity: 0.7;
+}
+
+/* ===== Region swatch grid (matches shipping-module-mockup.html) ===== */
+.dcw-ship-region-swatch-grid .swatch-attribute-options,
+.dcw-ship-region-swatch-grid__inner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.dcw-ship-region-swatch-grid .selectOptionColor,
+.dcw-ship-region-swatch {
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    display: block;
+}
+
+.dcw-ship-region-swatch__card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    cursor: pointer;
+    text-align: left;
+    background: #fff;
+    border-radius: 10px;
+    padding: 5px 5px 7px;
+    border: 2px solid #e5e7eb;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    margin: 0 !important;
+    box-shadow: none;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.12s ease,
+        border-color 0.12s ease;
+    user-select: none;
+}
+
+.dcw-ship-region-swatch__card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
+}
+
+.dcw-ship-region-section--near .dcw-ship-region-swatch__card.checked {
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+
+.dcw-ship-region-section--far .dcw-ship-region-swatch__card.checked {
+    border-color: #d97706;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.18);
+}
+
+/* Inactive for current variant: faded but still selectable */
+.dcw-ship-region-swatch__card--inactive {
+    opacity: 0.72;
+}
+
+.dcw-ship-region-swatch__card--inactive .dcw-ship-region-swatch__image img,
+.dcw-ship-region-swatch__card--inactive .dcw-ship-region-swatch__fallback {
+    opacity: 0.8;
+}
+
+.dcw-ship-region-swatch__card--inactive .dcw-ship-region-swatch__name {
+    color: #6b7280;
+}
+
+.dcw-ship-region-swatch__fallback {
+    width: 100%;
+    height: 100%;
+    min-height: 48px;
+    border-radius: 7px;
+}
+
+.dcw-ship-region-swatch__image {
+    aspect-ratio: 16 / 10;
+    border-radius: 7px;
+    margin-bottom: 5px;
+    overflow: hidden;
+    background-color: #0d0d0d;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.dcw-ship-region-swatch__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 7px;
+}
+
+.dcw-ship-region-swatch__image span {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.dcw-ship-region-swatch__name {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.25;
+    padding: 0 2px;
+    text-align: left;
+    display: block;
+    white-space: normal;
+}
+
+.dcw-ship-region-swatch-grid .dcw-ship-region-swatch__card .selectOptionContent,
+.dcw-ship-region-swatch-grid .dcw-ship-region-swatch__card .no-padding {
+    padding: 0 !important;
+}
+
+@media (max-width: 640px) {
+    .dcw-ship-region-swatch-grid .swatch-attribute-options,
+    .dcw-ship-region-swatch-grid__inner {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.dcw-ship-region-active-line,
+.dcw-ship-region-section .active-color-line {
+    background: #fff;
+    border: 2.5px solid #16a34a;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.18);
+    position: relative;
+}
+
+.dcw-ship-region-active-line--far,
+.dcw-ship-region-section--far .active-color-line {
+    border-color: #d97706;
+    box-shadow: 0 4px 14px rgba(217, 119, 6, 0.18);
+}
+
+.dcw-ship-region-active-line .active-color-swatch,
+.dcw-ship-region-section .active-color-swatch,
+.dcw-ship-region-active-swatch {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #16a34a, 0 2px 6px rgba(0, 0, 0, 0.15);
+    background-color: #0d0d0d;
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dcw-ship-region-active-swatch img,
+.dcw-ship-region-active-swatch .dcw-ship-region-active-swatch-fallback {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+}
+
+.dcw-ship-region-active-line--far .active-color-swatch,
+.dcw-ship-region-section--far .active-color-swatch {
+    box-shadow: 0 0 0 2px #d97706, 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.dcw-ship-region-active-line .active-color-meta,
+.dcw-ship-region-section .active-color-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.dcw-ship-region-active-top-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    margin-bottom: 4px;
+}
+
+.dcw-ship-region-active-line .active-color-top,
+.dcw-ship-region-section .active-color-top {
+    font-size: 16px;
+    font-weight: 800;
+    color: #111827;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+}
+
+.dcw-ship-region-active-color {
+    min-width: 0;
+    word-break: break-word;
+}
+
+.dcw-ship-region-active-line .active-color-top .label,
+.dcw-ship-region-section .active-color-top .label {
+    font-size: 10px;
+    color: #fff;
+    background: #16a34a;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0;
+    margin-top: 2px;
+}
+
+.dcw-ship-region-active-line--far .active-color-top .label,
+.dcw-ship-region-section--far .active-color-top .label {
+    background: #d97706;
+}
+
+.dcw-ship-region-active-variant {
+    flex: 0 1 45%;
+    max-width: 45%;
+    font-size: 16px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-align: right;
+    word-break: break-word;
+    margin-top: 2px;
+}
+
+.dcw-ship-region-pdp-clone-wrapper {
+    width: 100%;
+    margin-top: 4px;
+}
+
+.dcw-ship-region-pdp-clone-wrapper--price .price-container,
+.dcw-ship-region-pdp-clone-wrapper--price .dcw-ship-region-price-clone {
+    margin: 0;
+}
+
+.dcw-ship-region-active-line .active-color-ship,
+.dcw-ship-region-section .active-color-ship {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #16a34a;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+}
+
+.dcw-ship-region-active-line--far .active-color-ship,
+.dcw-ship-region-section--far .active-color-ship {
+    color: #b45309;
+}
+
+.dcw-ship-region-active-line .active-color-ship::before,
+.dcw-ship-region-section .active-color-ship::before {
+    content: '🚚';
+    font-size: 13px;
+}
+
+/* ZIP active: hide legacy Quick Ship / Select A Color blocks (variant axis hides when only one option) */
+.colors_swat.ship-region-zip-active .quickship_swatch_option,
+.colors_swat.ship-region-zip-active .normal_color_swatch_option {
+    display: none !important;
+}
+
+/* Legacy theme CSS hides variant swatches until JS toggles them — keep visible when multiple options */
+.catalog-product-view .product-info-main .colors_swat .swatch-attribute.other_swatch_option:not(.dcw-single-option-hidden) {
+    display: block !important;
+}
+.catalog-product-view .product-info-main .colors_swat .swatch-attribute.other_swatch_option.dcw-single-option-hidden,
+.catalog-product-view .product-info-main .colors_swat .swatch-attribute.other_swatch_option.product_option.dcw-single-option-hidden {
+    display: none !important;
+}
+
+/* Legacy color swatches must stay visible before ZIP is applied */
+.catalog-product-view .product-info-main .colors_swat:not(.ship-region-zip-active) .normal_color_swatch_option .selectOptionColor,
+.catalog-product-view .product-info-main .colors_swat:not(.ship-region-zip-active) .normal_color_swatch_option .selectOptionContent {
+    display: block !important;
+}
+/* Quick-ship colors belong in Quick Ship Colors only — override the rule above */
+.catalog-product-view .product-info-main .colors_swat:not(.ship-region-zip-active) .normal_color_swatch_option .selectOptionColor.hidden {
+    display: none !important;
+}
+.catalog-product-view .product-info-main .colors_swat:not(.ship-region-zip-active) .normal_color_swatch_option .selectOptionContent img {
+    display: block !important;
+    width: 77px !important;
+    height: 77px !important;
+}
+
+ .hidden {
+    display: none;
+}
+@media (min-width: 768px) {
+    .md\:block{
+        display: block;
+    }
+}
+.dcw-ship-region-section--near .dcw-ship-region-price-clone .final-price span{
+    color: #16a34a;
+    font-weight: 900;
+    font-size: 18px;
+    margin: 0;
+}
+.dcw-ship-region-section--near .dcw-ship-region-price-clone .old-price span{
+    color: #9ca3af;
+    font-weight: 500;
+    margin-left: 4px;
+    font-size: 13px;
+}
+.dcw-ship-region-section--far .dcw-ship-region-pdp-clone-wrapper .final-price span{
+    color: #b45309;
+    font-weight: 900;
+    font-size: 18px;
+    margin: 0;
+}
+.dcw-ship-region-section--far .dcw-ship-region-pdp-clone-wrapper .old-price span{
+    color: #9ca3af;
+    font-weight: 500;
+    margin-left: 4px;
+    font-size: 13px;
+}
+.dcw-ship-region-swatch-grid .dcw-ship-region-swatch.hidden{
+    display: none;
+}
+.dcw-ship-region-pdp-clone-wrapper--price .dcw-ship-region-price-clone .price-linear_foot-container {
+    display: none;
+}
+.catalog-product-view .product-info-main .tag-label .limited{
+    border-radius: 8px;
+    border: none !important;
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.2);
+    gap: 10px;
+}
+.catalog-product-view .product-info-main .tag-label .limited span.ml-1{
+    background: rgba(0, 0, 0, 0.18);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+.catalog-product-view .product-info-main .color_swatches .swatch-attribute-options .selectOptionColor .swatch-option .whitespace-normal img {
+    height: 77px !important;
+    width: 77px !important;
+    border-radius: 6px;
+}
+.catalog-product-view .product-info-main .normal_color_swatch_option .color_swatches .swatch-attribute-options .swatch-option.checked, .catalog-product-view .product-info-main .quickship_swatch_option .color_swatches .swatch-attribute-options .swatch-option.checked{
+    border-radius: 6px;
+}
+.catalog-product-view .product-info-main .color_swatches .swatch-attribute-options .swatch-option{
+    border-radius: 8px;
+}
+.catalog-product-view .product-info-main .swatch-attribute.quickship_swatch_option .selectOptionColor, .catalog-product-view .product-info-main .swatch-attribute.normal_color_swatch_option .selectOptionColor{
+    transition: transform 0.12s, box-shadow 0.12s;
+}
+.catalog-product-view .product-info-main .swatch-attribute.quickship_swatch_option .selectOptionColor:hover, .catalog-product-view .product-info-main .swatch-attribute.normal_color_swatch_option .selectOptionColor:hover{
+    transform: translateY(-2px);
+}
+.normal_color_swatch_option .dcw-ship-region-swatch__card {
+    min-width: 77px;
+}
+.normal_color_swatch_option .dcw-ship-region-swatch__image img {
+    height: 77px !important;
+    width: 77px !important;
+    border-radius: 6px;
+}
+.dcw-ship-region-section .dcw-ship-region-section__swatches .selectOptionColor .dcw-ship-region-swatch__card{
+    padding: 5px 5px 7px !important;
+    height: 100% !important;
+}
+.catalog-product-view .color_swatches .product-option-label [id^="swatch-group-label-"] {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+.catalog-product-view .color_swatches .product-option-label span{
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+.catalog-product-view .color_swatches .product-option-label span.display-option-price{
+    color: #16a34a;
+    font-weight: 800;
+}
+@media(max-width: 767px){
+    .dcw-ship-region-pdp-clone-wrapper--price .price-container, .dcw-ship-region-pdp-clone-wrapper--price .dcw-ship-region-price-clone{
+        flex-wrap: wrap;
+    }
+    .dcw-ship-region-active-top-row{
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    .dcw-ship-region-active-variant{
+        flex: 0 1 100%;
+        max-width: 100%;
+        text-align: left;
+    }
+}

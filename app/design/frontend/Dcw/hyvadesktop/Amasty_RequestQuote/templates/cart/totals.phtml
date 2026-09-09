@@ -1,0 +1,39 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+use Hyva\Theme\Model\ViewModelRegistry;
+
+/**
+ * @var Template $block
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+
+?>
+<?= $block->getChildHtml('cart_quote_js') ?>
+<div x-data="cartQuoteTotals()"
+     @private-content-loaded.window="getQuoteCartData()">
+
+    <template x-if="cartData">
+        <div class="pt-0 ml-auto w-full">
+            <div class="flex pb-3 mb-2 border-b border-up-scale flex-col border-grey">
+                <h2 class="w-full text-gray title-font md:text-left text-size28 font-medium">Summary</h2>
+            </div>
+            <div class="flex py-3 border-b md:grid md:grid-cols-2 md:w-full border-up-scale border-grey">
+                <div class="w-7/12 text-left md:w-auto text-size16 font-medium">Subtotal</div>
+                <div class="w-5/12 text-right md:w-auto text-size16 font-medium" x-html="hyva.formatPrice(cartData.subtotal)"></div>
+            </div>
+            <div class="flex py-2 my-2 mx-auto mb-4 text-2xl md:grid md:grid-cols-2 md:w-full">
+                <div class="w-7/12 font-bold text-lg text-left md:w-auto text-size18 font-medium">Order Total</div>
+                <div class="w-5/12 text-right md:w-auto font-bold text-base text-size18 font-medium" x-html="hyva.formatPrice(cartData.grand_total)"></div>
+            </div>
+         </div>
+    </template>
+</div>

@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <!-- spotlight url -->
+    <table name="dcw_spotlight_tmp" resource="default" engine="innodb" comment="Spotlight SKUs">
+        <column xsi:type="int" name="id" unsigned="false" nullable="false" identity="true" comment="ID"/>
+        <column xsi:type="int" name="product_id" nullable="true" comment="Product Id"/>
+        <column xsi:type="varchar" name="sku" nullable="true" length="50" comment="SKU"/>
+        <column xsi:type="varchar" name="name" nullable="true" length="255" comment="Name"/>
+        <column xsi:type="varchar" name="brand" nullable="true" length="255" comment="Brand"/>
+        <column xsi:type="text" name="spotlight_url" nullable="true" comment="Spotlight Url"/>
+        <column xsi:type="varchar" name="type" nullable="true" length="50" comment="type" default="Main"/>
+        <column xsi:type="varchar" name="availability" nullable="true" length="50" comment="availability" default="in_stock"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="true" comment="Created At" default="CURRENT_TIMESTAMP"/>
+        <column xsi:type="varchar" name="status" nullable="true" length="50" comment="Status" default="Pending"/>
+        <column xsi:type="text" name="response" nullable="true" comment="Response"/>
+        <column xsi:type="datetime" name="updated_at" nullable="true" on_update="true" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+    </table>
+
+    <!-- Product Ratings Summary Table -->
+    <table name="dcw_spotlight_product_ratings" resource="default" engine="innodb" comment="Product Ratings Summary">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="ID"/>
+        <column xsi:type="varchar" name="sku" nullable="false" length="255" comment="Product SKU"/>
+        <column xsi:type="decimal" name="avg_rating_value" scale="2" precision="10" unsigned="false" nullable="true" comment="Average Rating Value"/>
+        <column xsi:type="int" name="reviews_count" unsigned="true" nullable="true" default="0" comment="Total Reviews Count"/>
+        <column xsi:type="int" name="best_rating" unsigned="true" nullable="true" default="5" comment="Best Possible Rating"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="DCW_SPOTLIGHT_PRODUCT_RATINGS_SKU_UNIQUE">
+            <column name="sku"/>
+        </constraint>
+    </table>
+
+    <!-- Top Reviews Table -->
+    <table name="dcw_spotlight_top_reviews" resource="default" engine="innodb" comment="Top 5 Reviews Per Product">
+        <column xsi:type="int" name="id" unsigned="true" nullable="false" identity="true" comment="ID"/>
+        <column xsi:type="varchar" name="sku" nullable="false" length="255" comment="Product SKU"/>
+        <column xsi:type="varchar" name="review_id" nullable="true" length="100" comment="Review ID"/>
+        <column xsi:type="varchar" name="author_name" nullable="true" length="255" comment="Author Name"/>
+        <column xsi:type="datetime" name="date_published" nullable="true" comment="Date Published"/>
+        <column xsi:type="varchar" name="review_title" nullable="true" length="500" comment="Review Title"/>
+        <column xsi:type="text" name="review_body" nullable="true" comment="Review Body"/>
+        <column xsi:type="int" name="rating_value" unsigned="true" nullable="true" comment="Rating Value"/>
+        <column xsi:type="int" name="best_rating" unsigned="true" nullable="true" default="5" comment="Best Possible Rating"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP" comment="Updated At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <index referenceId="DCW_SPOTLIGHT_TOP_REVIEWS_SKU_IDX" indexType="btree">
+            <column name="sku"/>
+        </index>
+        <index referenceId="DCW_SPOTLIGHT_TOP_REVIEWS_REVIEW_ID_IDX" indexType="btree">
+            <column name="review_id"/>
+        </index>
+    </table>
+</schema>

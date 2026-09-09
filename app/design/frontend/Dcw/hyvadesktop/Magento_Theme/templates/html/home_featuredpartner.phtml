@@ -1,0 +1,135 @@
+<?php
+$helperdata = $this->helper('Dcw\FlooringCalculation\Helper\Data');
+$desktop_limit = $helperdata->getDesktopLimitFeature();
+if (empty($desktop_limit)) {
+    $desktop_limit = 7;
+}
+$place_holder_img = $helperdata->getPlaceHolderImage();
+$place_holder_img_src =  $helperdata->getImageUrl($place_holder_img);
+$categoryCollection = $helperdata->getCategoryCollection('featured_partner');
+$no_of_item = $categoryCollection->count();
+?>
+<link rel="stylesheet" type="text/css" href="<?= $block->getViewFileUrl('css/swiper-bundle.min.css') ?>" media="print" onload="this.media='all'"/>
+<script async src="<?= $block->getViewFileUrl('js/swiper-bundle.min.js') ?>"></script>
+<div class="relative w-full mx-auto" >
+
+<?php if($no_of_item > 7){?>
+  <?php if($this->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('featured_partner_heading')->toHtml() != ''): ?>
+    <?php echo $this->getLayout()->createBlock('Magento\Cms\Block\Block')->setBlockId('featured_partner_heading')->toHtml(); ?>
+  <?php endif; ?>
+        <button class="swiper-button-prev" aria-label="Previous slide"></button>
+			<div class="swiper-container w-full">
+				<div class="swiper-wrapper" x-data="featuredPartnerAjaxCall()" x-init="initFeaturedPartnerFunc()">
+					<template x-for="item in categories.items">
+						<div class="swiper-slide">
+							<div class="flex flex-col rounded overflow-hidden">
+								<div class="flex-shrink-0">
+									<a x-bind:href="BASE_URL+item.url_path+item.url_suffix" rel="nofollow">
+										<template x-if="item.image">
+										<img  x-bind:src="item.image+'?width=186'" x-bind:alt="item.name" x-bind:title="item.name" height="64" width="188"  loading="lazy" fetchpriority="low" decoding="async" />
+										</template>
+										<template x-if="!item.image">
+											<img  src="<?= /* @noEscape */ $place_holder_img_src;?>?width=186" x-bind:alt="item.name" x-bind:title="item.name" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async" />
+										</template>
+									</a>
+								</div>
+							</div>
+						</div>
+					</template>
+				</div>
+			</div>
+        <button class="swiper-button-next" aria-label="Next slide"></button>
+<?php }else if($no_of_item > 0){ ?>
+	<div class="heading_fe_part">Featured Partners</div>
+		<div class="swiper-container w-full" x-ref="container">
+			<div class="swiper-wrapper" x-data="featuredPartnerAjaxCall()" x-init="initFeaturedPartnerFunc()">
+			<!-- Slides -->
+				<template x-for="item in categories.items">
+					<div class="swiper-slide">
+						<div class="flex flex-col rounded overflow-hidden">
+							<div class="flex-shrink-0">
+								<a x-bind:href="BASE_URL+item.url_path+item.url_suffix">
+									<img x-show="item.image" x-bind:src="item.image+'?width=186'" loading="lazy" alt="Shop by category" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async" />
+									<img x-show="!item.image" src="<?= /* @noEscape */ $place_holder_img_src;?>" loading="lazy" alt="Shop by category" height="64" width="188" loading="lazy" fetchpriority="low" decoding="async" />
+								</a>
+							</div>
+						</div>
+					</div>
+				</template>
+			</div>
+		</div>
+<?php } ?>
+</div>
+<script>
+    window.addEventListener('init-external-scripts', () => {
+    if (typeof Swiper === 'undefined') {
+        console.error('Swiper is not loaded!');
+        return;
+    }
+
+    // Wait a tick for DOM readiness if needed
+    requestAnimationFrame(() => {
+        const swiperEl = document.querySelector('.swiper-container');
+        if (!swiperEl) return;
+
+        swiperEl.classList.add('swiper-loading');
+
+        const swiper = new Swiper(swiperEl, {
+            slidesPerView: 7,
+            spaceBetween: 10,
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            breakpoints: {
+                640: { slidesPerView: 2, spaceBetween: 0 },
+                768: { slidesPerView: 4, spaceBetween: 0 },
+                1024: { slidesPerView: 7, spaceBetween: 0 },
+            },
+            on: {
+                init() {
+                    swiperEl.classList.remove('swiper-loading');
+                    swiperEl.classList.add('swiper-initialized');
+                }
+            }
+        });
+    });
+}, { once: true, passive: true });
+
+</script>
+<?php
+$body_data = '{categories(filters: {featured_partner: {eq:1}} pageSize:'.$desktop_limit.')'.
+'{items{name image url_path url_suffix sort_by_featured_partner featured_partner}}}';
+
+?>
+<script>
+  function featuredPartnerAjaxCall() {
+    return {
+        categories:'',
+        initFeaturedPartnerFunc: function () {
+            fetch(BASE_URL+'graphql?form_key=' + hyva.getFormKey(), {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query:'<?= /* @noEscape */ $body_data?>'}),
+            })
+            .then(response => {
+                if (! response.ok) console.warn('GET request failed');
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                  this.categories = data.data.categories;                
+                  }
+            })
+
+        }
+    }
+  }
+</script>
+<style>
+      .featured_partners{min-height: 164px;}
+</style>

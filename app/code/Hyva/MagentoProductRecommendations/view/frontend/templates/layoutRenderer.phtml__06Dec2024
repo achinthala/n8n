@@ -1,0 +1,456 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * See https://hyva.io/license
+ */
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Magento\Framework\Escaper;
+use Magento\ProductRecommendationsLayout\Block\Renderer;
+
+/**
+ * @var Renderer $block
+ * @var HeroiconsOutline $heroiconsOutline
+ * @var Escaper $escaper
+ * @var ViewModelRegistry $viewModels
+ */
+
+$heroiconsOutline = $viewModels->require(HeroiconsOutline::class);
+$pagePlacement = $block->getData('pagePlacement');
+$pagePlacementId = str_replace('-', '_', $pagePlacement);
+?>
+<div x-data="recommendedProducts_<?= /* @noEscape */ $pagePlacementId ?>()"
+     x-init="initProductRecBlock()"
+     id="recs_block_<?= /* @noEscape */ $pagePlacementId ?>"
+     class="products__recommendations">
+    <template x-if="productBanners">
+        <div>
+            <template x-for="banner in productBanners">
+                <div class="product-slider" x-intersect.once="scrollViewEvent(banner.unitId)">
+                    <section class="my-12 text-gray-700 body-font">
+                        <div class="relative">
+                        <div class="flex w-full">
+                            <h3 x-text='banner.storefrontLabel'
+                                class="font-semibold"></h3>
+                        </div>
+                        <div class="relative flex flex-nowrap w-full recommended-slider-items products_slider" data-content-type="recommended-products">
+                            <div class="overflow-x-hidden" data-role="glider-recommended">
+                                <template x-for="product in banner.products">
+                                    <div class="flex shrink-0 w-full js_slide md:w-1/2 lg:w-1/3 xl:w-1/4 recommended-slider-item">
+                                        <form method="post" x-bind:action="createAddToCartUrl(product.productId)"
+                                            @submit.prevent="addToCartRecsEvent($event.target, banner.unitId, product.productId)"
+                                            class="item product product-item product_addtocart_form card card-interactive flex flex-col w-full catergory_slider_content bg-white">
+                                            <input name="form_key" type="hidden" :value="hyva.getFormKey()"/>
+                                            <input type="hidden" name="product" x-bind:value="product.productId">
+                                            <a @click="recsClickEvent(banner.unitId, product.productId, product.url)"
+                                            class="product photo product-item-photo block cursor-pointer"
+                                            tabindex="-1">
+                                                <img class="hover:shadow-sm object-contain" loading="lazy"
+                                                    x-bind:alt="product.image?.label"
+                                                    x-bind:title="product.image?.label"
+                                                    x-bind:src="product.image?.url" width="360" height="360">
+                                            </a>
+                                            <div class="product-info flex flex-col flex-grow">
+                                                <div
+                                                    class="items-center justify-center font-semibold ">
+                                                    <a class="product-item-link text-size18 text-black font-semibold no-underline relative block"
+                                                    @click="recsClickEvent(banner.unitId, product.productId, product.url)"
+                                                    x-text="product.name"></a>
+                                                </div>
+                                                <div class="color_counts">
+                                                    <div class="bullet1 color_count text-size14 font-normal text-black" x-text=product.attributes.incstores_pim_feature_bullet_1></div>
+                                                    <div class="bullet2 color_count text-size14 font-normal text-black" x-text=product.attributes.incstores_pim_feature_bullet_2></div>
+                                                </div>
+                                                <template x-if="product.prices">
+                                                    <div class="pt-1 text-gray-900 price-box price-final_price" x-bind:data-product-id="product.productId">
+                                                        <span class="normal-price">
+                                                            <span class="price-container price-final_price">
+                                                                <!-- <span x-show="product.prices.minimum.final !== product.prices.maximum.final"
+                                                                    class="price-start-label"><?= $escaper->escapeHtml(__('Starting From:')) ?></span> -->
+                                                                <span id="product-price" class="price-wrapper ">
+                                                                    <!-- <span class="price" x-text="hyva.formatPrice(product.prices.minimum.final)"></span> -->
+                                                                    <div x-data="productPricing(product)">
+                                                                        <div :class="priceContainerClasses" 
+                                                                            :itemprop="schema ? 'offers' : ''" 
+                                                                            :itemscope="schema ? true : false" 
+                                                                            :itemtype="schema ? 'http://schema.org/Offer' : ''">
+
+                                                                            <!-- Price Wrapper -->
+                                                                            <span :id="priceId" 
+                                                                                :data-label="priceDisplayLabel" 
+                                                                                :data-price-amount="priceAmount" 
+                                                                                :data-price-type="priceType" 
+                                                                                :class="priceWrapperClasses">
+                                                                                <template x-if="priceType === 'finalPrice' && product.type === 'configurable'">
+                                                                                    <span class="price-start-label">Starting From:</span>
+                                                                                </template>
+
+                                                                                <!-- Adjusted Price Logic -->
+                                                                                <template x-if="calculatorType && (coverage > 0 || (width > 0 && length > 0 && height > 0))">
+                                                                                    <span>
+                                                                                        <template x-if="minPriceVolume > 0">
+                                                                                            <span>
+                                                                                                <template x-if="regularPrice > specialPrice && specialPrice > 0">
+                                                                                                    <span x-text="formatCurrency(specialPrice / minPriceVolume)"></span>
+                                                                                                </template>
+                                                                                                <template x-if="!(regularPrice > specialPrice && specialPrice > 0)">
+                                                                                                    <span x-text="formatCurrency(regularPrice / minPriceVolume)"></span>
+                                                                                                </template>
+                                                                                                <span x-text="'/' + calculatorType"></span>
+                                                                                            </span>
+                                                                                        </template>
+                                                                                    </span>
+                                                                                </template>
+                                                                                <template x-if="!calculatorType || minPriceVolume <= 0">
+                                                                                    <span class="price">
+                                                                                        <span x-text="formatCurrency(displayValue)"></span>
+                                                                                        <span>/each</span>
+                                                                                    </span>
+                                                                                </template>
+                                                                            </span>
+
+                                                                            <!-- MRP and Discount -->
+                                                                            <template x-if="regularPrice > specialPrice && product.type === 'configurable'">
+                                                                                <span class="price-mrp">
+                                                                                    <template x-if="minPriceVolume > 0 && calculatorType">
+                                                                                        <span class="price-mrp-new">
+                                                                                            <span x-text="formatCurrency(regularPrice / minPriceVolume)"></span>
+                                                                                            <span x-text="'/' + calculatorType"></span>
+                                                                                        </span>
+                                                                                        <span class="savePrice" x-text="'Save ' + discountPercentage + '%'"></span>
+                                                                                    </template>
+                                                                                    <template x-if="!(minPriceVolume > 0 && calculatorType)">
+                                                                                        <span class="price-mrp-new">
+                                                                                            <span x-text="formatCurrency(regularPrice)"></span>
+                                                                                            <span>/each</span>
+                                                                                        </span>
+                                                                                        <span class="savePrice" x-text="'Save ' + discountPercentage + '%'"></span>
+                                                                                    </template>
+                                                                                </span>
+                                                                            </template>
+
+                                                                            <!-- Adjustments -->
+                                                                            <template x-if="adjustmentsHtml">
+                                                                                <span x-html="adjustmentsHtml"></span>
+                                                                            </template>
+
+                                                                            <!-- Schema -->
+                                                                            <template x-if="schema">
+                                                                                <meta itemprop="price" :content="priceAmount" />
+                                                                                <meta itemprop="priceCurrency" :content="priceCurrency" />
+                                                                            </template>
+                                                                        </div>
+                                                                    </div>                                                                   
+                                                                </span>
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </template>
+                                                    <!-- End of product price -->
+                                                    <div class="color_options">
+                                                        <div class="color_count text-size14 font-normal text-darkblack">
+                                                            <span class="color_count_label text-size14 font-normal text-darkblack">Color</span>
+                                                            <select aria-label="Color" class="text-size14 font-normal text-darkblack cursor-pointer"  onchange="selectSwatch(this, '', '');">
+                                                            <template x-for="(value, key) in product.attributes.incstores_pim_color_axis">
+                                                                <option :value="key" x-text="value"></option>
+                                                            </template>
+                                                            <template x-if="!product.attributes.incstores_pim_color_axis || Object.keys(product.attributes.incstores_pim_color_axis).length === 0">
+                                                                <option value="na">N/A</option>
+                                                            </template>
+                                                            </select>
+                                                            
+                                                        </div>
+                                                    </div>
+                                                    <!-- end of color -->
+                                                    <div class="compare-buttons"> 
+                                                        <div class="qty_fields flex items-center justify-center justify-between w-full">
+                                                            <div class="field qty flex items-center justify-center">
+                                                                <label class="label text-size14 font-semibold text-darkblack" for="qty"><span><?= $escaper->escapeHtml(__('Qty')) ?></span></label>
+                                                                <div class="control">
+                                                                    <input type="text"
+                                                                        name="qty"
+                                                                        value="1"
+                                                                        pattern="[0-9]"
+                                                                        title="<?= $escaper->escapeHtml(__('Qty')) ?>"
+                                                                        class="input-text qty text-size16 font-semibold text-darkblack text-center cursor-pointer"
+                                                                        />
+                                                                </div>
+                                                            </div>                                                            
+                                                            <a :href="product.url" 
+                                                                class="btn btn-primary btn_cart bg-custom-blue text-size13 font-normal text-custom-white text-center" 
+                                                                aria-label="View">
+                                                                    <span class=" md:ml-0 md:hidden lg:ml-0 lg:inline">
+                                                                        <?= $escaper->escapeHtml(__('View')) ?>
+                                                                    </span>
+                                                            </a>                                                            
+                                                        </div>
+                                                        <!-- end of qty -->                                                        
+                                                    </div>
+                                            </div>                                            
+                                        </form>
+                                    </div>
+                                </template>
+                            </div>
+                            <div class="carousel-nav flex items-center justify-center flex-1 p-4">
+                                <button aria-label="Previous" class="glider-prev1"></button> 
+                                <button aria-label="Next" class="glider-next1"></button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                </div>
+            </template>
+        </div>
+    </template>
+</div>
+
+<script>
+    function recommendedProducts_<?= /* @noEscape */ $pagePlacementId ?>() {
+        return {
+            productBanners: [],
+            pagePreconfiguredDeferred: {},
+            bannerPlacement: '<?= /* @noEscape */ $pagePlacement ?>',
+            initProductRecBlock: function (placement) {
+                let self = this;
+                window.magentoStorefrontEvents.subscribe.recsResponseReceived(function () {
+                    let recsData = window.magentoStorefrontEvents.context.getRecommendations();
+                    self.renderProductRecs(recsData);
+                });
+            },
+            renderProductRecs: function (recsData) {
+                let self = this;
+
+                recsData.units.sort((a, b) => a.displayOrder - b.displayOrder);
+
+                recsData.units.forEach(function (unit, index) {
+                    if (unit.pagePlacement === self.bannerPlacement) {
+                        self.productBanners.push(unit);
+
+                        /** @todo move event outside of recsResponseReceived event **/
+                        window.magentoStorefrontEvents.publish.recsUnitRender(
+                            unit.unitId, magentoStorefrontEvents.context
+                        );
+                    }
+                });
+            },
+            addToCartRecsEvent: function (e, unitId, productId) {
+                // requires recommendationsContext to be set
+                magentoStorefrontEvents.publish.recsItemAddToCartClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => e.submit(), 500);
+            },
+            scrollViewEvent: function (unitId) {
+                magentoStorefrontEvents.publish.recsUnitView(
+                    unitId, magentoStorefrontEvents.context
+                );
+            },
+            recsClickEvent: function (unitId, productId, productUrl) {
+                magentoStorefrontEvents.publish.recsItemClick(
+                    unitId, productId, magentoStorefrontEvents.context
+                );
+                // Timeout to prevent submission before event has fired.
+                setTimeout(() => window.location.href = productUrl, 500);
+            },
+            createAddToCartUrl: function (productId) {
+                const currentLocationUENC = encodeURIComponent(
+                    this.encodeUenc(BASE_URL),
+                );
+                return BASE_URL +
+                    "checkout/cart/add/uenc/" +
+                    currentLocationUENC +
+                    "/product/" +
+                    productId
+            },
+            encodeUenc: function (value) {
+                const regex = /=/gi;
+                return btoa(value).replace(regex, ",");
+            },
+        }
+    }
+</script>
+<script>
+    'use strict';
+(() => {
+    const initCarousels = (elements) => {
+        if (typeof Glider === 'undefined') {
+            console.error("Glider.js is not loaded.");
+            return;
+        }
+
+        elements.forEach((carousel) => {
+            const gliderElement = carousel.querySelector('[data-role="glider-recommended"]');
+            if (!gliderElement) {
+                console.warn("Glider element not found.");
+                return;
+            }
+
+            const gliderPrev = carousel.querySelector('.glider-prev1');
+            const gliderNext = carousel.querySelector('.glider-next1');
+
+            // Initialize Glider
+            const glider = new Glider(gliderElement, {
+                slidesToShow: 1.2,
+                slidesToScroll: 1,
+                scrollLock: false,
+                draggable: true,
+                dragVelocity: 1.3,
+                arrows: {
+                    prev: gliderPrev,
+                    next: gliderNext,
+                },
+                responsive: [
+                    { breakpoint: 768, settings: { slidesToShow: 2, slidesToScroll: 1 } },
+                    { breakpoint: 1024, settings: { slidesToShow: 3, slidesToScroll: 1 } },
+                    { breakpoint: 1366, settings: { slidesToShow: 4, slidesToScroll: 4 } },
+                ],
+            });
+          
+            const preventDraggingOnInputs = (gliderElement) => {
+                gliderElement.querySelectorAll('select, input').forEach((el) => {
+                    el.addEventListener('mousedown', (event) => {
+                        console.log('Clicked:', el);
+                        event.stopPropagation(); // Prevent Glider drag from starting
+                    });
+
+                    el.addEventListener('touchstart', (event) => {
+                        event.stopPropagation(); // Prevent drag on touch devices
+                    });
+                });
+            };
+
+            // Call this inside initCarousels after Glider initialization
+            preventDraggingOnInputs(gliderElement);
+            
+            // Add event listener to handle the disabled class
+            gliderElement.addEventListener('glider-refresh', () => {
+                const hasNext = gliderElement.scrollWidth - gliderElement.scrollLeft > gliderElement.clientWidth;
+                const hasPrev = gliderElement.scrollLeft > 0;
+
+                gliderNext.classList.toggle('disabled', !hasNext);
+                gliderPrev.classList.toggle('disabled', !hasPrev);
+            });
+
+            // Force a refresh to ensure state is accurate on initialization
+            glider.refresh();
+        });
+    };
+
+    const loadGliderScript = (callback) => {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = "<?php echo $block->getViewFileUrl('Magento_PageBuilder::js/glider.min.js')?>";
+        script.addEventListener('load', callback);
+        document.head.appendChild(script);
+    };
+
+    const observeCarousels = () => {
+        const observer = new MutationObserver((mutationsList) => {
+            mutationsList.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    const carouselElements = document.querySelectorAll('[data-content-type="recommended-products"]');
+                    if (carouselElements.length > 0) {
+                        observer.disconnect(); // Stop observing once elements are found
+                        initCarousels(carouselElements);
+                    }
+                }
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadGliderScript(() => {
+            // Check if carousels are already in the DOM
+            const carouselElements = document.querySelectorAll('[data-content-type="recommended-products"]');
+            if (carouselElements.length > 0) {
+                initCarousels(carouselElements);
+            } else {
+                // Use MutationObserver to wait for dynamic content
+                observeCarousels();                
+            }
+        });
+    });
+})();
+</script>
+
+<script>
+    function productPricing(product) {
+        return {
+            // Variables
+            regularPrice: 0,
+            specialPrice: 0,
+            calculatorType: '',
+            coverage: 0,
+            width: 0,
+            length: 0,
+            height: 0,
+            minPriceVolume: 0,
+            displayValue: 0,
+            priceAmount: 0,
+            priceType: 'finalPrice',
+            priceCurrency: 'USD',
+            discountPercentage: 0,
+            adjustmentsHtml: '', // Placeholder for adjustment logic
+            schema: true,
+
+            // Dynamic Classes
+            priceContainerClasses: 'price-container',
+            priceWrapperClasses: 'price-wrapper',
+            priceId: '', // Add logic for dynamic IDs if needed
+            priceDisplayLabel: '',
+
+            // Initialization
+            init() {
+                // Load product attributes
+                const attributes = product.attributes;
+
+                // Regular and Special Prices
+                this.regularPrice = product.prices.minimum.regular || 0;
+                this.specialPrice = product.prices.minimum.final || this.regularPrice;
+
+                // Calculator Type and Dimensions
+                this.calculatorType = attributes.incstores_pim_calculator_type || '';
+                this.coverage = attributes.config_coverage || 0;
+                this.width = (attributes.incstores_pim_width_inches || 0) / 12;
+                this.length = (attributes.incstores_pim_length_inches || 0) / 12;
+                this.height = (attributes.incstores_pim_height_inches || 0) / 12;
+
+                // Calculate Price per Volume
+                if (this.calculatorType && (this.coverage > 0 || (this.width > 0 && this.length > 0 && this.height > 0))) {
+                    if (this.calculatorType === 'case') {
+                        this.minPriceVolume = this.coverage;
+                    } else {
+                        this.minPriceVolume = this.width * this.length * this.height;
+                    }
+
+                    if (this.minPriceVolume > 0) {
+                        const pricePerUnit =
+                            this.regularPrice > this.specialPrice && this.specialPrice > 0
+                                ? this.specialPrice / this.minPriceVolume
+                                : this.regularPrice / this.minPriceVolume;
+
+                        this.displayValue = pricePerUnit;
+                    }
+                } else {
+                    this.displayValue = this.regularPrice;
+                }
+
+                // Calculate Discount
+                if (this.regularPrice > this.specialPrice) {
+                    const savePrice = this.regularPrice - this.specialPrice;
+                    this.discountPercentage = Math.round((savePrice * 100) / this.regularPrice);
+                }
+            },
+
+            // Utility Functions
+            formatCurrency(value) {
+                return `$${value.toFixed(2)}`;
+            },
+        };
+    }
+</script>

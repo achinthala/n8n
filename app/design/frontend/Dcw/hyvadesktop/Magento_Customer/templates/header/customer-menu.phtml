@@ -1,0 +1,114 @@
+<?php
+
+declare(strict_types=1);
+
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\HeroiconsOutline;
+use Hyva\Theme\ViewModel\CustomerRegistration;
+use Magento\Customer\Block\Account\Customer;
+use Magento\Customer\Model\Account\Redirect;
+use Magento\Framework\Escaper;
+
+/** @var Customer $block */
+/** @var Escaper $escaper */
+/** @var ViewModelRegistry $viewModels */
+
+/** @var HeroiconsOutline $heroicons */
+$heroicons = $viewModels->require(HeroiconsOutline::class);
+
+/** @var CustomerRegistration $customerRegistration */
+$customerRegistration = $viewModels->require(CustomerRegistration::class);
+$blockObj = $block->getLayout()->createBlock('Dcw\Custom\Block\Custom');
+?>
+
+<div x-data="{ open: false }" class="relative inline-block ml-1">
+    <?php $customerName = $blockObj->getName();
+    if ($block->customerLoggedIn()){
+    ?>
+    <a
+        href="<?= $escaper->escapeHtmlAttr($escaper->escapeUrl($block->getUrl('customer/account'))) ?>"
+        id="customer-menu"
+        class="block hover:text-black logged"
+        @click.prevent="open = true"
+        :aria-expanded="open ? 'true' : 'false'"
+        aria-label="<?= $escaper->escapeHtmlAttr(__('My Account')) ?>"
+    >
+         <span>Hello, <?php echo $customerName?></span>
+         <img src="<?php echo $this->getViewFileUrl('images/arrow.png'); ?>" alt="arrow" width="8" height="6" class="icon">
+    </a>
+    <?php }else{?>
+    <a
+        href="<?= $escaper->escapeHtmlAttr($escaper->escapeUrl($block->getUrl('customer/account'))) ?>"
+        id="customer-menu"
+        class="block hover:text-black"
+        @click.prevent="open = true"
+        :aria-expanded="open ? 'true' : 'false'"
+        aria-label="<?= $escaper->escapeHtmlAttr(__('My Account')) ?>"
+    >
+        <span class="customer-menu-icon">
+            <img src="<?php echo $this->getViewFileUrl('images/user-icon.png'); ?>" alt="user-icon" width="20" height="22">
+            <img src="<?php echo $this->getViewFileUrl('images/arrow.png'); ?>" alt="arrow" width="8" height="6" class="icon">
+        </span>
+    </a>
+    <?php }?>
+    <nav class="absolute right-0 z-20 w-40 py-2 mt-2 -mr-4 px-1 overflow-auto origin-top-right rounded-sm
+        shadow-lg sm:w-48 lg:mt-3 bg-container-lighter"
+         x-cloak x-show="open"
+         @click.outside="open = false"
+         aria-labelledby="customer-menu"
+    >
+        <?php if ($block->customerLoggedIn()): ?>
+            <a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+               href="<?= $escaper->escapeUrl($block->getUrl('customer/account')) ?>"
+            >
+                <?= $escaper->escapeHtml(__('My Account')); ?>
+            </a>
+            <?php /*<a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+               href="<?= $escaper->escapeUrl($block->getUrl('wishlist')) ?>"
+            >
+                <?= $escaper->escapeHtml(__('My Wish List')); ?>
+            </a>*/?>
+            <a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+               href="<?= $escaper->escapeUrl($block->getUrl('sales/order/history')) ?>"
+            >
+                <?= $escaper->escapeHtml(__('My Orders')); ?>
+            </a>
+            <?php /*<a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+               href="<?= $escaper->escapeUrl($block->getUrl('customer/address')) ?>"
+            >
+                <?= $escaper->escapeHtml(__('Address Book')); ?></a>*/?>
+            <a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+               href="<?= $escaper->escapeUrl($block->getUrl('customer/account/logout')) ?>"
+            >
+                <?= $escaper->escapeHtml(__('Sign Out')); ?>
+            </a>
+		<a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+                   href="<?= $escaper->escapeUrl($block->getUrl('pro-advantage')) ?>"
+                >
+                    <?= $escaper->escapeHtml(__('Pro Advantage')); ?>
+                </a>
+        <?php else: ?>
+            <a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+               onclick="hyva.setCookie && hyva.setCookie(
+                   '<?= /** @noEscape */ Redirect::LOGIN_REDIRECT_URL ?>',
+                   window.location.href,
+                   1
+               )"
+               href="<?= $escaper->escapeUrl($block->getUrl('customer/account/index')) ?>">
+                <?= $escaper->escapeHtml(__('Sign In')); ?>
+            </a>
+            <?php if ($customerRegistration->isAllowed()): ?>
+                <a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+                   href="<?= $escaper->escapeUrl($block->getUrl('customer/account/create')) ?>"
+                >
+                    <?= $escaper->escapeHtml(__('Create an Account')); ?>
+                </a>
+				<a class="block px-4 py-2 lg:px-5 lg:py-2 hover:bg-gray-100"
+                   href="<?= $escaper->escapeUrl($block->getUrl('pro-advantage')) ?>"
+                >
+                    <?= $escaper->escapeHtml(__('Pro Advantage')); ?>
+                </a>
+            <?php endif; ?>
+        <?php endif; ?>
+    </nav>
+</div>

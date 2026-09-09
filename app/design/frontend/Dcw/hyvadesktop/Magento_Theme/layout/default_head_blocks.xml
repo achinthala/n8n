@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+        <css rel="preload" as="style" src="css/styles.css"/>
+        <remove src="css/poppins.css"/>
+        <remove src="css/print.css"/>
+        <remove src="css/admin.css"/>
+        <remove src="Astound_Affirm::affirm-promo.css"/>
+        <remove src="Bss_SocialLogin::css/jquery.fancybox.min.css" />
+        <remove src="Hyva_MirasvitLayeredNavigation::css/lib/nouislider.min.css"/>
+        <remove src="Dcw_CircularDesignerTool::css/base-global-header-footer.css"/>
+        <remove src="Dcw_CircularDesignerTool::css/matdesigner.css"/>
+        <remove src="Magefan_Blog::css/comments.css" />
+        <remove src="Plumrocket_GlobalPrivacyControl::css/gpc.css" />
+    </head>
+</page>

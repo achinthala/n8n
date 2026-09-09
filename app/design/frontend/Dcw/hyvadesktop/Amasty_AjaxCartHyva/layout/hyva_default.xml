@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @author Amasty Team
+ * @copyright Copyright (c) 2023 Amasty (https://www.amasty.com)
+ * @package Ajax Cart Hyva Compatibility (System)
+ */-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <referenceContainer name="before.body.end">
+        <block name="amcart.popup.confirmation" ifconfig="amasty_cart/confirm_popup/use_on_product_page"
+               template="Amasty_AjaxCartHyva::components/confirmation-popup.phtml"/>
+    </referenceContainer>
+</page>

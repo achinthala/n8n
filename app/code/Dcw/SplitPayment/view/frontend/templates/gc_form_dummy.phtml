@@ -1,0 +1,136 @@
+<?php
+use Hyva\Theme\ViewModel\ProductPage;
+
+/** @var Dcw\DesignerTool\Block\Index  $block */
+/** @var Escaper $escaper */
+
+/** @var ProductPage $productViewModel */
+$productViewModel = $viewModels->require(ProductPage::class);
+
+$customerFormBlock = $block->getLayout()->createBlock(\ParadoxLabs\TokenBase\Block\Customer\Form::class);
+$code = $block->escapeHtmlAttr($customerFormBlock->getCode()); 
+$shippingAddess = $block->getCurrentQuote()->getShippingAddress();
+?>
+<div class="dummy-gc-form" style="display:none">
+    <div class="step-panel-frm gc-each-frm-wrapper">
+        <h2 class="cart_ending_heading">Card Ending in <span>XXXX</span></h2>
+        <div class="gc_msg_sec"></div>
+        <h2 class="cart_info_title">Card Information</h2>
+        <?= $block->getBlockHtml('formkey'); ?>
+        <input type="hidden" name="is_gc_card" value="1" />
+        <input type="hidden" name="method" value="<?= /* @noEscape */ $code; ?>" />
+        <?php if ($customerFormBlock->getMethod()->isAcceptJsEnabled() === true): ?>
+            <input type="hidden" class="input-text" name="payment[acceptjs_key]" id="acceptjs-key" value="" />
+            <input type="hidden" class="input-text" name="payment[acceptjs_value]" id="acceptjs-value" value="" />
+            <input type="hidden" class="input-text" name="payment[cc_last4]" id="cc-last4" value="" />
+            <?php if ($customerFormBlock->getMethod()->getConfigData('can_store_bin') == 1): ?>
+                <input type="hidden" class="input-text" name="payment[cc_bin]" id="cc-bin" value="" />
+            <?php endif; ?>
+        <?php endif; ?>
+        <input type="hidden" class="input-text" name="payment[cc_type]" id="cc-type" value="" />
+
+        <input type="hidden" id="" name="billing[firstname]" value="<?= /* @noEscape */ $shippingAddess->getFirstname()?>">
+        <input type="hidden" id="" name="billing[lastname]" value="<?= /* @noEscape */ $shippingAddess->getLastname()?>">
+        <input type="hidden" name="billing[company]" id="" value="<?= /* @noEscape */ $shippingAddess->getCompany()?>">
+        <?php 
+        $_streetValidationClass = $block->escapeHtmlAttr($block->customerAddressHelper()->getAttributeValidationClass('street')); 
+        $billing_street = $shippingAddess->getStreet();
+        ?>
+        <input type="hidden" name="billing[street][]" value="<?= /* @noEscape */ $billing_street[0]?>" id="street" />
+        <?php for ($_i = 1, $_n = $block->customerAddressHelper()->getStreetLines(); $_i < $_n; $_i++): ?>
+            <?php $lineNo = (int)($_i+1); ?>
+            <input type="hidden" name="billing[street][]" value="<?= /* @noEscape */ !empty($billing_street[$_i])?$billing_street[$_i]:''?>" id="street_<?= $lineNo ?>">
+        <?php endfor; ?>
+        <input type="hidden" id="region_id" name="billing[country_id]" value="<?= /* @noEscape */ $shippingAddess->getCountryId();?>" />
+        <?php 
+        if (!empty($block->getRegionsOfCountry($shippingAddess->getCountryId()))) {
+            $region_dropdown_show = 1;
+            $regions = $block->getRegionsOfCountry($shippingAddess->getCountryId());
+        ?>
+            <input type="hidden" id="region_id" name="billing[region_id]" value="<?= /* @noEscape */ $shippingAddess->getRegionId();?>" />
+        <?php } else {
+            $region_dropdown_show = 0;
+        ?>
+            <select id="region_id" name="billing[region_id]" class="input-text required-entry region_id" style="display:none"></select>
+        <?php }
+        if (!empty($shippingAddess->getRegion()) && $region_dropdown_show == 0) {
+            $region_input_val = $shippingAddess->getRegion();
+        } else {
+            $region_input_val = '';
+        }
+        ?>
+        <input type="hidden" id="" name="billing[region]" value="<?= /* @noEscape */ $region_input_val;?>" />
+        <input type="hidden" name="billing[city]" value="<?= /* @noEscape */ $shippingAddess->getCity()?>" id="city">
+        <input type="hidden" name="billing[postcode]" value="<?= /* @noEscape */ $shippingAddess->getPostcode()?>">
+        <input type="hidden" name="billing[telephone]" value="<?= /* @noEscape */ $shippingAddess->getTelephone()?>" id="telephone">
+
+        <div class="step-panel-frm gc-frm-left">       
+            <div class="field field-gc_card_number required">
+                <label class="label" for="gc_card_number">
+                    <span>Card Number</span>
+                </label>
+                <div class="control">
+                    <input type="text" name="payment[cc_number]" 
+                    value="" 
+                    title="Card Number" class="input-text card-number required-entry">
+                </div>
+            </div>
+            <div class="field field-expiration-date required">
+                <label class="label" for="gc_exp_month">
+                    <span>Expiration Date</span>
+                </label>
+                <div class="control">
+                    <select name="payment[cc_exp_month]" 
+                    value="" required class="input-text required-entry">
+                        <option value="">Month</option>
+                        <?php for ($i = 1; $i <= 12; $i++) {?>
+                        <option value="<?= /* @noEscape */ str_pad($i, 2, '0', STR_PAD_LEFT); ?>">
+                            <?= /* @noEscape */ str_pad($i, 2, '0', STR_PAD_LEFT); ?>
+                        </option>
+                        <?php }?>
+                    </select>
+                </div>
+                <div class="control">
+                    <select name="payment[cc_exp_year]" value="" 
+                    required class="input-text required-entry">
+                        <option value="">Year</option>
+                        <?php
+                        $year_i = $block->getCurrentDateTime('Y');
+                        for ($i = 1; $i <= 20; $i++) {?>
+                        <option value="<?= /* @noEscape */ $year_i; ?>">
+                            <?= /* @noEscape */ $year_i; ?>
+                        </option>
+                            <?php
+                            $year_i = $year_i + 1;
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+            <div class="field field-gc_cvv2 required">
+                <label class="label" for="gc_cvv2">
+                    <span>CVV2</span>
+                </label>
+                <div class="control">
+                    <input type="text" name="payment[cc_cid]" 
+                    value="" title="CVV2" class="input-text required-entry">
+                </div>
+            </div>
+            <div class="field field-action">
+                <button type="button" class="remove-gc-btn">Remove</button>
+            </div>
+        </div>
+        <div class="step-panel-frm gc-balance-right-sec">
+            <div class="gc-balance">
+                Balance
+                <span class="gc-balance-amt"><?= /* @noEscape */ $productViewModel->format(0) ?></span>
+            </div>
+            <div class="gc-payment">
+                Payment Amount
+                <span class="gc-payment-amt"><?= /* @noEscape */ $productViewModel->format(0) ?></span>
+                <input type="hidden" class="input-text" name="cc_payment" value="0">
+            </div>
+            <button type="button" class="apply-gc-balance-btn" disabled>Apply</button>
+        </div>
+    </div>
+</div>

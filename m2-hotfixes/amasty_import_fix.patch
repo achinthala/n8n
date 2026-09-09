@@ -1,0 +1,80 @@
+diff --git a/vendor/amasty/module-import-core/Model/Process/ProcessRepository.php b/vendor/amasty/module-import-core/Model/Process/ProcessRepository.php
+index 2d37edd..5d93fd7 100644
+--- a/vendor/amasty/module-import-core/Model/Process/ProcessRepository.php
++++ b/vendor/amasty/module-import-core/Model/Process/ProcessRepository.php
+@@ -128,7 +128,7 @@ class ProcessRepository
+ 
+         $process
+             ->setStatus(Process::STATUS_RUNNING)
+-            ->setPid(getmypid())
++//            ->setPid(getmypid())
+             ->setImportResult($importProcess->getImportResult()->serialize());
+         $this->processResource->save($process);
+     }
+diff --git a/vendor/amasty/module-import-core/Model/Process/StatusChecker.php b/vendor/amasty/module-import-core/Model/Process/StatusChecker.php
+index 24d0ec8..b2c18c3 100644
+--- a/vendor/amasty/module-import-core/Model/Process/StatusChecker.php
++++ b/vendor/amasty/module-import-core/Model/Process/StatusChecker.php
+@@ -81,34 +81,34 @@ class StatusChecker implements StatusCheckerInterface
+         $isProcessAlive = $process->getPid() !== null
+             && $this->jobManager->isPidAlive((int)$process->getPid());
+ 
+-        if (!$isProcessAlive) {
+-            $processStatus = $this->processStatusFactory->create();
+-            $currentStatus = $this->processRepository->checkProcessStatus((string)$process->getIdentity());
+-            if (!$importResult) { //when error with starting process before first action ran
+-                $errorMsg = __(
+-                    'The import process failed to launch. Please, check your PHP executable path or'
+-                    . ' see log for more details.'
+-                );
+-            } elseif (!in_array($currentStatus, [Process::STATUS_SUCCESS, Process::STATUS_FAILED])) {
+-                $errorMsg = __(
+-                    'The system process failed. For an error details please make sure that Debug mode is enabled '
+-                    . 'and see %1',
+-                    ConfigProvider::DEBUG_LOG_PATH
+-                );
+-                $importResult->logMessage(ImportResultInterface::MESSAGE_CRITICAL, $errorMsg);
+-            }
+-
+-            if (isset($errorMsg)) {
+-                $processStatus->setMessages([
+-                    [
+-                        'type' => ImportResultInterface::MESSAGE_CRITICAL,
+-                        'message' => $errorMsg
+-                    ]
+-                ]);
+-
+-                return $processStatus;
+-            }
+-        }
++//        if (!$isProcessAlive) {
++//            $processStatus = $this->processStatusFactory->create();
++//            $currentStatus = $this->processRepository->checkProcessStatus((string)$process->getIdentity());
++//            if (!$importResult) { //when error with starting process before first action ran
++//                $errorMsg = __(
++//                    'The import process failed to launch. Please, check your PHP executable path or'
++//                    . ' see log for more details.'
++//                );
++//            } elseif (!in_array($currentStatus, [Process::STATUS_SUCCESS, Process::STATUS_FAILED])) {
++//                $errorMsg = __(
++//                    'The system process failed. For an error details please make sure that Debug mode is enabled '
++//                    . 'and see %1',
++//                    ConfigProvider::DEBUG_LOG_PATH
++//                );
++//                $importResult->logMessage(ImportResultInterface::MESSAGE_CRITICAL, $errorMsg);
++//            }
++//
++//            if (isset($errorMsg)) {
++//                $processStatus->setMessages([
++//                    [
++//                        'type' => ImportResultInterface::MESSAGE_CRITICAL,
++//                        'message' => $errorMsg
++//                    ]
++//                ]);
++//
++//                return $processStatus;
++//            }
++//        }
+ 
+         return null;
+     }

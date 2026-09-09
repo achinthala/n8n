@@ -1,0 +1,14 @@
+diff --git a/vendor/magento/module-price-permissions/Observer/AdminhtmlBlockHtmlBeforeObserver.php b/vendor/magento/module-price-permissions/Observer/AdminhtmlBlockHtmlBeforeObserver.php
+index 974b4ecf..64482fd9 100644
+--- a/vendor/magento/module-price-permissions/Observer/AdminhtmlBlockHtmlBeforeObserver.php
++++ b/vendor/magento/module-price-permissions/Observer/AdminhtmlBlockHtmlBeforeObserver.php
+@@ -122,7 +122,7 @@ class AdminhtmlBlockHtmlBeforeObserver implements ObserverInterface
+         $this->_filterByBlockName($block);
+ 
+         // Handle prices that are shown when admin reviews customers shopping cart
+-        if (stripos($block->getNameInLayout(), 'customer_cart_') === 0) {
++        if ($block->getNameInLayout() && stripos($block->getNameInLayout(), 'customer_cart_') === 0) {
+             if (!$this->observerData->isCanReadProductPrice()) {
+                 if ($block->getParentBlock()->getNameInLayout() == 'admin.customer.carts') {
+                     $this->_removeColumnFromGrid($block, 'price');
+                     

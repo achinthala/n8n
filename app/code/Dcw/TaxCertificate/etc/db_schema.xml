@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="tax_certificates_list" resource="default" engine="innodb" comment="Tax Certificates List">
+        <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false" identity="true" comment="ID"/>
+        <column xsi:type="int" name="customer_id" nullable="false" comment="Customer ID"/>
+        <column xsi:type="varchar" name="certificate_id" nullable="false" length="255" comment="Certificate ID"/>
+        <column xsi:type="int" name="email_flag" default="0" nullable="false" comment="Email Sent Flag"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="255" comment="Status"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="id"/>
+        </constraint>
+        <index referenceId="CUSTOMER_CERTIFICATE_IDX">
+            <column name="customer_id"/>
+            <column name="certificate_id"/>
+        </index>
+    </table>
+</schema>

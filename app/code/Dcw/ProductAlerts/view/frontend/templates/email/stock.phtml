@@ -1,0 +1,68 @@
+<?php
+/**
+ * Hyvä Themes - https://hyva.io
+ * Copyright © Hyvä Themes 2020-present. All rights reserved.
+ * This product is licensed per Magento install
+ * See https://hyva.io/license
+ */
+
+use Dcw\ProductAlerts\Block\Email\Stock;
+use Magento\Framework\Escaper;
+
+/** @var Escaper $escaper */
+/** @var Stock $block */
+?>
+<?php if ($products = $block->getProducts()): ?>
+    <div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom: 35px;">
+            <?php foreach ($products as $product):
+                $qty = $block->getProductQty($product);
+                $sku = $product->getSku();
+                $colors = $block->getColorPattern($product);
+                ?>
+                <tr>
+                    <td class="col photo" width="160" valign="top">
+                        <a href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>"
+                           title="<?= $escaper->escapeHtml($product->getName()) ?>"
+                           class="product photo"
+                           style="display: block;width: 100%;">
+                            <?= /* @noEscape */ $block->getProductImageHtml($product) ?>
+                        </a>
+                    </td>
+                    <td class="col item" style="padding: 0 0 0 25px;box-sizing: border-box;vertical-align: top;">
+                        <p style="margin:0 0 0 0 !important;color: #000000 !important;font-size: 14px;line-height: 20px;font-weight: 600;">
+                            <strong class="product name" style="font-weight: 600 !important;">
+                                <a style="color:#000000!important;text-decoration:none!important;font-weight:400 !important;font-size:14px;line-height:normal;"
+                                   href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                                    <?= $escaper->escapeHtml($product->getName()) ?>
+                                </a>
+                            </strong>
+                        </p>
+                        <p style="margin:0 0 0 0 !important;color: #000000 !important;font-size: 14px;font-weight: 400;">
+                            <?= $escaper->escapeHtml(__('SKU: ')) . $escaper->escapeHtml($sku) ?>
+                        </p>
+                        <?php if ($qty !== null): ?>
+                            <p style="margin:0 0 0 0 !important;color: #000000 !important;font-size: 14px;font-weight: 400;">
+                                <?= $escaper->escapeHtml(__('QTY: ')) . $escaper->escapeHtml($qty) ?>
+                            </p>
+                        <?php endif; ?>
+                        <?php if ($colors !== ''): ?>
+                            <p style="margin:0 0 0 0 !important;color: #000000 !important;font-size: 14px;font-weight: 400;">
+                                <?= $escaper->escapeHtml(__('Color/Pattern: ')) . $escaper->escapeHtml($colors) ?>
+                            </p>
+                        <?php endif; ?>
+                        <p style="margin:50px 0 0 0 !important;padding-left:0 !important;box-sizing: border-box;">
+                            <a style="margin:0 auto;padding:10px 32px;color:#fff;background:#296497;text-decoration:none;"
+                               href="<?= $escaper->escapeUrl($product->getProductUrl()) ?>">
+                                <?= $escaper->escapeHtml(__('Shop Now')) ?>
+                            </a>
+                        </p>
+                    </td>
+                    <td class="col item" style="box-sizing: border-box;vertical-align: top;text-align:right;">
+                        <strong><?= /* @noEscape */ $block->getProductPriceHtmlForEmail($product) ?></strong>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    </div>
+<?php endif; ?>

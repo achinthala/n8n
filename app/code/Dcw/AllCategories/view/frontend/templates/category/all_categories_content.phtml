@@ -1,0 +1,86 @@
+<?php
+    $currentCategory=$block->getCurrentCategory();
+if ($currentCategory) {
+    $parentcategories=$block->getCategoryById($currentCategory->getId());
+    $categories=$parentcategories->getChildrenCategories();
+   
+    $imageHelper =  $this->helper('Magento\Catalog\Helper\Image');
+    $placeholderimage = $imageHelper->getDefaultPlaceholderUrl('small_image');
+    ?> 
+<div class="all-categories">
+<div class="row md:flex flex-wrap mb-10">
+    <?php
+    $ij=0;
+    
+    foreach ($categories as $subcat) {
+        $ij++;
+        $sub_cat = $block->getCategoryById($subcat->getId());
+        $imageurl=$placeholderimage;
+        if ($sub_cat->getCatThumbnail()) {
+            $imageurl=$block->getUrl().$sub_cat->getCatThumbnail();
+        }
+        ?>
+    <div class="column md:w-1/2 xl:w-1/4 mb-12">
+        <div class="cards md:flex flex-nowrap">
+            <div class="image md:w-6/12 pr-4"><a class="block" href="<?= /** @noEscape */ $sub_cat->getUrl();?>">
+                    <img class="w-full rounded-md" 
+                    src="<?= /** @noEscape */ $imageurl?>" alt="<?= /** @noEscape */ $sub_cat->getName();?>" title="<?= /** @noEscape */ $sub_cat->getName();?>" 
+                    style="display: inline-block;"/>
+                </a>
+            </div>
+            <div class="details md:w-4/12" x-data="{ isClicked: false, ulLength: false }" x-bind:class="{ 'active': isClicked, 'acc_arw': ulLength }">
+                <h3 class="pb-2" x-on:click="isClicked = !isClicked">
+                    <a class="text-size18 font-semibold text-black" href="<?= /** @noEscape */ $sub_cat->getUrl();?>">
+                    <?= /** @noEscape */ $sub_cat->getName();?>
+                    </a>
+                </h3> 
+                <?php
+                $subsub_categories = $sub_cat->getChildrenCategories();
+                if (count($subsub_categories) != 0) {
+                    $innch=0;
+                    foreach ($subsub_categories as $subcat) {
+                        $childcal = $block->getCategoryById($subcat->getId());
+                        if ($childcal->getIsActive()) {
+                            $innch=$innch+1;
+                            if ($innch>6) {continue;}
+                            ?>
+                        <ul x-init="ulLength = document.querySelectorAll('ul').length > 0"  <?php if ($innch>3) echo 'class="hide_for_desktop"'; ?>>
+                            <li class="pb-2">
+                                <a class="text-size14 font-normal text-black" 
+                                href="<?= /** @noEscape */ $childcal->getUrl();?>">
+                                    <p class="text-size14 font-normal text-black">
+                                        <?= /** @noEscape */ $childcal->getName();?>
+                                    </p>
+                                </a> 
+                            </li>
+                        </ul>
+                            <?php                            
+                        } ?>
+                    <?php } ?>
+                    <?php if (count($subsub_categories)>3) {?>
+                       <a class="text-size14 font-normal text-black underline <?php if ($innch<=6){ echo 'hide_for_mobile';}else{ echo 'show_for_mobile';} ?>" 
+                       href="<?= /** @noEscape */ $sub_cat->getUrl();?>" >View All</a>
+                    <?php } ?>
+                <?php } ?>
+                
+                             
+            </div>
+        </div>
+    </div>
+<?php }?>
+
+</div>
+</div>
+
+<div class="featured_partner_all_cat">	
+	<div class="featured_partner_item featured_partners">
+		<?php 
+			echo $this->getLayout()
+			->createBlock('Magento\Cms\Block\Block')
+			->setBlockId('home_featured_partner')
+			->toHtml();
+		?>
+	</div>
+</div>
+
+<?php }?>

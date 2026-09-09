@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="quote">
+        <column xsi:type="varchar" name="admin_user_assistance" nullable="true" length="255" comment="Admin User Assistance"/>
+    </table>
+    <table name="quote_item" resource="default" engine="innodb" comment="Quote Item Table">
+        <column xsi:type="decimal" name="original_quote_item_price" nullable="true" precision="12" scale="4" comment="Original Quote Item Price" />
+        <column xsi:type="decimal" name="original_qty_when_discount_applied" nullable="true" precision="12" scale="4" comment="Original Quantity When Discount Was Applied" />
+    </table>
+    <table name="quote_change_log" resource="default" engine="innodb" comment="Quote Change Log">
+        <column xsi:type="int" name="log_id" unsigned="true" nullable="false" identity="true" comment="Log ID"/>
+        <column xsi:type="int" name="quote_id" unsigned="true" nullable="false" comment="Quote ID"/>
+        <column xsi:type="varchar" name="action_type" length="50" nullable="false" comment="Action Type (item_added, item_removed, item_updated, discount_changed, status_changed)"/>
+        <column xsi:type="int" name="item_id" unsigned="true" nullable="true" comment="Quote Item ID (if applicable)"/>
+        <column xsi:type="text" name="old_value" nullable="true" comment="Old Value (JSON)"/>
+        <column xsi:type="text" name="new_value" nullable="true" comment="New Value (JSON)"/>
+        <column xsi:type="varchar" name="changed_by" length="255" nullable="true" comment="Changed By (customer email or admin username)"/>
+        <column xsi:type="int" name="customer_id" unsigned="true" nullable="true" comment="Customer ID"/>
+        <column xsi:type="int" name="admin_id" unsigned="true" nullable="true" comment="Admin User ID"/>
+        <column xsi:type="varchar" name="admin_email" length="255" nullable="true" comment="Admin Email"/>
+        <column xsi:type="varchar" name="admin_role" length="255" nullable="true" comment="Admin Role"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Created At"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="log_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="QUOTE_CHANGE_LOG_QUOTE_ID_QUOTE_ENTITY_ID" 
+                    table="quote_change_log" column="quote_id" 
+                    referenceTable="quote" referenceColumn="entity_id" 
+                    onDelete="CASCADE"/>
+        <index referenceId="QUOTE_CHANGE_LOG_QUOTE_ID" indexType="btree">
+            <column name="quote_id"/>
+        </index>
+        <index referenceId="QUOTE_CHANGE_LOG_CREATED_AT" indexType="btree">
+            <column name="created_at"/>
+        </index>
+    </table>
+    <table name="quote_lock" resource="default" engine="innodb" comment="Quote Lock Table">
+        <column xsi:type="int" name="lock_id" unsigned="true" nullable="false" identity="true" comment="Lock ID"/>
+        <column xsi:type="int" name="quote_id" unsigned="true" nullable="false" comment="Quote ID"/>
+        <column xsi:type="varchar" name="locked_by_type" length="20" nullable="false" comment="Locked By Type (customer or admin)"/>
+        <column xsi:type="int" name="locked_by_id" unsigned="true" nullable="false" comment="Locked By ID (customer_id or admin_user_id)"/>
+        <column xsi:type="varchar" name="locked_by_name" length="255" nullable="true" comment="Locked By Name"/>
+        <column xsi:type="varchar" name="session_id" length="255" nullable="true" comment="Session ID"/>
+        <column xsi:type="timestamp" name="locked_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Locked At"/>
+        <column xsi:type="timestamp" name="last_activity" on_update="false" nullable="false" default="CURRENT_TIMESTAMP" comment="Last Activity"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="lock_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="QUOTE_LOCK_QUOTE_ID_QUOTE_ENTITY_ID" 
+                    table="quote_lock" column="quote_id" 
+                    referenceTable="quote" referenceColumn="entity_id" 
+                    onDelete="CASCADE"/>
+        <index referenceId="QUOTE_LOCK_QUOTE_ID" indexType="btree">
+            <column name="quote_id"/>
+        </index>
+        <index referenceId="QUOTE_LOCK_LAST_ACTIVITY" indexType="btree">
+            <column name="last_activity"/>
+        </index>
+    </table>
+    <table name="amasty_quote" resource="checkout" engine="innodb" comment="Amasty Quote Table">
+        <column xsi:type="decimal" name="discount" nullable="true" precision="5" scale="2" comment="Discount Percentage" />
+    </table>
+</schema>

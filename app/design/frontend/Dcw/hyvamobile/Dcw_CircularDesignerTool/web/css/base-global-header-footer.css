@@ -1,0 +1,10 @@
+#propfinish input {
+    width: 162px;
+    font-size: 14px;
+    padding: 4px;
+}
+div#propfinish div#finalform div{font-size: 14px}
+div#propfinish textarea#comments {
+    width: 220px!important;
+    height: 70px!important;
+}

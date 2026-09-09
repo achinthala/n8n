@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Email:etc/email_templates.xsd">
+    <template id="dcw_share_cart_email" label="Share Cart Invitation" file="share_cart.html" type="html" module="Dcw_ShareCart" area="frontend"/>
+</config>

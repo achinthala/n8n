@@ -1,0 +1,13 @@
+diff --git a/vendor/magento/module-catalog-permissions/Model/Indexer/Plugin/Import.php b/vendor/magento/module-catalog-permissions/Model/Indexer/Plugin/Import.php
+index ff4413f6..285403b0 100644
+--- a/vendor/magento/module-catalog-permissions/Model/Indexer/Plugin/Import.php
++++ b/vendor/magento/module-catalog-permissions/Model/Indexer/Plugin/Import.php
+@@ -39,7 +39,7 @@ class Import
+      */
+     public function afterImportSource(\Magento\ImportExport\Model\Import $subject, $import)
+     {
+-        if ($this->config->isEnabled()) {
++        if ($this->config->isEnabled() && $subject->getEntity() !== 'ENTITY_CODE') {
+             $this->indexerRegistry->get(\Magento\CatalogPermissions\Model\Indexer\Category::INDEXER_ID)->invalidate();
+             $this->indexerRegistry->get(\Magento\CatalogPermissions\Model\Indexer\Product::INDEXER_ID)->invalidate();
+         }
