@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <router id="admin">
+        <route id="product_data_validation" frontName="product_data_validation">
+            <module name="Dcw_ProductDataValidation" before="Magento_Backend"/>
+        </route>
+    </router>
+</config>

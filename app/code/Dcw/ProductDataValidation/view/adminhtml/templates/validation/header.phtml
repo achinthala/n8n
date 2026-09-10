@@ -1,0 +1,31 @@
+<?php
+/**
+ * @var \Dcw\ProductDataValidation\Block\Adminhtml\Validation\Header $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+?>
+<div class="dcw-pdv-actions" style="margin-bottom: 20px;">
+    <?php if ($block->canRun()): ?>
+        <form method="post"
+              action="<?= $escaper->escapeUrl($block->getStartUrl()) ?>"
+              id="dcw-pdv-start-form"
+              style="display: inline-block;">
+            <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>"/>
+            <button type="submit"
+                    class="action-primary"
+                    id="dcw-pdv-check-product-data"
+                    onclick="return confirm('<?= $escaper->escapeJs(
+                        (string) __('Start product data validation? This will queue a catalog scan for enabled, in-stock products. The report will be available when the job completes.')
+                    ) ?>');">
+                <span><?= $escaper->escapeHtml(__('Check Product Data')) ?></span>
+            </button>
+        </form>
+    <?php endif; ?>
+    <p class="note" style="margin-top: 10px;">
+        <?= $escaper->escapeHtml(__(
+            'Manual catalog health check only. Validation runs asynchronously via cron and does not change product data. '
+            . 'Configure required attributes under Stores → Configuration → Product Data Validation. '
+            . 'Results reflect Magento values; PIM-owned attributes may need upstream fixes.'
+        )) ?>
+    </p>
+</div>

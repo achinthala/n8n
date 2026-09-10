@@ -1,0 +1,47 @@
+<?php
+/**
+ * @var \Dcw\ProductDataValidation\Block\Adminhtml\Report\Summary $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$summary = $block->getSummaryData();
+?>
+<div class="dcw-pdv-report-summary" style="margin-bottom: 20px; padding: 15px; background: #f8f8f8; border: 1px solid #e3e3e3;">
+    <?php if ($summary === null): ?>
+        <p><?= $escaper->escapeHtml(__(
+            'No completed validation report yet. Start a job from Catalog → Product Data Validation → Validation Jobs.'
+        )) ?></p>
+    <?php else: ?>
+        <h2><?= $escaper->escapeHtml(__('Validation Summary — Job #%1', $summary['job']->getJobId())) ?></h2>
+        <p><strong><?= $escaper->escapeHtml(__('Status:')) ?></strong>
+            <?= $escaper->escapeHtml(ucfirst((string) $summary['status'])) ?></p>
+        <p><strong><?= $escaper->escapeHtml(__('Store Views:')) ?></strong>
+            <?= $escaper->escapeHtml((string) $summary['store_labels']) ?></p>
+        <ul>
+            <li><?= $escaper->escapeHtml(__('Total Eligible Products: %1', number_format((int) $summary['total_eligible']))) ?></li>
+            <li><?= $escaper->escapeHtml(__('Products Checked: %1', number_format((int) $summary['products_checked']))) ?></li>
+            <li><?= $escaper->escapeHtml(__('Products With Missing Data: %1', number_format((int) $summary['products_with_issues']))) ?></li>
+            <li><?= $escaper->escapeHtml(__('Products Passed: %1', number_format((int) $summary['products_passed']))) ?></li>
+            <li><?= $escaper->escapeHtml(__('Completion Time: %1', $block->formatDuration($summary['execution_time']))) ?></li>
+        </ul>
+        <?php if (!empty($summary['attribute_breakdown'])): ?>
+            <h3><?= $escaper->escapeHtml(__('Missing Attribute Breakdown')) ?></h3>
+            <ul>
+                <?php foreach ($summary['attribute_breakdown'] as $code => $count): ?>
+                    <li><?= $escaper->escapeHtml(sprintf('Missing %s: %s', $code, number_format((int) $count))) ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+        <?php if ($block->canExport()): ?>
+            <p>
+                <a class="action-secondary" href="<?= $escaper->escapeUrl($block->getExportUrl()) ?>">
+                    <span><?= $escaper->escapeHtml(__('Export CSV')) ?></span>
+                </a>
+            </p>
+        <?php endif; ?>
+        <p class="note">
+            <?= $escaper->escapeHtml(__(
+                'This report is Magento-local and does not write back to PIM. Fix source fields upstream when attributes are PIM-owned.'
+            )) ?>
+        </p>
+    <?php endif; ?>
+</div>

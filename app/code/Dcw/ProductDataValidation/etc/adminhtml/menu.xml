@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Dcw_ProductDataValidation::validation"
+             title="Product Data Validation"
+             module="Dcw_ProductDataValidation"
+             sortOrder="90"
+             parent="Magento_Catalog::catalog"
+             resource="Dcw_ProductDataValidation::view"/>
+        <add id="Dcw_ProductDataValidation::jobs"
+             title="Validation Jobs"
+             module="Dcw_ProductDataValidation"
+             sortOrder="10"
+             parent="Dcw_ProductDataValidation::validation"
+             action="product_data_validation/validation/index"
+             resource="Dcw_ProductDataValidation::view"/>
+        <add id="Dcw_ProductDataValidation::report"
+             title="Validation Report"
+             module="Dcw_ProductDataValidation"
+             sortOrder="20"
+             parent="Dcw_ProductDataValidation::validation"
+             action="product_data_validation/report/index"
+             resource="Dcw_ProductDataValidation::view"/>
+        <add id="Dcw_ProductDataValidation::config_menu"
+             title="Configuration"
+             module="Dcw_ProductDataValidation"
+             sortOrder="30"
+             parent="Dcw_ProductDataValidation::validation"
+             action="adminhtml/system_config/edit/section/dcw_product_data_validation"
+             resource="Dcw_ProductDataValidation::config"/>
+    </menu>
+</config>

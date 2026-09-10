@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Magento_Catalog::catalog">
+                    <resource id="Dcw_ProductDataValidation::validation"
+                              title="Product Data Validation"
+                              sortOrder="90">
+                        <resource id="Dcw_ProductDataValidation::run"
+                                  title="Run Validation"
+                                  sortOrder="10"/>
+                        <resource id="Dcw_ProductDataValidation::view"
+                                  title="View Jobs and Reports"
+                                  sortOrder="20"/>
+                        <resource id="Dcw_ProductDataValidation::export"
+                                  title="Export Reports"
+                                  sortOrder="30"/>
+                        <resource id="Dcw_ProductDataValidation::config"
+                                  title="Configuration"
+                                  sortOrder="40"/>
+                    </resource>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>
