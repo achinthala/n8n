@@ -1,0 +1,39 @@
+<?php
+/**
+ * @var \Dcw\ProductDataValidation\Block\Adminhtml\Validation\StatusInfo $block
+ * @var \Magento\Framework\Escaper $escaper
+ */
+$job = $block->getJob();
+?>
+<?php if ($job): ?>
+    <div class="dcw-pdv-job-status" style="margin-bottom: 20px; padding: 15px; background: #f8f8f8; border: 1px solid #e3e3e3;">
+        <h2><?= $escaper->escapeHtml(__('Job #%1', $job->getJobId())) ?></h2>
+        <p><strong><?= $escaper->escapeHtml(__('Status:')) ?></strong>
+            <?= $escaper->escapeHtml(ucfirst($job->getStatus())) ?></p>
+        <p><strong><?= $escaper->escapeHtml(__('Products Checked:')) ?></strong>
+            <?= $escaper->escapeHtml($block->getProgressLabel()) ?></p>
+        <p><strong><?= $escaper->escapeHtml(__('Products With Issues:')) ?></strong>
+            <?= $escaper->escapeHtml((string) (int) $job->getData('products_with_issues')) ?></p>
+        <?php if ($block->isFailed()): ?>
+            <p class="message message-error">
+                <?= $escaper->escapeHtml((string) $job->getData('error_message')) ?>
+            </p>
+        <?php endif; ?>
+        <p>
+            <a class="action-secondary" href="<?= $escaper->escapeUrl($block->getRefreshUrl()) ?>">
+                <span><?= $escaper->escapeHtml(__('Refresh Status')) ?></span>
+            </a>
+            <?php if ($block->isCompleted()): ?>
+                <a class="action-primary" href="<?= $escaper->escapeUrl($block->getReportUrl()) ?>"
+                   style="margin-left: 10px;">
+                    <span><?= $escaper->escapeHtml(__('View Report')) ?></span>
+                </a>
+            <?php endif; ?>
+            <a class="action-secondary"
+               href="<?= $escaper->escapeUrl($block->getUrl('product_data_validation/validation/index')) ?>"
+               style="margin-left: 10px;">
+                <span><?= $escaper->escapeHtml(__('Back to Jobs')) ?></span>
+            </a>
+        </p>
+    </div>
+<?php endif; ?>

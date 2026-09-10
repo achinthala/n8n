@@ -613,6 +613,7 @@ return [
         'Dcw_Ordersaveadmin' => 1,
         'Dcw_PaymentMethods' => 1,
         'Dcw_ProductAlerts' => 1,
+        'Dcw_ProductDataValidation' => 1,
         'Dcw_ProductImage' => 1,
         'Dcw_RequestQuote' => 1,
         'Dcw_RevenueRanking' => 1,

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="dcw_product_data_validation"
+                 translate="label"
+                 type="text"
+                 sortOrder="95"
+                 showInDefault="1"
+                 showInWebsite="0"
+                 showInStore="0">
+            <label>Product Data Validation</label>
+            <tab>dcw_store_config</tab>
+            <resource>Dcw_ProductDataValidation::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10"
+                   showInDefault="1" showInWebsite="0" showInStore="0">
+                <label>General</label>
+                <field id="enabled" translate="label comment" type="select" sortOrder="10"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Enable Module</label>
+                    <comment>When disabled, new validation jobs cannot be started.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="attributes" translate="label comment" type="multiselect" sortOrder="20"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Required Attributes</label>
+                    <comment>Select product attributes to validate. Special rules apply for image (missing/no_selection) and price (missing or &lt;= 0). HTML fields are stripped before emptiness checks. Report checks Magento values only — PIM-owned fields may need upstream fixes.</comment>
+                    <source_model>Dcw\ProductDataValidation\Model\Config\Source\ProductAttributes</source_model>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+                <field id="store_ids" translate="label comment" type="multiselect" sortOrder="30"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Store Views to Validate</label>
+                    <comment>Leave empty to validate the Default Store View only.</comment>
+                    <source_model>Dcw\ProductDataValidation\Model\Config\Source\StoreViews</source_model>
+                    <can_be_empty>1</can_be_empty>
+                </field>
+                <field id="batch_size" translate="label comment" type="text" sortOrder="40"
+                       showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Batch Size</label>
+                    <comment>Number of products processed per batch. Default: 500.</comment>
+                    <validate>validate-number validate-greater-than-zero</validate>
+                </field>
+                <field id="exclude_sample_attribute_set_id" translate="label comment" type="text"
+                       sortOrder="50" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <label>Sample Attribute Set ID</label>
+                    <comment>Products with this attribute set ID are excluded from validation. Default: 455.</comment>
+                    <validate>validate-number validate-zero-or-greater</validate>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

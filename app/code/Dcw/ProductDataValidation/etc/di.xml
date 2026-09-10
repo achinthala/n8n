@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <virtualType name="Dcw\ProductDataValidation\Logger\Handler"
+                 type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/product_data_validation.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="Dcw\ProductDataValidation\Logger\Logger" type="Monolog\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">productDataValidation</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">Dcw\ProductDataValidation\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Dcw\ProductDataValidation\Model\ValidationProcessor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\ProductDataValidation\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\ProductDataValidation\Cron\ProcessValidation">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\ProductDataValidation\Logger\Logger</argument>
+        </arguments>
+    </type>
+    <type name="Dcw\ProductDataValidation\Model\JobManager">
+        <arguments>
+            <argument name="logger" xsi:type="object">Dcw\ProductDataValidation\Logger\Logger</argument>
+        </arguments>
+    </type>
+
+    <virtualType name="Dcw\ProductDataValidation\Model\ResourceModel\Job\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">dcw_product_data_validation_job</argument>
+            <argument name="resourceModel" xsi:type="string">Dcw\ProductDataValidation\Model\ResourceModel\Job</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="Dcw\ProductDataValidation\Model\ResourceModel\Result\Grid\Collection"
+                 type="Magento\Framework\View\Element\UiComponent\DataProvider\SearchResult">
+        <arguments>
+            <argument name="mainTable" xsi:type="string">dcw_product_data_validation_result</argument>
+            <argument name="resourceModel" xsi:type="string">Dcw\ProductDataValidation\Model\ResourceModel\Result</argument>
+        </arguments>
+    </virtualType>
+    <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
+        <arguments>
+            <argument name="collections" xsi:type="array">
+                <item name="dcw_pdv_job_listing_data_source" xsi:type="string">
+                    Dcw\ProductDataValidation\Model\ResourceModel\Job\Grid\Collection
+                </item>
+                <item name="dcw_pdv_result_listing_data_source" xsi:type="string">
+                    Dcw\ProductDataValidation\Model\ResourceModel\Result\Grid\Collection
+                </item>
+            </argument>
+        </arguments>
+    </type>
+</config>

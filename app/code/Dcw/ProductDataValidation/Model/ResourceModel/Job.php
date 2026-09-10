@@ -1,0 +1,17 @@
+<?php
+declare(strict_types=1);
+
+namespace Dcw\ProductDataValidation\Model\ResourceModel;
+
+use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
+
+class Job extends AbstractDb
+{
+    /**
+     * @inheritDoc
+     */
+    protected function _construct(): void
+    {
+        $this->_init('dcw_product_data_validation_job', 'job_id');
+    }
+}

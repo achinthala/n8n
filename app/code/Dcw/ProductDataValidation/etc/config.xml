@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <dcw_product_data_validation>
+            <general>
+                <enabled>1</enabled>
+                <attributes>name,description,short_description,meta_title,meta_description,image,price</attributes>
+                <store_ids></store_ids>
+                <batch_size>500</batch_size>
+                <exclude_sample_attribute_set_id>455</exclude_sample_attribute_set_id>
+            </general>
+        </dcw_product_data_validation>
+    </default>
+</config>

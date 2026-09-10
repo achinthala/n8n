@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">dcw_pdv_result_listing.dcw_pdv_result_listing_data_source</item>
+        </item>
+    </argument>
+    <settings>
+        <spinner>dcw_pdv_result_columns</spinner>
+        <deps>
+            <dep>dcw_pdv_result_listing.dcw_pdv_result_listing_data_source</dep>
+        </deps>
+    </settings>
+    <dataSource name="dcw_pdv_result_listing_data_source" component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">result_id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <aclResource>Dcw_ProductDataValidation::view</aclResource>
+        <dataProvider class="Dcw\ProductDataValidation\Ui\Component\Listing\DataProvider\ResultDataProvider"
+                      name="dcw_pdv_result_listing_data_source">
+            <settings>
+                <requestFieldName>result_id</requestFieldName>
+                <primaryFieldName>result_id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+    <columns name="dcw_pdv_result_columns">
+        <column name="result_id" sortOrder="10">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>desc</sorting>
+            </settings>
+        </column>
+        <column name="job_id" sortOrder="20">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Validation Job</label>
+            </settings>
+        </column>
+        <column name="sku" sortOrder="30">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">SKU</label>
+            </settings>
+        </column>
+        <column name="product_name" sortOrder="40">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Product Name</label>
+            </settings>
+        </column>
+        <column name="store_id" class="Dcw\ProductDataValidation\Ui\Component\Listing\Column\StoreName" sortOrder="50">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Store View</label>
+            </settings>
+        </column>
+        <column name="missing_attributes" sortOrder="60">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Missing Attributes</label>
+            </settings>
+        </column>
+        <column name="status" sortOrder="70">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Validation Status</label>
+            </settings>
+        </column>
+        <column name="created_at" class="Magento\Ui\Component\Listing\Columns\Date" component="Magento_Ui/js/grid/columns/date" sortOrder="80">
+            <settings>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+                <label translate="true">Date</label>
+            </settings>
+        </column>
+    </columns>
+</listing>
